@@ -45,8 +45,9 @@ another host (an exchange-rate API, map tiles) needs adding there, and must stay
   `http(s)` addresses ever become a clickable href (`safeHttpUrl` in `src/domain/links.ts`).
 - **Time**: records keep the wall-clock day/time plus the place's IANA zone; `zonedInstant` puts them on the
   real timeline; calendar export is in UTC.
-- **Money**: expenses convert at the average rate the trip's exchanges actually got (fees included), unless
-  they have their own rate; rates are typed in, never fetched.
+- **Money**: cash expenses convert at the average rate the trip's exchanges actually got (fees included);
+  card payments at what the bank charged (their own `rate`), estimated at the cash average and flagged
+  "cost pending" until someone adds it (`paidWith`, `awaitingCost`). Rates are typed in, never fetched.
 - Target scale: a few trips per phone, up to a few hundred items each, groups of 2–10. English only.
 
 ## Layout

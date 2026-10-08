@@ -16,9 +16,9 @@ export const SEGMENT: Record<Exclude<TripTable, 'travellers'>, string> = {
 
 /**
  * Saves a form: a new item opens its page (replacing the form in history), an edited one goes back
- * to where it was opened from.
+ * to where it was opened from. With `backWhenNew`, a new item goes back too (a settle-up payment).
  */
-export function useSave<T extends Exclude<TripTable, 'travellers'>>(table: T, existingId: string | undefined) {
+export function useSave<T extends Exclude<TripTable, 'travellers'>>(table: T, existingId: string | undefined, backWhenNew = false) {
   const t = useTrip()
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
@@ -27,7 +27,7 @@ export function useSave<T extends Exclude<TripTable, 'travellers'>>(table: T, ex
     setBusy(true)
     try {
       const id = await saveRecord(table, t.trip.id, input, existingId)
-      if (existingId) navigate(-1)
+      if (existingId || backWhenNew) navigate(-1)
       else navigate(tripPath(t.trip.id, SEGMENT[table], id), { replace: true })
     } catch {
       setError("Couldn't save. Try again.")

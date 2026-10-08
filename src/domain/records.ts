@@ -120,6 +120,7 @@ const SPECS: { [T in RecordTable]: Record<string, { check: Check; required: bool
     amount: required(money),
     currency: required(currency),
     rate: optional(rate),
+    paidWith: optional(WORD),
     date: required(isDay),
     category: required(WORD),
     paidBy: required(isId),

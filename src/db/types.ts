@@ -122,16 +122,26 @@ export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number]
 /** Who an expense is for: split equally, or exact amounts (in the expense's currency) per traveller. */
 export type Split = { kind: 'equal'; among: string[] } | { kind: 'exact'; amounts: Record<string, number> }
 
+export const PAID_WITH = ['cash', 'card'] as const
+export type PaidWith = (typeof PAID_WITH)[number]
+
 export interface Expense extends TripRecord {
   title: string
   amount: number
   currency: string
   /**
-   * A rate typed in for this expense alone (a card payment, say): how many units of `currency` one
-   * unit of the trip's currency was worth ("1 EUR = 161.5 JPY" is 161.5). Without it, the expense
-   * converts at the rate the trip's exchanges got (see Exchange).
+   * The rate this expense alone converts at (what the bank charged for a card payment): how many
+   * units of `currency` one unit of the trip's currency was worth ("1 EUR = 161.5 JPY" is 161.5).
+   * Without it, the expense converts at the rate the trip's exchanges got (see Exchange).
    */
   rate?: number
+  /**
+   * How an expense in another currency was paid. Cash converts at what the exchanges got. A card
+   * payment converts at what the bank charged (`rate`), which can take days to show up: until it's
+   * added, the payment counts at the exchanges' rate as an estimate, and is flagged. Older records
+   * have none, and convert at their own rate if they have one.
+   */
+  paidWith?: PaidWith
   date: Day
   category: ExpenseCategory
   /** Traveller id. */

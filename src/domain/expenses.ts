@@ -1,10 +1,10 @@
 import type { Day, Exchange, Expense } from '../db/types.ts'
 
 /*
- * Shared expenses, Splitwise-style but offline. Expenses can be in any currency, and convert to the
+ * Shared expenses, Splitwise-style but offline. Expenses can be in any currency. Cash converts to the
  * trip's currency at the rate the trip's exchanges actually got (cash withdrawals, money changed),
- * fees included, so the totals say what things really cost. An expense can have a rate of its own
- * instead (a card payment, say). No exchange-rate API.
+ * fees included, so the totals say what things really cost. A card payment converts at what the bank
+ * charged, once someone adds it. No exchange-rate API.
  */
 
 export interface ExchangeRate {
@@ -43,6 +43,13 @@ export const toTripCurrency = (amount: number, rate: number) => amount / rate
 
 /** Expenses that can't be converted yet: their currency has no exchange, and they have no rate of their own. */
 export const unconverted = (expenses: Expense[], rateOf: RateOf) => expenses.filter((e) => !e.deletedAt && !rateOf(e))
+
+/**
+ * A card payment still waiting for what the bank charged. Until then it converts at the exchanges'
+ * rate, as an estimate (or not at all, while its currency has none).
+ */
+export const awaitingCost = (e: Pick<Expense, 'currency' | 'rate' | 'paidWith' | 'deletedAt'>, tripCurrency: string) =>
+  !e.deletedAt && e.paidWith === 'card' && e.currency !== tripCurrency && !e.rate
 
 /** Each traveller's part of an expense, in the expense's own currency. */
 export function sharesOf(expense: Pick<Expense, 'amount' | 'split'>): Map<string, number> {
