@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please report security problems privately through GitHub:
-**[Report a vulnerability](https://github.com/timoneiro/waypoints/security/advisories/new)**
+**[Report a vulnerability](https://github.com/waypoints-pwa/waypoints/security/advisories/new)**
 (the repo's *Security* tab → *Report a vulnerability*). Don't open a public issue for them.
 
 Include what you found and how to reproduce it. waypoints is a one-person project, so replies can take

@@ -1,7 +1,7 @@
 # waypoints — notes for Claude
 
 Trip companion PWA. Local-first: all data in IndexedDB via Dexie; hosted as a static site on GitHub
-Pages (https://timoneiro.github.io/waypoints/). There is no server: trips move between phones as links
+Pages (https://waypoints-pwa.github.io/waypoints/). There is no server: trips move between phones as links
 (`#/t/<data>`, the trip compressed into the URL fragment) or files, and are merged record by record.
 
 ## People's trips — never lose them
@@ -10,8 +10,11 @@ non-destructive for existing data:
 - **Dexie versions are append-only** (`src/db/db.ts`): never edit/delete a released `db.version(n)`,
   never change a primary key, never drop a table holding user data. Add a new version, and extend
   `src/db/migrations.test.ts` (it opens a v0.1-shaped database with the current code).
-- **Never change the app's origin/base path** (`/waypoints/` on GitHub Pages). Browser storage is per
-  origin: moving the app would show everyone an empty app.
+- **Never change the app's origin/base path** (`waypoints-pwa.github.io` + `/waypoints/`). Browser storage is
+  per origin: moving the app would show everyone an empty app.
+- **waypoints has an origin of its own** (the `waypoints-pwa` GitHub org) on purpose: apps on one origin share
+  storage, permissions and eviction, so clearing or uninstalling one with its data would wipe the other.
+  Never host it, or another app, on the same origin as fronds (`timoneiro.github.io`).
 - **Trip links live forever in group chats** (`src/domain/sync.ts`, `src/lib/tripLink.ts`): every
   `LINK_VERSION` ever shipped must keep decoding. Add a version instead of changing one.
 - **Backup format**: add optional fields only; bumping `BACKUP_VERSION` makes older app versions reject

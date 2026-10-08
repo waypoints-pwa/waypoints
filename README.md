@@ -4,7 +4,7 @@ A trip companion you install on your phone: the bookings, a day-by-day plan, the
 and the shared expenses of every trip, in one place. Works offline, needs **no account and no API keys**,
 and never connects to a server of its own.
 
-**Use it:** https://timoneiro.github.io/waypoints/ → open it on your phone → *Add to Home Screen*.
+**Use it:** https://waypoints-pwa.github.io/waypoints/ → open it on your phone → *Add to Home Screen*.
 
 ## Features
 
