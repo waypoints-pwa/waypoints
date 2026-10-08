@@ -8,6 +8,19 @@ Heading: "## x.y.z — YYYY-MM-DD". Body: short paragraphs and "- " bullets; inl
 Write for people who use the app, not for developers.
 -->
 
+## 0.2.0 — 2026-10-09
+
+Card payments and paying back part of what you owe.
+
+- **Cash or card**: an expense in another currency now says how it was paid. Cash converts at the
+  rate your withdrawals got, as before. For a card, type what the bank charged.
+- **Add the card cost later**: not in your bank app yet? Save the expense without it. It's marked
+  **cost pending**, counts at your cash rate meanwhile, and the Money tab tells you how many are
+  waiting (and which are yours).
+- **Pay back part of it**: "Record payment" now opens the payment, filled in, so you can change the
+  amount. Owe €100 and gave back €35? Record €35, and €65 stays owed. **+ Payment** in Balances
+  records any other payment.
+
 ## 0.1.0 — 2026-10-08
 
 The first version of waypoints: your trips in one place, on your phone, offline and without an account.

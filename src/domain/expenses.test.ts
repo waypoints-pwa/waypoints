@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { ANA, BO, CY, exchange, expense } from '../test/fixtures'
-import { balances, exchangeRates, parseAmount, rateFinder, settleUp, sharesOf, totals, unconverted } from './expenses'
+import { ANA, BO, CY, exchange, expense, T1 } from '../test/fixtures'
+import { awaitingCost, balances, exchangeRates, parseAmount, rateFinder, settleUp, sharesOf, totals, unconverted } from './expenses'
 
 /** A trip in EUR, without exchanges unless given. */
 const inEuros = (exchanges = [exchange({ deletedAt: '2026-10-02T10:00:00.000Z' })]) => rateFinder('EUR', exchanges)
@@ -47,6 +47,24 @@ describe('exchange rates', () => {
     expect(rateOf({ currency: 'USD' })).toBeUndefined()
   })
 
+  it('estimate card payments until what the bank charged is added', () => {
+    const sushi = expense({ amount: 3_200, currency: 'JPY', paidWith: 'card', split: { kind: 'equal', among: [ANA] } })
+    const rateOf = rateFinder('EUR', [exchange()])
+    expect(awaitingCost(sushi, 'EUR')).toBe(true)
+    expect(totals([sushi], rateOf).total).toBe(20)
+    // The bank charged 21.33 EUR.
+    const charged = { ...sushi, rate: 3_200 / 21.33 }
+    expect(awaitingCost(charged, 'EUR')).toBe(false)
+    expect(totals([charged], rateOf).total).toBeCloseTo(21.33, 10)
+  })
+
+  it('wait for what the bank charged only on card payments in another currency', () => {
+    expect(awaitingCost(expense({ currency: 'JPY', paidWith: 'cash' }), 'EUR')).toBe(false)
+    expect(awaitingCost(expense({ currency: 'JPY' }), 'EUR')).toBe(false)
+    expect(awaitingCost(expense({ currency: 'EUR', paidWith: 'card' }), 'EUR')).toBe(false)
+    expect(awaitingCost(expense({ currency: 'JPY', paidWith: 'card', deletedAt: T1 }), 'EUR')).toBe(false)
+  })
+
   it('apply to expenses added before the exchange, too', () => {
     const ramen = expense({ amount: 1_600, currency: 'JPY', split: { kind: 'equal', among: [ANA] } })
     expect(unconverted([ramen], inEuros())).toEqual([ramen])
@@ -80,6 +98,13 @@ describe('balances', () => {
     expect(nets(b)).toEqual({ [ANA]: 10, [BO]: 0, [CY]: -10 })
     expect(b.get(BO)).toMatchObject({ paid: 0, share: 10 })
     expect(totals([dinner, payBack], inEuros()).total).toBe(30)
+  })
+
+  it('takes part payments off what is owed', () => {
+    const dinner = expense({ id: 'cost0001', amount: 200, paidBy: ANA, split: { kind: 'equal', among: [ANA, BO] } })
+    const part = expense({ id: 'cost0002', title: 'Payment', amount: 35, paidBy: BO, transfer: true, split: { kind: 'equal', among: [ANA] } })
+    const b = balances([dinner, part], inEuros(), [ANA, BO])
+    expect(settleUp(new Map([...b].map(([id, x]) => [id, x.net])))).toEqual([{ from: BO, to: ANA, amount: 65 }])
   })
 
   it('ignores deleted expenses', () => {

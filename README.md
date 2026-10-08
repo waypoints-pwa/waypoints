@@ -18,10 +18,11 @@ and never connects to a server of its own.
 - **Places to see**, grouped by city: must-sees, a visited tick, and one tap to put a place in the plan.
   Paste a Google or Apple Maps link to open it again later.
 - **Shared expenses**, Splitwise-style: any currency, split equally or by exact amounts, with balances
-  and the fewest payments to settle up.
+  and the fewest payments to settle up, paid back in full or in part.
 - **Exchange rates from your own money**: note a cash withdrawal or a money exchange once ("10,000 JPY for
-  €62.50") and every expense in that currency is converted at the rate you actually got, fees included.
-  Several exchanges are averaged. Expenses paid by card can have their own rate.
+  €62.50") and every cash expense in that currency is converted at the rate you actually got, fees
+  included. Several exchanges are averaged. Card payments use what the bank charged, and can be added
+  before the bank shows it: they're marked "cost pending" and estimated until then.
 - **Calendar export**: one `.ics` file with the whole trip for Google or Apple Calendar, or *Add to Google
   Calendar* for a single booking. Importing an updated file updates the events instead of copying them.
 - **Share with your group** through any chat app, without a server (see below).

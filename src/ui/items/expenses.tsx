@@ -1,10 +1,21 @@
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { saveRecord } from '../../db/actions'
-import type { Expense, ExpenseCategory, Split } from '../../db/types'
-import { balances, exchangeRates, parseAmount, settleUp, sharesOf, toTripCurrency, totals, unconverted, type Payment } from '../../domain/expenses'
+import type { Expense, ExpenseCategory, PaidWith, Split } from '../../db/types'
+import {
+  awaitingCost,
+  balances,
+  exchangeRates,
+  parseAmount,
+  settleUp,
+  sharesOf,
+  toTripCurrency,
+  totals,
+  unconverted,
+  type Payment,
+} from '../../domain/expenses'
 import { tripPhase } from '../../domain/itinerary'
-import { isDay, toDay } from '../../domain/time'
+import { isDay } from '../../domain/time'
 import { BackLink, DetailHead, EmptyState, Notice } from '../components/bits'
 import { ChoiceChips, CurrencySelect, Field, NotesField, TextField } from '../components/fields'
 import { UnsentNotice } from '../components/UnsentNotice'
@@ -21,13 +32,24 @@ const converted = (e: Expense, t: TripData) => {
   return rate ? toTripCurrency(e.amount, rate) : undefined
 }
 
+/** Payments that settle everyone up, in the trip's currency. */
+const settlePayments = (bal: ReturnType<typeof balances>) => settleUp(new Map([...bal].map(([id, b]) => [id, b.net])))
+
+/** The payment form, filled in: who pays whom, and how much. */
+const paymentPath = (t: TripData, p?: Payment) =>
+  `${tripPath(t.trip.id, 'expenses', 'new')}?${new URLSearchParams({ transfer: '1', ...(p && { from: p.from, to: p.to, amount: String(p.amount) }) })}`
+
+/** How an expense was paid. Older ones don't say: a rate of their own came from a card statement. */
+const paidWithOf = (e: Expense): PaidWith => (e.paidWith === 'cash' || e.paidWith === 'card' ? e.paidWith : e.rate ? 'card' : 'cash')
+
 export function MoneyPage() {
   const t = useTrip()
   const { trip } = t
   const cur = trip.currency
   const spent = totals(t.expenses, t.rateOf)
   const bal = balances(t.expenses, t.rateOf, t.travellers.map((x) => x.id))
-  const payments = settleUp(new Map([...bal].map(([id, b]) => [id, b.net])))
+  const payments = settlePayments(bal)
+  const estimated = t.expenses.filter((e) => awaitingCost(e, cur) && t.rateOf(e)).length
   const group = t.travellers.length > 1
   const categories = [...spent.byCategory].sort((a, b) => b[1] - a[1])
   const byDay = new Map<string, Expense[]>()
@@ -79,7 +101,12 @@ export function MoneyPage() {
 
       {group && (
         <section className="card">
-          <h3>Balances</h3>
+          <div className="section-head">
+            <h3>Balances</h3>
+            <Link className="btn btn-small" to={paymentPath(t)}>
+              + Payment
+            </Link>
+          </div>
           {!t.me && (
             <p className="small muted">
               Which one are you? Choose on the{' '}
@@ -116,6 +143,12 @@ export function MoneyPage() {
           ) : (
             <p className="muted small">Everyone is square. 🎉</p>
           )}
+          {estimated > 0 && (
+            <p className="muted small">
+              {plural(estimated, 'card payment')} {estimated === 1 ? 'is an estimate' : 'are estimates'} until what the bank charged is added, so these
+              amounts can still change a little.
+            </p>
+          )}
         </section>
       )}
 
@@ -148,7 +181,10 @@ function RatesCard() {
   const t = useTrip()
   const { trip } = t
   const rates = exchangeRates(t.exchanges, trip.currency)
-  const waiting = unconverted(t.expenses, t.rateOf)
+  const cardsWaiting = t.expenses.filter((e) => awaitingCost(e, trip.currency))
+  const yours = t.me ? cardsWaiting.filter((e) => e.paidBy === t.me?.id).length : 0
+  // Card payments wait for the bank, not for an exchange.
+  const waiting = unconverted(t.expenses, t.rateOf).filter((e) => !awaitingCost(e, trip.currency))
   const missing = [...new Set(waiting.map((e) => e.currency))]
   const exchanges = [...t.exchanges].sort((a, b) => b.date.localeCompare(a.date))
   return (
@@ -164,6 +200,16 @@ function RatesCard() {
           <span className="small">
             {plural(waiting.length, 'expense')} in {missing.join(', ')} can't be counted yet. Add what you got for your money (a cash
             withdrawal, say) and they're converted.
+          </span>
+        </Notice>
+      )}
+      {cardsWaiting.length > 0 && (
+        <Notice kind="warn">
+          <span className="small">
+            {plural(cardsWaiting.length, 'card payment')} {cardsWaiting.length === 1 ? 'is' : 'are'} waiting for what the bank charged
+            {yours > 0 && ` (${yours === cardsWaiting.length ? (yours === 1 ? "it's yours" : 'all yours') : `${yours} of them yours`})`}. Until then,{' '}
+            {cardsWaiting.length === 1 ? 'it counts' : 'they count'} at your cash rate, if there is one. Look for{' '}
+            <span className="chip chip-must">cost pending</span> below.
           </span>
         </Notice>
       )}
@@ -190,38 +236,25 @@ function RatesCard() {
           ))}
         </ul>
       )}
-      <p className="muted small">Expenses convert at the rate you actually got, fees included. One with its own rate (a card payment, say) keeps it.</p>
+      <p className="muted small">Cash converts at the rate you actually got, fees included. Card payments convert at what the bank charged.</p>
     </section>
   )
 }
 
+/** A payment that settles up: recording it opens the payment form, where it can be part of the amount. */
 function SettleRow({ payment }: { payment: Payment }) {
   const t = useTrip()
-  const cur = t.trip.currency
-  const record = async () => {
-    if (!confirm(`Record that ${nameOf(t, payment.from)} paid ${nameOf(t, payment.to)} ${fmtMoney(payment.amount, cur)}?`)) return
-    await saveRecord('expenses', t.trip.id, {
-      title: 'Payment',
-      amount: payment.amount,
-      currency: cur,
-      date: toDay(new Date()),
-      category: 'other',
-      paidBy: payment.from,
-      split: { kind: 'equal', among: [payment.to] },
-      transfer: true,
-    })
-  }
   return (
     <li className="list-row">
       <span className="list-text">
         <span>
           <strong>{nameOf(t, payment.from)}</strong> pays <strong>{nameOf(t, payment.to)}</strong>
         </span>
-        <span className="money">{fmtMoney(payment.amount, cur)}</span>
+        <span className="money">{fmtMoney(payment.amount, t.trip.currency)}</span>
       </span>
-      <button type="button" className="btn btn-small" onClick={() => void record()}>
+      <Link className="btn btn-small" to={paymentPath(t, payment)}>
         Record payment
-      </button>
+      </Link>
     </li>
   )
 }
@@ -238,6 +271,8 @@ function ExpenseRow({ expense: e }: { expense: Expense }) {
   const t = useTrip()
   const label = labelOf(EXPENSE_CATEGORIES, e.category)
   const inTrip = converted(e, t)
+  const foreign = e.currency !== t.trip.currency
+  const waiting = awaitingCost(e, t.trip.currency)
   return (
     <li>
       <Link to={tripPath(t.trip.id, 'expenses', e.id)} className="list-row">
@@ -250,12 +285,13 @@ function ExpenseRow({ expense: e }: { expense: Expense }) {
         </span>
         <span className="list-end">
           <strong className="money">{fmtMoney(e.amount, e.currency)}</strong>
-          {e.currency !== t.trip.currency &&
-            (inTrip === undefined ? (
-              <span className="chip chip-must">no rate yet</span>
-            ) : (
-              <span className="muted small money">{fmtMoney(inTrip, t.trip.currency)}</span>
-            ))}
+          {foreign && inTrip !== undefined && (
+            <span className="muted small money">
+              {waiting && '≈ '}
+              {fmtMoney(inTrip, t.trip.currency)}
+            </span>
+          )}
+          {foreign && (waiting ? <span className="chip chip-must">cost pending</span> : inTrip === undefined && <span className="chip chip-must">no rate yet</span>)}
         </span>
       </Link>
     </li>
@@ -268,28 +304,43 @@ export function ExpenseFormPage() {
   const [params] = useSearchParams()
   const existing = itemId ? t.expenses.find((e) => e.id === itemId) : undefined
   if (itemId && !existing) return <ItemGone backTo={tripPath(t.trip.id, 'money')} />
-  return <ExpenseForm key={itemId ?? 'new'} existing={existing} transfer={existing?.transfer ?? params.get('transfer') === '1'} />
+  const transfer = existing?.transfer ?? params.get('transfer') === '1'
+  // A settle-up payment comes filled in (see paymentPath): who pays whom, and how much.
+  const traveller = (key: string) => t.travellers.find((x) => x.id === params.get(key))?.id
+  const settle = existing || !transfer ? undefined : { from: traveller('from'), to: traveller('to'), amount: parseAmount(params.get('amount') ?? '') }
+  return <ExpenseForm key={itemId ?? `new?${params}`} existing={existing} transfer={transfer} settle={settle} />
 }
 
-/** How a foreign-currency expense converts: at the exchanges' rate, at its own, or (no rate yet) via a new exchange. */
-type RateMode = 'exchange' | 'own' | 'new-exchange'
+interface SettlePrefill {
+  from?: string
+  to?: string
+  amount?: number
+}
 
-function ExpenseForm({ existing, transfer }: { existing?: Expense; transfer: boolean }) {
+function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; transfer: boolean; settle?: SettlePrefill }) {
   const t = useTrip()
   const { trip } = t
   const ids = t.travellers.map((x) => x.id)
   const group = ids.length > 1
-  const defaultPayer = t.me?.id ?? ids[0]
+  const defaultPayer = settle?.from ?? t.me?.id ?? ids[0]
   const today = useToday()
   const rates = exchangeRates(t.exchanges, trip.currency)
   // The currency used last is likely the one in your wallet now.
   const lastCurrency = [...t.expenses].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]?.currency
+  /** How a new expense in a currency was likely paid: like the last one in it, else cash once there's an exchange. */
+  const likelyPaidWith = (code: string): PaidWith => {
+    if (transfer) return 'cash'
+    const last = t.expenses.filter((e) => e.currency === code && !e.transfer).sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+    return last ? paidWithOf(last) : rates.has(code) ? 'cash' : 'card'
+  }
+  // What the bank charged for a card payment, in the trip's currency, as the form opened.
+  const chargedBefore = existing?.rate ? fmtPlain(existing.amount / existing.rate) : ''
 
   const [title, setTitle] = useState(existing?.title ?? '')
-  const [amountText, setAmountText] = useState(existing ? fmtPlain(existing.amount) : '')
+  const [amountText, setAmountText] = useState(existing ? fmtPlain(existing.amount) : settle?.amount ? fmtPlain(settle.amount) : '')
   const [currency, setCurrency] = useState(existing?.currency ?? (transfer ? trip.currency : (lastCurrency ?? trip.currency)))
-  const [ownRateText, setOwnRateText] = useState(existing?.rate ? fmtPlain(existing.rate, 6) : '')
-  const [ownRate, setOwnRate] = useState(existing?.rate !== undefined)
+  const [paidWith, setPaidWith] = useState<PaidWith>(() => (existing ? paidWithOf(existing) : likelyPaidWith(currency)))
+  const [chargedText, setChargedText] = useState(chargedBefore)
   const [gotText, setGotText] = useState('')
   const [costText, setCostText] = useState('')
   const [date, setDate] = useState(existing?.date ?? (tripPhase(trip, today).phase === 'past' ? trip.endDate : today))
@@ -300,28 +351,37 @@ function ExpenseForm({ existing, transfer }: { existing?: Expense; transfer: boo
   const [exact, setExact] = useState<Record<string, string>>(() =>
     existing?.split.kind === 'exact' ? Object.fromEntries(Object.entries(existing.split.amounts).map(([id, a]) => [id, fmtPlain(a)])) : {},
   )
-  const [to, setTo] = useState(() => (existing?.transfer ? [...sharesOf(existing).keys()][0] : ids.find((id) => id !== defaultPayer)) ?? '')
+  const [to, setTo] = useState(() => settle?.to ?? (existing?.transfer ? [...sharesOf(existing).keys()][0] : ids.find((id) => id !== defaultPayer)) ?? '')
   const [notes, setNotes] = useState(existing?.notes ?? '')
-  const { save, busy, error, setError } = useSave('expenses', existing?.id)
+  const { save, busy, error, setError } = useSave('expenses', existing?.id, transfer)
 
   const amount = parseAmount(amountText)
   const foreign = currency !== trip.currency
   const exchangeRate = rates.get(currency)?.rate
-  const mode: RateMode = ownRate ? 'own' : exchangeRate ? 'exchange' : 'new-exchange'
+  const card = foreign && paidWith === 'card'
+  // Cash in a currency without an exchange yet: the form can add one.
+  const newExchange = foreign && !card && !exchangeRate
+  const charged = parseAmount(chargedText)
   const got = parseAmount(gotText)
   const cost = parseAmount(costText)
-  const rate = !foreign ? 1 : mode === 'own' ? parseAmount(ownRateText) : mode === 'exchange' ? exchangeRate : got && cost ? got / cost : undefined
+  // An untouched card payment keeps its exact rate: re-deriving it from the rounded charge would save a change nobody made.
+  const unchanged = existing?.rate && currency === existing.currency && amount === existing.amount && chargedText === chargedBefore
+  const cardRate = !card || !amount || !charged ? undefined : unchanged ? existing.rate : amount / charged
+  // A card payment without what the bank charged is estimated at the exchanges' rate meanwhile.
+  const rate = !foreign ? 1 : card ? (cardRate ?? exchangeRate) : newExchange ? (got && cost ? got / cost : undefined) : exchangeRate
   const exactTotal = ids.reduce((sum, id) => sum + (parseAmount(exact[id] ?? '') ?? 0), 0)
+  // For a new payment between two travellers: what settling up says one owes the other.
+  const owed = transfer && !existing ? settlePayments(balances(t.expenses, t.rateOf, ids)).find((p) => p.from === paidBy && p.to === to)?.amount : undefined
 
   const onSubmit = async () => {
     if (!transfer && !title.trim()) return setError('What was it for?')
     if (amount === undefined || amount <= 0) return setError('Enter the amount, like 12.50.')
     if (!isDay(date)) return setError('Choose the day.')
-    if (foreign && mode === 'own' && !rate) return setError(`Enter how many ${currency} one ${trip.currency} was worth, or use the exchange rate.`)
-    if (foreign && mode === 'new-exchange' && Boolean(gotText.trim()) !== Boolean(costText.trim())) {
+    if (card && chargedText.trim() && !(cardRate && cardRate <= 1e9)) return setError(`Check what the bank charged in ${trip.currency}, like 12.50.`)
+    if (newExchange && Boolean(gotText.trim()) !== Boolean(costText.trim())) {
       return setError('Fill in both what you got and what it cost, or leave both empty to add the rate later.')
     }
-    if (foreign && mode === 'new-exchange' && gotText.trim() && !(got && cost)) return setError('Check the exchange amounts.')
+    if (newExchange && gotText.trim() && !(got && cost)) return setError('Check the exchange amounts.')
 
     let split: Split
     if (transfer) {
@@ -338,14 +398,17 @@ function ExpenseForm({ existing, transfer }: { existing?: Expense; transfer: boo
     }
 
     // A rate given here for a currency without one is saved for the whole trip, as an exchange.
-    if (foreign && mode === 'new-exchange' && got && cost) {
+    if (newExchange && got && cost) {
       await saveRecord('exchanges', trip.id, { date, currency, amount: got, cost, costCurrency: trip.currency, by: paidBy })
     }
+    // An older expense that doesn't say how it was paid stays that way while it converts as before.
+    const convertsAsBefore = existing && existing.currency === currency && paidWithOf(existing) === paidWith && existing.rate === cardRate
     void save({
       title: transfer ? 'Payment' : title.trim(),
       amount,
       currency,
-      rate: foreign && mode === 'own' ? rate : undefined,
+      rate: cardRate,
+      paidWith: !foreign ? undefined : convertsAsBefore ? existing.paidWith : paidWith,
       date,
       category: (transfer ? 'other' : category) as ExpenseCategory,
       paidBy,
@@ -381,10 +444,11 @@ function ExpenseForm({ existing, transfer }: { existing?: Expense; transfer: boo
             compact
             value={currency}
             onChange={(code) => {
-              // A rate typed for the old currency means nothing for the new one.
+              // Amounts typed for the old currency mean nothing for the new one.
+              const back = existing?.currency === code
               setCurrency(code)
-              setOwnRate(false)
-              setOwnRateText('')
+              setPaidWith(back ? paidWithOf(existing) : likelyPaidWith(code))
+              setChargedText(back ? chargedBefore : '')
               setGotText('')
               setCostText('')
             }}
@@ -392,39 +456,48 @@ function ExpenseForm({ existing, transfer }: { existing?: Expense; transfer: boo
             label="Currency"
           />
         </div>
+        {owed !== undefined && (
+          <small className="muted">
+            {nameOf(t, paidBy)} owes {nameOf(t, to)} {fmtMoney(owed, trip.currency)}.{' '}
+            {amount && !foreign && owed - amount > 0.005
+              ? `${fmtMoney(owed - amount, trip.currency)} will still be owed after this.`
+              : 'Paying part of it is fine: the rest stays owed.'}
+          </small>
+        )}
       </div>
 
-      {foreign && mode === 'exchange' && (
-        <div className="notice notice-info small">
-          Converted at <strong className="money">1 {trip.currency} = {fmtPlain(exchangeRate!, 4)} {currency}</strong>, what your exchanges got
-          {approx && <>: {approx}</>}.{' '}
-          <button
-            type="button"
-            className="link"
-            onClick={() => {
-              setOwnRate(true)
-              setOwnRateText(fmtPlain(exchangeRate!, 4))
-            }}
-          >
-            Use another rate for this one
-          </button>
+      {foreign && (
+        <div className="field" role="group" aria-label="Paid with">
+          <span>Paid with</span>
+          <div className="segmented">
+            <button type="button" className={paidWith === 'cash' ? 'active' : ''} onClick={() => setPaidWith('cash')}>
+              💵 Cash
+            </button>
+            <button type="button" className={paidWith === 'card' ? 'active' : ''} onClick={() => setPaidWith('card')}>
+              💳 {transfer ? 'Card or bank' : 'Card'}
+            </button>
+          </div>
         </div>
       )}
-      {foreign && mode === 'own' && (
-        <Field label="Exchange rate for this expense" hint={approx ?? 'From your bank app or card statement, for example.'}>
-          <div className="row nowrap">
-            <span className="muted">1 {trip.currency} =</span>
-            <input className="input input-amount" inputMode="decimal" value={ownRateText} placeholder="0.00" aria-label={`${currency} per ${trip.currency}`} onChange={(e) => setOwnRateText(e.target.value)} />
-            <span className="muted">{currency}</span>
-          </div>
-          {exchangeRate && (
-            <button type="button" className="link small" onClick={() => setOwnRate(false)}>
-              Use what your exchanges got instead
-            </button>
-          )}
+      {foreign && !card && exchangeRate && (
+        <div className="notice notice-info small">
+          Converted at <strong className="money">1 {trip.currency} = {fmtPlain(exchangeRate, 4)} {currency}</strong>, what your exchanges got
+          {approx && <>: {approx}</>}.
+        </div>
+      )}
+      {card && (
+        <Field
+          label={`What the bank charged (${trip.currency}, fees included)`}
+          hint={
+            cardRate
+              ? `1 ${trip.currency} = ${fmtPlain(cardRate, 4)} ${currency}`
+              : `Not in your bank app yet? Leave it empty and add it later: it's marked "cost pending" until then${approx ? `, and counts at your cash rate (${approx})` : ''}.`
+          }
+        >
+          <input className="input" inputMode="decimal" placeholder="Not known yet" value={chargedText} onChange={(e) => setChargedText(e.target.value)} />
         </Field>
       )}
-      {foreign && mode === 'new-exchange' && (
+      {newExchange && (
         <div className="field" role="group" aria-label={`Exchange rate for ${currency}`}>
           <span>What did you get for your money?</span>
           <div className="row nowrap">
@@ -439,10 +512,7 @@ function ExpenseForm({ existing, transfer }: { existing?: Expense; transfer: boo
           </div>
           <small className="muted">
             {approx ? `${approx}. ` : ''}A cash withdrawal or money changed, fees included. It's saved as the {currency} rate for the whole trip, so
-            you only enter it once. Leave it empty to add it later in Money.{' '}
-            <button type="button" className="link" onClick={() => setOwnRate(true)}>
-              Type a rate just for this expense
-            </button>
+            you only enter it once. Leave it empty to add it later in Money.
           </small>
         </div>
       )}
@@ -550,16 +620,32 @@ export function ExpensePage() {
   const label = labelOf(EXPENSE_CATEGORIES, e.category)
   const parts = [...sharesOf(e)]
   const rate = t.rateOf(e)
+  const cur = t.trip.currency
+  const foreign = e.currency !== cur
   return (
     <article className="stack">
       <BackLink to={back}>Money</BackLink>
       <DetailHead emoji={e.transfer ? '🤝' : label.emoji} title={e.title} subtitle={e.transfer ? 'Settle-up payment' : label.label} />
       <section className="card">
         <p className="big-number">{fmtMoney(e.amount, e.currency)}</p>
-        {e.currency !== t.trip.currency &&
-          (rate ? (
+        {foreign &&
+          (awaitingCost(e, cur) ? (
+            <Notice kind="warn">
+              <span className="small">
+                Waiting for what the bank charged.{' '}
+                {rate ? `Until then it counts at your cash rate: ≈ ${fmtMoney(toTripCurrency(e.amount, rate), cur)}.` : "It isn't counted until then."}{' '}
+                <Link className="link" to={tripPath(t.trip.id, 'expenses', e.id, 'edit')}>
+                  Add it
+                </Link>
+              </span>
+            </Notice>
+          ) : rate && e.paidWith === 'card' ? (
             <p className="muted small">
-              ≈ {fmtMoney(toTripCurrency(e.amount, rate), t.trip.currency)} at 1 {t.trip.currency} = {fmtPlain(rate, 4)} {e.currency}
+              {fmtMoney(toTripCurrency(e.amount, rate), cur)} charged by the bank (1 {cur} = {fmtPlain(rate, 4)} {e.currency})
+            </p>
+          ) : rate ? (
+            <p className="muted small">
+              ≈ {fmtMoney(toTripCurrency(e.amount, rate), cur)} at 1 {cur} = {fmtPlain(rate, 4)} {e.currency}
               {e.rate ? ' (its own rate)' : ', what your exchanges got'}
             </p>
           ) : (
@@ -575,6 +661,12 @@ export function ExpensePage() {
         <dl className="facts">
           <dt>Day</dt>
           <dd>{fmtDay(e.date)}</dd>
+          {foreign && (
+            <>
+              <dt>Paid with</dt>
+              <dd>{paidWithOf(e) === 'cash' ? 'Cash' : e.transfer ? 'Card or bank' : 'Card'}</dd>
+            </>
+          )}
           {t.travellers.length > 1 && (
             <>
               <dt>{e.transfer ? 'From' : 'Paid by'}</dt>
