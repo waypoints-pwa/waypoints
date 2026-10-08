@@ -1,0 +1,152 @@
+import { db, isLive, newId, nowISO, recordTable, setSetting, SETTINGS } from './db'
+import { takeSnapshot } from './snapshots'
+import { RECORD_TABLES, TRIP_TABLES, type RecordTable, type SyncMeta, type TableRecords, type Traveller, type Trip, type TripTable } from './types'
+
+/*
+ * All writes to trip records go through here (or backupIO), so they're also noted as unsent:
+ * changes the rest of the group hasn't had in a link yet. Callers must include db.unsent in any
+ * surrounding transaction.
+ *
+ * In a merge, the newer copy of a record wins as a whole, so writes touch only records that really
+ * changed: saving an unchanged form must not override someone else's newer edit.
+ */
+
+export type Input<T> = Omit<T, keyof SyncMeta | 'tripId'>
+
+/** Drops empty fields, so a cleared form field doesn't linger as "" or undefined. */
+function compact<T extends object>(record: T): T {
+  return Object.fromEntries(Object.entries(record).filter(([, v]) => v !== undefined && v !== '')) as T
+}
+
+const canonical = (value: unknown): unknown =>
+  Array.isArray(value)
+    ? value.map(canonical)
+    : value && typeof value === 'object'
+      ? Object.fromEntries(Object.keys(value).sort().map((k) => [k, canonical((value as Record<string, unknown>)[k])]))
+      : value
+
+/** Same content, ignoring when it was last saved. */
+const sameContent = (a: SyncMeta, b: SyncMeta) => JSON.stringify(canonical({ ...a, updatedAt: '' })) === JSON.stringify(canonical({ ...b, updatedAt: '' }))
+
+/** Travellers are listed by when they were added: a millisecond apart keeps the order they were typed in. */
+const inOrder = (iso: string, index: number) => new Date(Date.parse(iso) + index).toISOString()
+
+function markUnsent(table: RecordTable, ids: string[], tripId: string) {
+  return db.unsent.bulkPut(ids.map((id) => ({ table, id, tripId })))
+}
+
+/** Creates a record, or replaces the editable fields of an existing one. Returns its id. */
+export async function saveRecord<T extends TripTable>(table: T, tripId: string, input: Input<TableRecords[T]>, id?: string): Promise<string> {
+  const store = recordTable(table)
+  return db.transaction('rw', store, db.unsent, async () => {
+    const existing = id ? await store.get(id) : undefined
+    const now = nowISO()
+    const next = compact({ ...existing, ...input, id: existing?.id ?? newId(), tripId, createdAt: existing?.createdAt ?? now, updatedAt: now }) as TableRecords[T]
+    if (existing && sameContent(next, existing)) return existing.id
+    await store.put(next)
+    await markUnsent(table, [next.id], tripId)
+    return next.id
+  })
+}
+
+/** Changes a few fields of a record, e.g. ticking a place as visited. */
+export async function patchRecord<T extends TripTable>(table: T, id: string, changes: Partial<Input<TableRecords[T]>>) {
+  const store = recordTable(table)
+  await db.transaction('rw', store, db.unsent, async () => {
+    const existing = await store.get(id)
+    if (!existing || existing.deletedAt) return
+    const next = compact({ ...existing, ...changes, updatedAt: nowISO() }) as TableRecords[T]
+    if (sameContent(next, existing)) return
+    await store.put(next)
+    await markUnsent(table, [id], existing.tripId)
+  })
+}
+
+/** Deletes a record for the whole group: a tombstone that travels in the next link. */
+export async function deleteRecord(table: TripTable, id: string) {
+  const store = recordTable(table)
+  await db.transaction('rw', store, db.unsent, async () => {
+    const existing = await store.get(id)
+    if (!existing || existing.deletedAt) return
+    const now = nowISO()
+    await store.put({ ...existing, deletedAt: now, updatedAt: now })
+    await markUnsent(table, [id], existing.tripId)
+  })
+}
+
+/** Creates a trip with its travellers. The first traveller is the person using this phone. */
+export async function createTrip(input: Input<Trip>, travellerNames: string[]): Promise<string> {
+  const now = nowISO()
+  const tripId = newId()
+  const travellers: Traveller[] = travellerNames.map((name, i) => ({ id: newId(), tripId, name, createdAt: inOrder(now, i), updatedAt: now }))
+  await db.transaction('rw', [db.trips, db.travellers, db.unsent, db.settings], async () => {
+    await db.trips.add(compact({ ...input, id: tripId, createdAt: now, updatedAt: now }))
+    await db.travellers.bulkAdd(travellers)
+    await markUnsent('trips', [tripId], tripId)
+    await markUnsent('travellers', travellers.map((t) => t.id), tripId)
+    if (travellers[0]) await setSetting(SETTINGS.me(tripId), travellers[0].id)
+    await setSetting(SETTINGS.lastCurrency, input.currency)
+  })
+  return tripId
+}
+
+export interface TravellerDraft {
+  id?: string
+  name: string
+}
+
+/** Saves the trip's details and its list of travellers: renamed, added and removed ones. */
+export async function updateTrip(tripId: string, input: Input<Trip>, travellers: TravellerDraft[]) {
+  await db.transaction('rw', [db.trips, db.travellers, db.unsent], async () => {
+    const trip = await db.trips.get(tripId)
+    if (!trip) return
+    const now = nowISO()
+    const next = compact({ ...trip, ...input, updatedAt: now })
+    if (!sameContent(next, trip)) {
+      await db.trips.put(next)
+      await markUnsent('trips', [tripId], tripId)
+    }
+    const current = new Map((await db.travellers.where('tripId').equals(tripId).toArray()).filter(isLive).map((t) => [t.id, t]))
+    const changed: Traveller[] = []
+    let added = 0
+    for (const draft of travellers) {
+      const existing = draft.id ? current.get(draft.id) : undefined
+      if (!existing) changed.push({ id: newId(), tripId, name: draft.name, createdAt: inOrder(now, added++), updatedAt: now })
+      else if (existing.name !== draft.name) changed.push({ ...existing, name: draft.name, updatedAt: now })
+      if (existing) current.delete(existing.id)
+    }
+    for (const removed of current.values()) changed.push({ ...removed, deletedAt: now, updatedAt: now })
+    await db.travellers.bulkPut(changed)
+    await markUnsent('travellers', changed.map((t) => t.id), tripId)
+  })
+}
+
+/** Adds someone to a trip, e.g. a friend who joins from a link and isn't on the list yet. */
+export async function addTraveller(tripId: string, name: string): Promise<string> {
+  const now = nowISO()
+  const traveller: Traveller = { id: newId(), tripId, name, createdAt: now, updatedAt: now }
+  await db.transaction('rw', db.travellers, db.unsent, async () => {
+    await db.travellers.add(traveller)
+    await markUnsent('travellers', [traveller.id], tripId)
+  })
+  return traveller.id
+}
+
+export const setMe = (tripId: string, travellerId: string | undefined) => setSetting(SETTINGS.me(tripId), travellerId)
+
+/** After the trip went out in a link or file: everything changed so far has been shared. */
+export const clearUnsent = (tripId: string) => db.unsent.where('tripId').equals(tripId).delete()
+
+/**
+ * Deletes a trip from this phone only, keeping a safety snapshot. Nothing is sent to anyone: the
+ * group's copies stay as they are, and a link from them brings the trip back.
+ */
+export async function removeTripFromPhone(trip: Trip) {
+  await takeSnapshot(`Before removing “${trip.name}”`)
+  await db.transaction('rw', [...RECORD_TABLES.map(recordTable), db.unsent, db.settings], async () => {
+    await db.trips.delete(trip.id)
+    for (const table of TRIP_TABLES) await recordTable(table).where('tripId').equals(trip.id).delete()
+    await db.unsent.where('tripId').equals(trip.id).delete()
+    await db.settings.delete(SETTINGS.me(trip.id))
+  })
+}

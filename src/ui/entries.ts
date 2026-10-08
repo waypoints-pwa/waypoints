@@ -1,0 +1,80 @@
+import type { Transport } from '../db/types'
+import type { PlanEntry } from '../domain/itinerary'
+import { timeZoneName, zonedInstant } from '../domain/time'
+import { fmtDay, fmtDuration, fmtTime } from './format'
+import { labelOf, STAY_KINDS, TRANSPORT_MODES } from './labels'
+import { tripPath, type TripData } from './tripData'
+
+export interface EntryView {
+  emoji: string
+  title: string
+  detail?: string
+  to: string
+  /** Short zone name when it isn't the trip's own, e.g. "GMT+9". */
+  zone?: string
+}
+
+export function transportDuration(r: Transport): number | undefined {
+  if (!r.departTime || !r.arriveTime) return undefined
+  const start = zonedInstant(r.departDate, r.departTime, r.departTimeZone)
+  const end = zonedInstant(r.arriveDate ?? r.departDate, r.arriveTime, r.arriveTimeZone ?? r.departTimeZone)
+  return end > start ? end - start : undefined
+}
+
+function zoneOf(e: PlanEntry): string {
+  if (e.kind === 'transport') return e.record.departTimeZone
+  if (e.kind === 'arrival') return e.record.arriveTimeZone ?? e.record.departTimeZone
+  return e.record.timeZone
+}
+
+/** How a plan entry reads in a list. */
+export function describeEntry(e: PlanEntry, t: TripData): EntryView {
+  const zone = e.time && zoneOf(e) !== t.trip.timeZone ? timeZoneName(zoneOf(e), e.at) : undefined
+  const join = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(' · ') || undefined
+  switch (e.kind) {
+    case 'transport': {
+      const r = e.record
+      const duration = transportDuration(r)
+      const arrival = r.arriveTime && `arrives ${r.arriveDate && r.arriveDate !== r.departDate ? `${fmtDay(r.arriveDate)} ` : ''}${fmtTime(r.arriveTime)}`
+      return {
+        emoji: labelOf(TRANSPORT_MODES, r.mode).emoji,
+        title: `${r.from} → ${r.to}`,
+        detail: join([r.carrier, r.number].filter(Boolean).join(' '), arrival, duration !== undefined && fmtDuration(duration)),
+        to: tripPath(t.trip.id, 'transport', r.id),
+        zone,
+      }
+    }
+    case 'arrival': {
+      const r = e.record
+      const mode = labelOf(TRANSPORT_MODES, r.mode)
+      return {
+        emoji: r.mode === 'flight' ? '🛬' : mode.emoji,
+        title: `Arrive in ${r.to}`,
+        detail: join(`${mode.label} from ${r.from}`, r.number),
+        to: tripPath(t.trip.id, 'transport', r.id),
+        zone,
+      }
+    }
+    case 'checkin':
+    case 'checkout': {
+      const r = e.record
+      return {
+        emoji: e.kind === 'checkin' ? '🔑' : '🧳',
+        title: `${e.kind === 'checkin' ? 'Check in' : 'Check out'}: ${r.name}`,
+        detail: join(labelOf(STAY_KINDS, r.kind).label, r.city),
+        to: tripPath(t.trip.id, 'stays', r.id),
+        zone,
+      }
+    }
+    case 'activity': {
+      const r = e.record
+      return {
+        emoji: '🎟️',
+        title: r.title,
+        detail: join(r.endTime && `until ${fmtTime(r.endTime)}`, r.city),
+        to: tripPath(t.trip.id, 'activities', r.id),
+        zone,
+      }
+    }
+  }
+}

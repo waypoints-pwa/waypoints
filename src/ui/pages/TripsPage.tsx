@@ -1,0 +1,122 @@
+import { useEffect } from 'react'
+import { Link, useNavigate } from 'react-router'
+import { SETTINGS } from '../../db/db'
+import type { Day, Trip } from '../../db/types'
+import { tripPhase } from '../../domain/itinerary'
+import { EmptyState } from '../components/bits'
+import { WhatsNewCard } from '../components/WhatsNew'
+import { fmtDayRange } from '../format'
+import { useSetting, useToday, useTrips } from '../hooks'
+
+// Opening the app during a trip goes straight to it, once per launch, and only when the app was
+// opened on its home page (not from a link).
+const launchedAtHome = typeof location !== 'undefined' && /^#?\/?$/.test(location.hash)
+let resumed = false
+
+export function TripsPage() {
+  const trips = useTrips()
+  const lastTrip = useSetting<string>(SETTINGS.lastTrip)
+  const today = useToday()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (resumed || !launchedAtHome || !trips || !lastTrip) return
+    resumed = true
+    const trip = trips.find((t) => t.id === lastTrip.value)
+    if (trip && tripPhase(trip, today).phase === 'ongoing') navigate(`/trips/${trip.id}`)
+  }, [trips, lastTrip, today, navigate])
+
+  if (!trips) return null
+  if (!trips.length) {
+    return (
+      <>
+        {/* Renders nothing on a fresh install, but marks this version's notes as seen. */}
+        <WhatsNewCard />
+        <Welcome />
+      </>
+    )
+  }
+
+  const groups = { ongoing: [] as Trip[], upcoming: [] as Trip[], past: [] as Trip[] }
+  for (const trip of trips) groups[tripPhase(trip, today).phase].push(trip)
+  groups.ongoing.sort((a, b) => a.startDate.localeCompare(b.startDate))
+  groups.upcoming.sort((a, b) => a.startDate.localeCompare(b.startDate))
+  groups.past.sort((a, b) => b.endDate.localeCompare(a.endDate))
+
+  return (
+    <>
+      <WhatsNewCard />
+      <div className="section-head">
+        <h2>Your trips</h2>
+        <Link className="btn btn-small btn-primary" to="/new">
+          + New trip
+        </Link>
+      </div>
+      <TripGroup title="Now" trips={groups.ongoing} today={today} />
+      <TripGroup title="Coming up" trips={groups.upcoming} today={today} />
+      <TripGroup title="Past trips" trips={groups.past} today={today} />
+      <Link className="btn btn-ghost" to="/open">
+        🔗 Open a trip link or file
+      </Link>
+    </>
+  )
+}
+
+function TripGroup({ title, trips, today }: { title: string; trips: Trip[]; today: Day }) {
+  if (!trips.length) return null
+  return (
+    <section>
+      <h3 className="group-title">{title}</h3>
+      <ul className="list">
+        {trips.map((trip) => (
+          <TripRow key={trip.id} trip={trip} today={today} />
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function TripRow({ trip, today }: { trip: Trip; today: Day }) {
+  const phase = tripPhase(trip, today)
+  const chip =
+    phase.phase === 'upcoming'
+      ? phase.daysToGo === 1
+        ? 'Tomorrow'
+        : `In ${phase.daysToGo} days`
+      : phase.phase === 'ongoing'
+        ? `Day ${phase.day} of ${phase.length}`
+        : 'Done'
+  return (
+    <li>
+      <Link to={`/trips/${trip.id}`} className="list-row">
+        <span className="trip-emoji" aria-hidden>
+          {trip.emoji ?? '🧳'}
+        </span>
+        <span className="list-text">
+          <strong>{trip.name}</strong>
+          <span className="muted small">{fmtDayRange(trip.startDate, trip.endDate)}</span>
+        </span>
+        <span className={`chip chip-${phase.phase}`}>{chip}</span>
+      </Link>
+    </li>
+  )
+}
+
+function Welcome() {
+  return (
+    <EmptyState>
+      <p className="big-emoji">🧭</p>
+      <h2>Plan a trip</h2>
+      <p className="muted">
+        Keep your bookings, a day-by-day plan, places to see and shared expenses in one place. It works offline, with no
+        account, and you can share a trip with the people going.
+      </p>
+      <Link className="btn btn-primary" to="/new">
+        + New trip
+      </Link>
+      <Link className="btn" to="/open">
+        🔗 Open a trip someone sent you
+      </Link>
+    </EmptyState>
+  )
+}
