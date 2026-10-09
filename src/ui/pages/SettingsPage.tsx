@@ -9,7 +9,7 @@ import { LINKS } from '../../lib/links'
 import { requestPersistentStorage } from '../../lib/storage'
 import { Notice } from '../components/bits'
 import { mergeSummary, plural } from '../format'
-import { useSetting } from '../hooks'
+import { useServer, useSetting } from '../hooks'
 
 const stamp = () => new Date().toLocaleDateString('en-CA')
 
@@ -18,6 +18,7 @@ export function SettingsPage() {
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string }>()
   const [persisted, setPersisted] = useState<boolean>()
   const snapshots = useLiveQuery(() => db.snapshots.orderBy('createdAt').reverse().toArray(), [])
+  const server = useServer()
 
   useEffect(() => {
     navigator.storage?.persisted?.().then(setPersisted).catch(() => setPersisted(false))
@@ -55,6 +56,23 @@ export function SettingsPage() {
           />
         )}
         <p className="muted small">Suggested as the first traveller on new trips. It stays on this phone.</p>
+      </section>
+
+      <section className="card">
+        <h3>Sync server</h3>
+        {server ? (
+          <p className="small">
+            🌐 Connected as <strong>{server.member.name}</strong> to {new URL(server.url).host}
+            {server.lastErrorStatus === 401 ? ', but this phone was disconnected.' : '.'}
+          </p>
+        ) : (
+          <p className="muted small">
+            Optional. With a waypoints server, trips you put on it reach the others on it by themselves, without sending links.
+          </p>
+        )}
+        <Link className="btn btn-small" style={{ alignSelf: 'flex-start' }} to="/server">
+          {server ? 'Server settings' : 'Connect to a server'}
+        </Link>
       </section>
 
       <section className="card">
@@ -139,7 +157,8 @@ export function SettingsPage() {
         </p>
         <p className="muted small">
           No account, no tracking, no ads. Your trips stay on this phone and only leave it in the links and files you choose to
-          send. Maps and calendars open in their own apps; waypoints itself never connects to anything.
+          send, and for the trips you put on a sync server, if you connect to one. Maps and calendars open in their own apps;
+          without a server, waypoints itself never connects to anything.
         </p>
       </section>
     </>

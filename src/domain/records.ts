@@ -2,8 +2,8 @@ import type { RecordTable, TableRecords } from '../db/types.ts'
 import { isDay, isTime } from './time.ts'
 
 /*
- * Shape checks for records from outside this phone: trip links and backup files. Anyone can craft a
- * link, so nothing is trusted. Fields this version doesn't know are kept as they are, so a record
+ * Shape checks for records from outside this phone: trip links, backup files and the sync server
+ * (which runs the same checks on what phones send it). Anyone can craft a link, so nothing is trusted. Fields this version doesn't know are kept as they are, so a record
  * from a newer version of the app survives a round trip through an older one.
  */
 
@@ -54,7 +54,7 @@ const SPECS: { [T in RecordTable]: Record<string, { check: Check; required: bool
     currency: required(currency),
     notes: optional(LONG),
   },
-  travellers: { tripId: required(isId), name: required(text(60)) },
+  travellers: { tripId: required(isId), name: required(text(60)), memberId: optional(isId), linkedAt: optional(isTimestamp) },
   stays: {
     tripId: required(isId),
     name: required(SHORT),
@@ -147,7 +147,7 @@ export function checkRecord<T extends RecordTable>(table: T, raw: unknown, now =
   const invalid = () => new DataError(`It contains an invalid ${table.replace(/s$/, '')}.`)
   if (!isObject(raw) || !isId(raw.id) || !isTimestamp(raw.createdAt) || !isTimestamp(raw.updatedAt)) throw invalid()
   if (raw.deletedAt !== undefined && !isTimestamp(raw.deletedAt)) throw invalid()
-  if (Date.parse(raw.updatedAt) > now + MAX_FUTURE_MS) {
+  if (Date.parse(raw.updatedAt) > now + MAX_FUTURE_MS || (typeof raw.linkedAt === 'string' && Date.parse(raw.linkedAt) > now + MAX_FUTURE_MS)) {
     throw new DataError("It has changes dated in the future. Check the date and time on the phone that sent it.")
   }
   for (const [field, { check, required }] of Object.entries(SPECS[table])) {

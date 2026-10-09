@@ -21,7 +21,9 @@ export function OpenPage() {
 
   const open = (value: string) => {
     const route = tripRouteFrom(value)
+    const invite = /#\/server\?(\S*invite=\S+)/.exec(value)
     if (route) navigate(route)
+    else if (invite) navigate(`/server?${invite[1]}`)
     else setError("That isn't a waypoints trip link. Copy the whole link and try again.")
   }
 
@@ -53,7 +55,7 @@ export function OpenPage() {
     <>
       <BackLink to="/">Your trips</BackLink>
       <h2>Open a trip</h2>
-      <p className="muted">Paste a trip link someone sent you, or open a waypoints file.</p>
+      <p className="muted">Paste a trip link someone sent you (or an invite to a sync server), or open a waypoints file.</p>
       {canReadClipboard() && (
         <button className="btn btn-primary" onClick={() => void onPaste()}>
           📋 Paste trip link

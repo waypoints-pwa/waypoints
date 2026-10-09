@@ -36,6 +36,16 @@ export interface TripRecord extends SyncMeta {
 
 export interface Traveller extends TripRecord {
   name: string
+  /**
+   * For a trip on the sync server: the server member this traveller is. The server lets a trip be
+   * seen only by the members its travellers are linked to. Travellers without one use links.
+   */
+  memberId?: string
+  /**
+   * When `memberId` was last set or cleared. The link merges on this clock, apart from the rest of the
+   * traveller, so an edit made on an older copy (a rename, say) can't undo a link or an unlink.
+   */
+  linkedAt?: ISODate
 }
 
 /*
@@ -212,6 +222,25 @@ export interface UnsentEntry {
   table: RecordTable
   id: string
   tripId: string
+}
+
+/**
+ * A record changed on this phone that the sync server hasn't had yet. Noted for every trip but only
+ * sent for trips on the server, so moving a trip there later loses nothing.
+ */
+export interface OutboxEntry {
+  table: RecordTable
+  id: string
+  tripId: string
+}
+
+/** How far this phone has synced a trip that's on the sync server. Local only. */
+export interface ServerTrip {
+  tripId: string
+  /** The server's change number for the trip that this phone has pulled up to (0: nothing yet). */
+  cursor: number
+  /** False until every record this phone has of the trip has been sent once. */
+  uploaded: boolean
 }
 
 /** Automatic local backup taken before an operation that removes or overwrites data. */

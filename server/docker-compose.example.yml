@@ -1,0 +1,16 @@
+services:
+  waypoints:
+    container_name: waypoints
+    image: ghcr.io/waypoints-pwa/waypoints-server:latest
+    pull_policy: always
+    ports:
+      - 8788:8788
+    volumes:
+      # The trip database and the server code: small, next to the compose file.
+      - ./data:/data
+      # Daily copies of the database (documents and photos later). Can be on another disk.
+      - ./files:/files
+    environment:
+      # Only the hosted app may call the server from a browser.
+      - ALLOWED_ORIGINS=https://waypoints-pwa.github.io
+    restart: unless-stopped

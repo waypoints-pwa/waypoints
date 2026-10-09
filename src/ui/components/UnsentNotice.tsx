@@ -1,11 +1,11 @@
 import { Link } from 'react-router'
 import { plural } from '../format'
-import { tripPath, useTrip } from '../tripData'
+import { needsLinks, tripPath, useTrip } from '../tripData'
 
-/** Nudge to send the group a link after changing things. Only for trips with company. */
+/** Nudge to send the group a link after changing things. Only for trips with company who use links. */
 export function UnsentNotice() {
   const t = useTrip()
-  if (t.unsent === 0 || t.travellers.length < 2) return null
+  if (!needsLinks(t)) return null
   return (
     <div className="notice notice-info notice-row" role="status">
       <span className="small">✏️ {plural(t.unsent, 'change')} the group hasn't seen yet.</span>

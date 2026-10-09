@@ -1,11 +1,15 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { removeTripFromPhone, setMe } from '../../db/actions'
 import { buildICS, tripEvents } from '../../domain/calendar'
 import { daysBetween, timeZoneName, zoneCity } from '../../domain/time'
 import { downloadBlob, fileSlug } from '../../lib/download'
+import { leaveTrip } from '../../sync/account'
+import { Notice } from '../components/bits'
+import { ServerStatus } from '../components/ServerStatus'
 import { currencyName, fmtDayRange, plural } from '../format'
-import { useNow } from '../hooks'
-import { tripPath, useTrip } from '../tripData'
+import { usable, useNow, useServer } from '../hooks'
+import { tripPath, useTrip, type TripData } from '../tripData'
 
 export function TripInfoPage() {
   const t = useTrip()
@@ -17,6 +21,8 @@ export function TripInfoPage() {
 
   const downloadCalendar = () =>
     downloadBlob(new Blob([buildICS(events, trip.name)], { type: 'text/calendar' }), `${fileSlug(trip.name)}.ics`)
+
+  const server = usable(useServer())
 
   const remove = async () => {
     const others = group ? ' The others keep their copy, and a link from them brings it back.' : ''
@@ -55,7 +61,8 @@ export function TripInfoPage() {
 
       <section className="card">
         <h3>Who's going</h3>
-        <p>{t.travellers.map((x) => x.name + (x.id === t.me?.id ? ' (you)' : '')).join(', ')}</p>
+        <p>{t.travellers.map((x) => (t.server && t.linked.includes(x) ? '🌐 ' : '') + x.name + (x.id === t.me?.id ? ' (you)' : '')).join(', ')}</p>
+        {t.server && <p className="muted small">🌐 On the sync server: they get changes by themselves.</p>}
         {group && (
           <label className="field">
             <span>Which one are you?</span>
@@ -72,19 +79,24 @@ export function TripInfoPage() {
         )}
       </section>
 
-      <section className="card">
-        <h3>Share with the group</h3>
-        <p className="muted small">
-          {group
-            ? t.unsent
-              ? `You have ${plural(t.unsent, 'change')} the others haven't seen yet.`
-              : "The others have had everything you've changed."
-            : 'Send the trip to the people going: they get their own copy, and can add places and expenses too.'}
-        </p>
-        <Link className="btn btn-primary" to={tripPath(trip.id, 'share')}>
-          🔗 Share the trip
-        </Link>
-      </section>
+      {t.server ? (
+        <OnServerCard t={t} />
+      ) : (
+        <section className="card">
+          <h3>Share with the group</h3>
+          <p className="muted small">
+            {group
+              ? t.unsent
+                ? `You have ${plural(t.unsent, 'change')} the others haven't seen yet.`
+                : "The others have had everything you've changed."
+              : 'Send the trip to the people going: they get their own copy, and can add places and expenses too.'}
+          </p>
+          <Link className="btn btn-primary" to={tripPath(trip.id, 'share')}>
+            🔗 Share the trip
+          </Link>
+          {server && <ServerOffer t={t} />}
+        </section>
+      )}
 
       <section className="card">
         <h3>Calendar</h3>
@@ -97,15 +109,106 @@ export function TripInfoPage() {
         </button>
       </section>
 
-      <section className="card">
-        <h3>Remove from this phone</h3>
-        <p className="muted small">
-          Deletes the trip from this phone only.{group && ' The others keep their copy.'} A safety copy is kept in Settings → Backup.
-        </p>
-        <button className="btn btn-danger" onClick={() => void remove()}>
-          Remove from this phone
-        </button>
-      </section>
+      {t.server ? (
+        <LeaveCard t={t} />
+      ) : (
+        <section className="card">
+          <h3>Remove from this phone</h3>
+          <p className="muted small">
+            Deletes the trip from this phone only.{group && ' The others keep their copy.'} A safety copy is kept in Settings → Backup.
+          </p>
+          <button className="btn btn-danger" onClick={() => void remove()}>
+            Remove from this phone
+          </button>
+        </section>
+      )}
+    </>
+  )
+}
+
+function OnServerCard({ t }: { t: TripData }) {
+  const others = t.viaLinks.filter((x) => x.id !== t.me?.id)
+  return (
+    <section className="card">
+      <h3>🌐 On the sync server</h3>
+      <p className="muted small">Changes reach everyone on the server by themselves, usually within a minute while their app is open.</p>
+      <ServerStatus waiting={t.waiting} />
+      {others.length > 0 && (
+        <>
+          <p className="small">
+            {others.map((x) => x.name).join(', ')} {others.length === 1 ? "isn't" : "aren't"} on the server, so they get changes by
+            link{t.unsent > 0 ? `: you have ${plural(t.unsent, 'change')} they haven't seen yet.` : '.'}
+          </p>
+          <Link className="btn btn-primary" to={tripPath(t.trip.id, 'share')}>
+            🔗 Send them a link
+          </Link>
+        </>
+      )}
+      {others.length === 0 && (
+        <Link className="btn" to={tripPath(t.trip.id, 'share')}>
+          🔗 Share a link
+        </Link>
+      )}
+      <p className="muted small">To add people from the server, or take someone off it, edit the trip.</p>
+    </section>
+  )
+}
+
+function LeaveCard({ t }: { t: TripData }) {
+  const navigate = useNavigate()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string>()
+
+  const leave = async () => {
+    const msg = `Leave “${t.trip.name}”? You're taken off it on the server and it's removed from this phone. The others keep it, and your expenses stay in it. A safety copy is kept in Settings.`
+    if (!confirm(msg)) return
+    setBusy(true)
+    setError(undefined)
+    try {
+      await leaveTrip(t.trip.id)
+      navigate('/', { replace: true })
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="card">
+      <h3>Leave the trip</h3>
+      <p className="muted small">
+        Takes you off this trip on the server, and removes it from this phone. The others keep it, and you stay in its expenses. It
+        needs the server, so do it while you can reach it.
+      </p>
+      {error && <Notice kind="error">{error}</Notice>}
+      <button className="btn btn-danger" disabled={busy} onClick={() => void leave()}>
+        {busy ? 'Leaving…' : 'Leave the trip'}
+      </button>
+    </section>
+  )
+}
+
+/**
+ * A trip that's only on this phone can go on the server, unless others already have it there (this
+ * phone was taken off it, or never added): then only someone on it can add you.
+ */
+function ServerOffer({ t }: { t: TripData }) {
+  const there = t.linked.filter((x) => x.id !== t.me?.id)
+  if (there.length) {
+    return (
+      <p className="muted small">
+        🌐 {there.map((x) => x.name).join(', ')} {there.length === 1 ? 'has' : 'have'} this trip on the sync server. To get its
+        changes by yourself too, ask {there.length === 1 ? 'them' : 'one of them'} to add you to it (Edit trip).
+      </p>
+    )
+  }
+  return (
+    <>
+      <p className="muted small">Or put it on your sync server: the people on it then get every change by themselves, without links.</p>
+      <Link className="btn" to={tripPath(t.trip.id, 'server')}>
+        🌐 Put it on the server
+      </Link>
     </>
   )
 }

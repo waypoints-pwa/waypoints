@@ -7,7 +7,7 @@ import { LONG_LINK_CHARS, tripLink } from '../../lib/tripLink'
 import { BackLink, Notice } from '../components/bits'
 import { Field } from '../components/fields'
 import { plural } from '../format'
-import { tripPath, useTrip } from '../tripData'
+import { needsLinks, tripPath, useTrip } from '../tripData'
 
 export function SharePage() {
   const t = useTrip()
@@ -56,6 +56,7 @@ export function SharePage() {
     <>
       <BackLink to={tripPath(trip.id, 'trip')}>Trip</BackLink>
       <h2>Share with the group</h2>
+      {t.server && <ServerNote />}
       <p className="muted">
         Everyone keeps their own copy of the trip on their phone. Send this link in your group chat: opening it adds the trip,
         or brings an existing copy up to date. When someone else changes something, they send a link back the same way.
@@ -73,7 +74,7 @@ export function SharePage() {
         <p className="small">
           <strong>{counts.join(' · ')}</strong>
         </p>
-        {t.travellers.length > 1 && t.unsent > 0 && <p className="small muted">Includes {plural(t.unsent, 'change')} the others haven't seen yet.</p>}
+        {needsLinks(t) && <p className="small muted">Includes {plural(t.unsent, 'change')} the others haven't seen yet.</p>}
         <button className="btn btn-primary" disabled={!link || busy} onClick={() => void onShare()}>
           {result === 'copied' ? '✓ Link copied' : result === 'shared' ? '✓ Shared' : '🔗 Share trip link'}
         </button>
@@ -95,5 +96,20 @@ export function SharePage() {
         </p>
       </section>
     </>
+  )
+}
+
+/** On a trip on the server, links are only needed for the people who aren't on it. */
+function ServerNote() {
+  const t = useTrip()
+  const onServer = t.linked.map((x) => x.name)
+  const others = t.viaLinks.filter((x) => x.id !== t.me?.id).map((x) => x.name)
+  return (
+    <p className="notice notice-info small">
+      🌐 This trip is on the sync server, so {onServer.join(', ')} get every change by themselves.{' '}
+      {others.length
+        ? `Send this link to ${others.join(', ')}, who ${others.length === 1 ? "isn't" : "aren't"} on it.`
+        : "A link is still handy for someone who isn't on the server."}
+    </p>
   )
 }

@@ -1,4 +1,4 @@
-import { emptyTables, RECORD_TABLES, TRIP_TABLES, type RecordTable, type SyncMeta, type Tables, type Trip, type TripRecord } from '../db/types.ts'
+import { emptyTables, RECORD_TABLES, TRIP_TABLES, type RecordTable, type SyncMeta, type Tables, type Traveller, type Trip, type TripRecord } from '../db/types.ts'
 import { checkRecord, DataError } from './records.ts'
 
 /*
@@ -115,19 +115,72 @@ export interface MergePlan {
   newTrips: Trip[]
 }
 
+const canonical = (value: unknown): unknown =>
+  Array.isArray(value)
+    ? value.map(canonical)
+    : value && typeof value === 'object'
+      ? Object.fromEntries(Object.keys(value).sort().map((k) => [k, canonical((value as Record<string, unknown>)[k])]))
+      : value
+
+/** JSON with sorted keys: the same record gives the same text, whatever order its fields were set in. */
+export const canonicalJSON = (value: unknown): string => JSON.stringify(canonical(value))
+
+type Link = Pick<Traveller, 'memberId' | 'linkedAt'>
+
+/** `record` with the sync server link of `source`, or with none. */
+export function withLinkOf<T extends Link>(record: T, source: Link | undefined): T {
+  const out: Link = { ...record }
+  delete out.memberId
+  delete out.linkedAt
+  if (source?.memberId !== undefined) out.memberId = source.memberId
+  if (source?.linkedAt !== undefined) out.linkedAt = source.linkedAt
+  return out as T
+}
+
+/**
+ * A traveller's sync server link merges on its own clock (`linkedAt`), apart from the rest of the
+ * record: whichever copy linked or unlinked last wins, so renaming someone from an older copy can't
+ * undo it. Returns `record` itself when its link is the newer one (or as new).
+ */
+export function withNewerLink<T extends Link>(record: T, other: Link): T {
+  return (other.linkedAt ?? '') > (record.linkedAt ?? '') ? withLinkOf(record, other) : record
+}
+
 /**
  * Which incoming records win against this phone's copies (`local`, looked up by id). A record that
  * belongs to a different trip here is left alone: ids never move between trips.
+ *
+ * Travellers' server links merge on their own (see withNewerLink). For trips in `keepLinksOf` (trips
+ * this phone keeps on the sync server), incoming links are ignored altogether: who's on a server trip
+ * changes through the server, never through a link or file.
  */
-export function planMerge(local: { [T in RecordTable]: Map<string, Tables[T][number]> }, incoming: Tables): MergePlan {
+export function planMerge(local: { [T in RecordTable]: Map<string, Tables[T][number]> }, incoming: Tables, keepLinksOf?: ReadonlySet<string>): MergePlan {
   const changes = emptyTables()
   const counts: MergeCounts = { added: 0, updated: 0, removed: 0 }
   const newTrips: Trip[] = []
   for (const table of RECORD_TABLES) {
     const mine = local[table] as Map<string, SyncMeta & { tripId?: string }>
-    for (const record of incoming[table] as (SyncMeta & { tripId?: string })[]) {
-      const current = mine.get(record.id)
-      if (current && (record.updatedAt <= current.updatedAt || record.tripId !== current.tripId)) continue
+    for (const raw of incoming[table] as (SyncMeta & { tripId?: string })[]) {
+      const current = mine.get(raw.id)
+      if (current && raw.tripId !== current.tripId) continue
+      let record = raw
+      if (table === 'travellers') {
+        const keep = keepLinksOf?.has(raw.tripId ?? '')
+        const mineT = current as Traveller | undefined
+        const theirs = raw as Traveller
+        if (mineT && raw.updatedAt <= mineT.updatedAt) {
+          // This phone's copy is as new or newer: at most its link changes.
+          const merged = keep ? mineT : withNewerLink(mineT, theirs)
+          if (merged !== mineT) {
+            changes.travellers.push(merged)
+            counts.updated++
+          }
+          continue
+        }
+        record = keep ? withLinkOf(theirs, mineT) : mineT ? withNewerLink(theirs, mineT) : theirs
+      } else if (current && raw.updatedAt <= current.updatedAt) {
+        continue
+      }
       ;(changes[table] as SyncMeta[]).push(record)
       if (table === 'trips' && !current) newTrips.push(record as Trip)
       if (!current) {
