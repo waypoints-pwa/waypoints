@@ -9,6 +9,7 @@ import { MapLinks, WebLink } from '../components/ItemLinks'
 import { fmtDayTime, plural } from '../format'
 import { labelOf, PLACE_CATEGORIES } from '../labels'
 import { tripPath, useTrip } from '../tripData'
+import { AttachmentsCard } from '../components/Attachments'
 import { ItemFooter, ItemForm, ItemGone } from './common'
 import { opt, useSave } from './save'
 
@@ -249,6 +250,7 @@ export function PlacePage() {
           🗓️ Add to the plan
         </Link>
       </section>
+      <AttachmentsCard table="places" id={place.id} />
       <ItemFooter table="places" id={place.id} what="place" backTo={back} />
     </article>
   )

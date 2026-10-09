@@ -25,6 +25,14 @@ const currency: Check = (v) => typeof v === 'string' && /^[A-Z]{3}$/.test(v)
 const money: Check = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1e12
 const rate: Check = (v) => typeof v === 'number' && Number.isFinite(v) && v > 0 && v <= 1e9
 const positive: Check = (v) => money(v) && (v as number) > 0
+const count = (max: number): Check => (v) => Number.isSafeInteger(v) && (v as number) > 0 && (v as number) <= max
+const mediaType: Check = (v) => typeof v === 'string' && /^[\w.+-]{1,40}\/[\w.+-]{1,120}$/.test(v)
+const sha256: Check = (v) => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v)
+/** A wall-clock time, "YYYY-MM-DDTHH:MM". */
+const wallClock: Check = (v) => typeof v === 'string' && v.length === 16 && v[10] === 'T' && isDay(v.slice(0, 10)) && isTime(v.slice(11))
+
+/** Largest file any attachment can have. Servers set their own, lower limit. */
+export const MAX_FILE_BYTES = 100 * 1024 * 1024
 
 export const isId = (v: unknown): v is string => typeof v === 'string' && /^[\w-]{8,64}$/.test(v)
 
@@ -137,6 +145,22 @@ const SPECS: { [T in RecordTable]: Record<string, { check: Check; required: bool
     costCurrency: required(currency),
     by: optional(isId),
     notes: optional(LONG),
+  },
+  attachments: {
+    tripId: required(isId),
+    kind: required(WORD),
+    name: required(SHORT),
+    caption: optional(LONG),
+    type: required(mediaType),
+    size: required(count(MAX_FILE_BYTES)),
+    sha256: required(sha256),
+    width: optional(count(100_000)),
+    height: optional(count(100_000)),
+    takenAt: optional(wallClock),
+    itemTable: optional(WORD),
+    itemId: optional(isId),
+    addedBy: optional(isId),
+    private: optional(bool),
   },
 }
 

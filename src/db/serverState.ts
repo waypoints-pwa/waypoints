@@ -18,6 +18,8 @@ export interface ServerConfig {
   lastErrorStatus?: number
   /** Changes the server refused at the last sync. They stay waiting, and are sent again. */
   rejected?: RejectedRecord[]
+  /** The largest file the server takes, in bytes. Absent: the server keeps no files (too old). */
+  fileLimit?: number
 }
 
 export const getServerConfig = () => getSetting<ServerConfig>(SETTINGS.server)

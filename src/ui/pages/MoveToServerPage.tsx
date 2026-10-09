@@ -110,6 +110,11 @@ function MoveForm({ t, server }: { t: TripData; server: ServerConfig }) {
         Only the people linked here can see the trip on the server. If the server can't be reached right now, the trip goes up the
         next time it can.
       </p>
+      {t.attachments.some((a) => !a.private) && (
+        <p className="muted small">
+          Its photos and documents go up too, and the others on the server see them. Those marked “only on this phone” stay here.
+        </p>
+      )}
       <FormError error={error} />
       <div className="form-actions">
         <button type="button" className="btn btn-ghost" onClick={() => navigate(tripPath(t.trip.id, 'trip'))}>

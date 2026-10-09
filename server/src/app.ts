@@ -1,7 +1,12 @@
+import { createHash } from 'node:crypto'
+import { createReadStream } from 'node:fs'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { join } from 'node:path'
+import { isId } from '../../src/domain/records.ts'
 import {
   PROTOCOL_VERSION,
   SERVER_APP,
+  THUMB_MAX_BYTES,
   type AdminMembersRequest,
   type Credentials,
   type DeviceSummary,
@@ -13,11 +18,12 @@ import {
   type ServerHello,
 } from '../../src/domain/serverProtocol.ts'
 import type { Config } from './config.ts'
+import { FileStore } from './files.ts'
 import { codesMatch, hashCode, hashSecret, newCode, newId, newToken } from './secrets.ts'
 import type { Device, Member, Store } from './store.ts'
-import { applySync, BadRequest, memberList, memberSummary, parseSyncRequest } from './sync.ts'
+import { applySync, BadRequest, memberList, memberSummary, parseSyncRequest, tripMembers } from './sync.ts'
 
-export const VERSION = '0.1.0'
+export const VERSION = '0.2.0'
 const MAX_BODY = 10 * 1024 * 1024 // a first sync uploads whole trips
 const INVITE_DAYS = 7
 const MAX_CODE_FAILURES = 20 // per 10 minutes, across all clients
@@ -31,27 +37,52 @@ class HttpError extends Error {
   }
 }
 
-function readJson(req: IncomingMessage): Promise<unknown> {
+function readBody(req: IncomingMessage, max: number, tooLarge = 'Request too large'): Promise<Buffer> {
   return new Promise((resolve, reject) => {
+    if (Number(req.headers['content-length']) > max) {
+      reject(new HttpError(413, tooLarge))
+      req.resume()
+      return
+    }
     const chunks: Buffer[] = []
     let size = 0
     req.on('data', (c: Buffer) => {
       size += c.length
-      if (size > MAX_BODY) {
-        reject(new HttpError(413, 'Request too large'))
+      if (size > max) {
+        reject(new HttpError(413, tooLarge))
         req.destroy()
       } else chunks.push(c)
     })
-    req.on('end', () => {
-      try {
-        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || 'null'))
-      } catch {
-        reject(new HttpError(400, 'Invalid JSON'))
-      }
-    })
+    req.on('end', () => resolve(Buffer.concat(chunks)))
     req.on('error', reject)
   })
 }
+
+async function readJson(req: IncomingMessage): Promise<unknown> {
+  const body = await readBody(req, MAX_BODY)
+  try {
+    return JSON.parse(body.toString('utf8') || 'null')
+  } catch {
+    throw new HttpError(400, 'Invalid JSON')
+  }
+}
+
+/** A file to send back as it is, instead of JSON. */
+class FileReply {
+  readonly path: string
+  readonly size: number
+  readonly type: string
+  constructor(path: string, size: number, type: string) {
+    this.path = path
+    this.size = size
+    this.type = type
+  }
+}
+
+/** Types sent as they are; anything else goes as plain bytes (the app knows each file's type). */
+const SERVED_TYPES = /^(image\/(jpeg|png|gif|webp|heic|heif|avif)|application\/pdf)$/
+
+const mb = (bytes: number) => `${Math.round(bytes / 1024 / 1024)} MB`
 
 const str = (v: unknown, max: number): string | undefined => {
   if (typeof v !== 'string') return undefined
@@ -67,7 +98,7 @@ interface Session {
 type Handler = (req: IncomingMessage, session: Session) => Promise<unknown>
 type PublicHandler = (req: IncomingMessage) => Promise<unknown>
 
-export function createApp(config: Config, store: Store) {
+export function createApp(config: Config, store: Store, files = new FileStore(join(config.filesDir, 'trips'))) {
   /** Brute-force brake for the server code and invite codes. */
   let codeFailures: number[] = []
   const guardCodes = () => {
@@ -115,6 +146,22 @@ export function createApp(config: Config, store: Store) {
   }
 
   const hello = (): ServerHello => ({ app: SERVER_APP, version: VERSION, protocol: PROTOCOL_VERSION })
+
+  /**
+   * The photo or document a file request is about. A trip the member isn't on gets the same answer
+   * as one that doesn't exist, so trips stay private.
+   */
+  const fileTarget = (req: IncomingMessage, member: Member) => {
+    const params = new URL(req.url ?? '/', 'http://x').searchParams
+    const tripId = params.get('trip')
+    const id = params.get('id')
+    if (!isId(tripId) || !isId(id)) throw new HttpError(400, 'Which photo or document?')
+    const trip = store.data.trips[tripId]
+    if (!trip || !tripMembers(trip, store.data.members).has(member.id)) throw new HttpError(404, 'No such trip')
+    const attachment = trip.records.attachments?.[id]?.rec
+    if (!attachment || attachment.deletedAt || attachment.private) throw new HttpError(404, 'No such photo or document')
+    return { tripId, id, attachment, thumb: params.get('thumb') === '1' }
+  }
 
   const publicRoutes: Record<string, PublicHandler> = {
     'GET /api/health': async () => ({ ok: true }),
@@ -180,9 +227,45 @@ export function createApp(config: Config, store: Store) {
     'GET /api/members': async () => memberList(store.data.members),
 
     'POST /api/sync': async (req, { member }) => {
-      const { response, changed } = applySync(store.data, member, parseSyncRequest(await readJson(req)))
+      const { response, changed, removedFiles } = applySync(store.data, member, parseSyncRequest(await readJson(req)))
       if (changed) await store.save()
+      for (const { tripId, id } of removedFiles) await files.remove(tripId, id)
+      for (const trip of response.trips) trip.files = await files.list(trip.id)
+      response.fileLimit = config.maxFileBytes
       return response
+    },
+
+    /** The file of a photo or document (or its preview) that the server has the record of. */
+    'POST /api/files': async (req, { member }) => {
+      const { tripId, id, attachment, thumb } = fileTarget(req, member)
+      // Files never change once here: someone sending one again changes nothing.
+      if ((await files.size(tripId, id, thumb)) !== undefined) {
+        req.resume()
+        return { ok: true }
+      }
+      if (thumb) {
+        const bytes = await readBody(req, THUMB_MAX_BYTES, 'The preview is too large')
+        if (bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) throw new HttpError(400, 'A preview must be a JPEG')
+        await files.write(tripId, id, true, bytes)
+      } else {
+        const tooLarge = `This server takes files up to ${mb(config.maxFileBytes)}`
+        if ((attachment.size as number) > config.maxFileBytes) throw new HttpError(413, tooLarge)
+        const bytes = await readBody(req, config.maxFileBytes, tooLarge)
+        const sha256 = createHash('sha256').update(bytes).digest('hex')
+        if (bytes.length !== attachment.size || sha256 !== attachment.sha256) throw new HttpError(422, "The file isn't the one that was added")
+        await files.write(tripId, id, false, bytes)
+      }
+      // Deleted while it was on its way.
+      if (store.data.trips[tripId]?.records.attachments?.[id]?.rec.deletedAt) await files.remove(tripId, id)
+      return { ok: true }
+    },
+
+    'GET /api/files': async (req, { member }) => {
+      const { tripId, id, attachment, thumb } = fileTarget(req, member)
+      const size = await files.size(tripId, id, thumb)
+      if (size === undefined) throw new HttpError(404, "The server doesn't have that file yet")
+      const type = thumb ? 'image/jpeg' : SERVED_TYPES.test(String(attachment.type)) ? String(attachment.type) : 'application/octet-stream'
+      return new FileReply(files.path(tripId, id, thumb), size, type)
     },
 
     'POST /api/invites': async (req, { member }): Promise<InviteResponse> => {
@@ -276,6 +359,19 @@ export function createApp(config: Config, store: Store) {
         result = await routes[route](req, session)
       } else {
         throw new HttpError(404, 'Not found')
+      }
+      if (result instanceof FileReply) {
+        res.writeHead(200, {
+          'Content-Type': result.type,
+          'Content-Length': result.size,
+          'Content-Disposition': 'attachment',
+          'X-Content-Type-Options': 'nosniff',
+          'Cache-Control': 'private, no-store',
+        })
+        createReadStream(result.path)
+          .on('error', () => res.destroy())
+          .pipe(res)
+        return
       }
       res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(result))
     } catch (err) {

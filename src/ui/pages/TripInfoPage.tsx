@@ -26,7 +26,7 @@ export function TripInfoPage() {
 
   const remove = async () => {
     const others = group ? ' The others keep their copy, and a link from them brings it back.' : ''
-    if (!confirm(`Remove “${trip.name}” from this phone?${others} A safety copy is kept in Settings.`)) return
+    if (!confirm(`Remove “${trip.name}” from this phone?${others} A safety copy is kept in Settings.${filesGo(t)}`)) return
     await removeTripFromPhone(trip)
     navigate('/', { replace: true })
   }
@@ -126,6 +126,14 @@ export function TripInfoPage() {
   )
 }
 
+/** Photos and documents that exist only on this phone are lost with the trip: safety copies can't keep files. */
+function filesGo(t: TripData): string {
+  const onlyHere = t.attachments.filter((a) => !t.server || a.private).length
+  if (!onlyHere) return ''
+  const these = onlyHere === 1 ? 'a photo or document that is only on this phone: it' : `${onlyHere} photos and documents that are only on this phone: they`
+  return `\n\nIt has ${these} won't be kept, as safety copies can't hold them. Save any you want first (open one → Share or save).`
+}
+
 function OnServerCard({ t }: { t: TripData }) {
   const others = t.viaLinks.filter((x) => x.id !== t.me?.id)
   return (
@@ -160,7 +168,7 @@ function LeaveCard({ t }: { t: TripData }) {
   const [error, setError] = useState<string>()
 
   const leave = async () => {
-    const msg = `Leave “${t.trip.name}”? You're taken off it on the server and it's removed from this phone. The others keep it, and your expenses stay in it. A safety copy is kept in Settings.`
+    const msg = `Leave “${t.trip.name}”? You're taken off it on the server and it's removed from this phone. The others keep it, and your expenses stay in it. A safety copy is kept in Settings.${filesGo(t)}`
     if (!confirm(msg)) return
     setBusy(true)
     setError(undefined)

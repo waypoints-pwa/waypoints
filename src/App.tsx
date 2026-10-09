@@ -4,6 +4,7 @@ import { AutoSync } from './sync/useAutoSync'
 import { EmptyState } from './ui/components/bits'
 import { UpdateBanner } from './ui/components/UpdateBanner'
 import { ActivityFormPage, ActivityPage } from './ui/items/activities'
+import { AttachmentFormPage, AttachmentPage } from './ui/items/attachments'
 import { ExchangeFormPage } from './ui/items/exchanges'
 import { ExpenseFormPage, ExpensePage, MoneyPage } from './ui/items/expenses'
 import { PlaceFormPage, PlacePage, PlacesPage } from './ui/items/places'
@@ -11,6 +12,7 @@ import { StayFormPage, StayPage } from './ui/items/stays'
 import { TransportFormPage, TransportPage } from './ui/items/transport'
 import { MoveToServerPage } from './ui/pages/MoveToServerPage'
 import { OpenPage } from './ui/pages/OpenPage'
+import { PhotosPage } from './ui/pages/PhotosPage'
 import { PlanPage } from './ui/pages/PlanPage'
 import { ServerPage } from './ui/pages/ServerPage'
 import { SettingsPage } from './ui/pages/SettingsPage'
@@ -44,6 +46,7 @@ export default function App() {
           <Route index element={<PlanPage />} />
           <Route path="places" element={<PlacesPage />} />
           <Route path="money" element={<MoneyPage />} />
+          <Route path="photos" element={<PhotosPage />} />
           <Route path="trip" element={<TripInfoPage />} />
           <Route path="edit" element={<TripFormPage />} />
           <Route path="share" element={<SharePage />} />
@@ -65,6 +68,8 @@ export default function App() {
           <Route path="expenses/:itemId/edit" element={<ExpenseFormPage />} />
           <Route path="exchanges/new" element={<ExchangeFormPage />} />
           <Route path="exchanges/:itemId/edit" element={<ExchangeFormPage />} />
+          <Route path="files/:itemId" element={<AttachmentPage />} />
+          <Route path="files/:itemId/edit" element={<AttachmentFormPage />} />
         </Route>
       </Routes>
       <UpdateBanner />

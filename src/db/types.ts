@@ -1,3 +1,5 @@
+import type { FileInfo } from '../domain/serverProtocol.ts'
+
 /**
  * Persisted records. Everything that belongs to a trip carries `id`, `createdAt`, `updatedAt` and
  * an optional `deletedAt` tombstone, so the copies of a trip on different phones can be merged
@@ -181,7 +183,49 @@ export interface Exchange extends TripRecord {
   notes?: string
 }
 
-export const TRIP_TABLES = ['travellers', 'stays', 'transports', 'activities', 'places', 'expenses', 'exchanges'] as const
+export const ATTACHMENT_KINDS = ['photo', 'document'] as const
+export type AttachmentKind = (typeof ATTACHMENT_KINDS)[number]
+
+/** Items a photo or document can belong to. Without one, it belongs to the whole trip. */
+export const ATTACHABLE_TABLES = ['stays', 'transports', 'activities', 'places', 'expenses'] as const
+export type AttachableTable = (typeof ATTACHABLE_TABLES)[number]
+
+/**
+ * A photo or document of a trip: of the whole trip, or of one of its items. The record merges like
+ * any other, while the file itself is kept apart (StoredFile on each phone, the files folder on the
+ * sync server). Attachments travel only through the sync server: links and trip files can't carry
+ * the files, so they leave the records out too.
+ */
+export interface Attachment extends TripRecord {
+  /** Plain string: a kind from a newer version of the app shows as a document. */
+  kind: AttachmentKind
+  /** File name: "Boarding pass.pdf". */
+  name: string
+  caption?: string
+  /** Media type of the file: "image/jpeg", "application/pdf"… */
+  type: string
+  /** Size of the file, in bytes. */
+  size: number
+  /** SHA-256 of the file, in hex. The server only takes the file that matches it. */
+  sha256: string
+  /** Pixel size, for images. */
+  width?: number
+  height?: number
+  /** For photos: when it was taken, as the wall-clock time where it was taken ("YYYY-MM-DDTHH:MM"). */
+  takenAt?: string
+  /** The item it belongs to (one of ATTACHABLE_TABLES, stored as a plain string). None: the whole trip. */
+  itemTable?: string
+  itemId?: string
+  /** Traveller who added it. */
+  addedBy?: string
+  /** Kept only on the phone that added it: never sent to the sync server, so nobody else sees it. */
+  private?: boolean
+}
+
+/** What trip links carry: every table of LINK_VERSION 1. Attachments travel only through the sync server. */
+export const LINK_TABLES = ['travellers', 'stays', 'transports', 'activities', 'places', 'expenses', 'exchanges'] as const
+export type LinkTable = (typeof LINK_TABLES)[number]
+export const TRIP_TABLES = [...LINK_TABLES, 'attachments'] as const
 export type TripTable = (typeof TRIP_TABLES)[number]
 export type RecordTable = 'trips' | TripTable
 export const RECORD_TABLES: readonly RecordTable[] = ['trips', ...TRIP_TABLES]
@@ -195,6 +239,7 @@ export interface TableRecords {
   places: Place
   expenses: Expense
   exchanges: Exchange
+  attachments: Attachment
 }
 
 /** Records of any number of trips, by table. The shape of backups, trip files and merges. */
@@ -209,6 +254,7 @@ export const emptyTables = (): Tables => ({
   places: [],
   expenses: [],
   exchanges: [],
+  attachments: [],
 })
 
 /** Local-only key/value settings (never shared or exported). */
@@ -241,6 +287,25 @@ export interface ServerTrip {
   cursor: number
   /** False until every record this phone has of the trip has been sent once. */
   uploaded: boolean
+  /** The trip's files the server has, as of the last sync. Absent: an older server, which keeps no files. */
+  files?: FileInfo[]
+}
+
+/**
+ * The file of a photo or document on this phone (see Attachment). Local only: never in links, files,
+ * backups or safety copies, which would grow too big. Removed only with its attachment (deleted here
+ * or by someone else) or with the whole trip.
+ */
+export interface StoredFile {
+  /** The attachment's id. */
+  id: string
+  tripId: string
+  /** The file itself. Someone else's photo has only its preview until it's opened. */
+  blob?: Blob
+  /** A small JPEG preview for lists, for images. */
+  thumb?: Blob
+  /** Why the server refused the file. It isn't sent again until someone tries again. */
+  uploadError?: string
 }
 
 /** Automatic local backup taken before an operation that removes or overwrites data. */

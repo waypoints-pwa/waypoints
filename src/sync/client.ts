@@ -1,15 +1,18 @@
+import { dropDeletedFiles } from '../db/attachments'
 import { previewServerMerge } from '../db/backupIO'
 import { db, getSetting, nowISO, recordTable, setSetting, SETTINGS } from '../db/db'
 import { getServerConfig, setServerConfig, type ServerConfig } from '../db/serverState'
 import { readTables } from '../db/snapshots'
 import { emptyTables, RECORD_TABLES, type OutboxEntry, type RecordTable, type ServerTrip, type Tables, type TableRecords } from '../db/types'
 import { checkRecord } from '../domain/records'
-import type { SyncRequest, SyncResponse, TripChanges } from '../domain/serverProtocol'
+import type { FileInfo, SyncRequest, SyncResponse, TripChanges } from '../domain/serverProtocol'
+import { runFileSync } from './files'
 
 /*
  * Keeps the trips that are on the sync server in sync with it. Each sync sends every trip this phone
  * keeps there, with what changed here since (the outbox), and brings back what changed elsewhere. A
  * server that can't be reached is normal (off Tailscale, on a plane): changes wait in the outbox.
+ * The files of photos and documents move afterwards, on their own (see ./files.ts).
  */
 
 export class SyncError extends Error {
@@ -36,25 +39,50 @@ export function normaliseServerUrl(input: string): string {
 
 const TIMEOUT_MS = 30_000
 
-/** Calls the server. `token` is this phone's; leave it out for the public endpoints. */
-export async function api<T>(cfg: { url: string; token?: string }, path: string, body?: unknown): Promise<T> {
+const UNREACHABLE = "Couldn't reach the server. Check the address, and that Tailscale is on."
+
+/** Calls the server and checks the answer. `token` is this phone's; leave it out for the public endpoints. */
+async function request(cfg: { url: string; token?: string }, path: string, init: { body?: BodyInit; type?: string; timeout?: number } = {}): Promise<Response> {
   let res: Response
   try {
     res = await fetch(`${cfg.url}${path}`, {
-      method: body === undefined ? 'GET' : 'POST',
-      headers: { 'Content-Type': 'application/json', ...(cfg.token ? { Authorization: `Bearer ${cfg.token}` } : {}) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      method: init.body === undefined ? 'GET' : 'POST',
+      headers: { 'Content-Type': init.type ?? 'application/json', ...(cfg.token ? { Authorization: `Bearer ${cfg.token}` } : {}) },
+      body: init.body,
+      signal: AbortSignal.timeout(init.timeout ?? TIMEOUT_MS),
     })
   } catch {
-    throw new SyncError("Couldn't reach the server. Check the address, and that Tailscale is on.")
+    throw new SyncError(UNREACHABLE)
   }
   if (res.status === 401 && cfg.token) throw new SyncError('This phone is no longer connected to the server.', 401)
   if (!res.ok) {
     const message = ((await res.json().catch(() => undefined)) as { error?: string } | undefined)?.error
     throw new SyncError(message ?? `Server error (${res.status}).`, res.status)
   }
+  return res
+}
+
+/** Calls the server with JSON. `token` is this phone's; leave it out for the public endpoints. */
+export async function api<T>(cfg: { url: string; token?: string }, path: string, body?: unknown): Promise<T> {
+  const res = await request(cfg, path, { body: body === undefined ? undefined : JSON.stringify(body) })
   return (await res.json()) as T
+}
+
+/** Big files over a slow connection abroad take a while. */
+const FILE_TIMEOUT_MS = 10 * 60_000
+
+/** Sends a file's bytes (see /api/files in serverProtocol.ts). */
+export async function uploadFile(cfg: { url: string; token: string }, path: string, blob: Blob) {
+  await request(cfg, path, { body: blob, type: blob.type || 'application/octet-stream', timeout: FILE_TIMEOUT_MS })
+}
+
+export async function downloadFile(cfg: { url: string; token: string }, path: string): Promise<Blob> {
+  const res = await request(cfg, path, { timeout: FILE_TIMEOUT_MS })
+  try {
+    return await res.blob()
+  } catch {
+    throw new SyncError(UNREACHABLE)
+  }
 }
 
 const nonEmpty = (tables: Partial<Tables>): Partial<Tables> => Object.fromEntries(Object.entries(tables).filter(([, records]) => records.length > 0))
@@ -71,8 +99,14 @@ async function outboxRecords(tripId: string, outbox: OutboxEntry[]): Promise<Par
   return nonEmpty(tables)
 }
 
+/** Private photos and documents stay on this phone, whatever else happens. */
+function withoutPrivate(tables: Partial<Tables>): Partial<Tables> {
+  if (!tables.attachments) return tables
+  return nonEmpty({ ...tables, attachments: tables.attachments.filter((a) => !a.private) })
+}
+
 async function recordsToSend(state: ServerTrip, outbox: OutboxEntry[]): Promise<Partial<Tables>> {
-  return state.uploaded ? outboxRecords(state.tripId, outbox) : nonEmpty(await readTables(state.tripId))
+  return withoutPrivate(state.uploaded ? await outboxRecords(state.tripId, outbox) : nonEmpty(await readTables(state.tripId)))
 }
 
 /** Sent records leave the outbox, unless they were edited again meanwhile or the server refused them. */
@@ -103,7 +137,10 @@ async function applyPulled(trip: TripChanges) {
   for (const table of RECORD_TABLES) {
     if (plan.changes[table].length) await recordTable(table).bulkPut(plan.changes[table] as never[])
   }
+  await dropDeletedFiles(plan.changes.attachments)
 }
+
+const sameFiles = (a: FileInfo[] | undefined, b: FileInfo[] | undefined) => JSON.stringify(a) === JSON.stringify(b)
 
 /** On a trip new to this phone, the traveller linked to this phone's member is "you". */
 async function setMeFromServer(tripId: string, memberId: string) {
@@ -149,7 +186,7 @@ async function doSync(again = false): Promise<boolean> {
     throw err
   }
 
-  const needsAnother = await db.transaction('rw', [...RECORD_TABLES.map(recordTable), db.outbox, db.serverTrips, db.settings], async () => {
+  const needsAnother = await db.transaction('rw', [...RECORD_TABLES.map(recordTable), db.files, db.outbox, db.serverTrips, db.settings], async () => {
     const latest = await getServerConfig()
     if (latest?.token !== cfg.token || latest.url !== cfg.url) return false // disconnected or moved meanwhile
     let more = false
@@ -163,12 +200,17 @@ async function doSync(again = false): Promise<boolean> {
       const wasHere = Boolean(await db.trips.get(trip.id))
       await applyPulled(trip)
       const resend = response.resend.includes(trip.id)
+      const files = trip.files?.slice().sort((a, b) => a.id.localeCompare(b.id))
       if (state) {
-        await db.serverTrips.put({ ...state, cursor: trip.cursor, uploaded: !resend && (state.uploaded || sentInFull.has(trip.id)) })
+        const uploaded = !resend && (state.uploaded || sentInFull.has(trip.id))
+        // Written only when something changed: the trip's pages reload on every write.
+        if (state.cursor !== trip.cursor || state.uploaded !== uploaded || !sameFiles(state.files, files)) {
+          await db.serverTrips.put({ ...state, cursor: trip.cursor, uploaded, files })
+        }
       } else {
         // Someone put this trip on the server with this phone's member on it. A copy that was already
         // here (from a link) may have things the server lacks, so it's sent in full next.
-        await db.serverTrips.put({ tripId: trip.id, cursor: trip.cursor, uploaded: !wasHere })
+        await db.serverTrips.put({ tripId: trip.id, cursor: trip.cursor, uploaded: !wasHere, files })
         if (wasHere) more = true
       }
       if (resend) more = true
@@ -193,6 +235,7 @@ async function doSync(again = false): Promise<boolean> {
     const next: ServerConfig = {
       ...latest,
       members: response.members,
+      fileLimit: response.fileLimit,
       lastSyncAt: nowISO(),
       lastError: undefined,
       lastErrorStatus: undefined,
@@ -203,5 +246,8 @@ async function doSync(again = false): Promise<boolean> {
   })
 
   if (needsAnother && !again) await doSync(true)
+  // Files move on their own, so a long upload doesn't hold up everyone's changes. Their failures
+  // show on the files themselves.
+  if (!again && response.fileLimit) void runFileSync().catch(() => undefined)
   return true
 }

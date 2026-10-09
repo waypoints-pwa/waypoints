@@ -12,6 +12,7 @@ import { fmtDayTime, fmtTime } from '../format'
 import { labelOf, PLACE_CATEGORIES } from '../labels'
 import { useToday } from '../hooks'
 import { tripPath, useTrip } from '../tripData'
+import { AttachmentsCard } from '../components/Attachments'
 import { ItemFooter, ItemForm, ItemGone } from './common'
 import { opt, useSave } from './save'
 
@@ -137,6 +138,7 @@ export function ActivityPage() {
           <p className="prewrap">{a.notes}</p>
         </section>
       )}
+      <AttachmentsCard table="activities" id={a.id} />
       <section className="card">
         <h3>Calendar</h3>
         <CalendarLinks event={activityEvent(a)} calendarName={t.trip.name} />

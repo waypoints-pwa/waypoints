@@ -1,6 +1,7 @@
 import {
   emptyTables,
   type Activity,
+  type Attachment,
   type Exchange,
   type Expense,
   type Place,
@@ -98,6 +99,25 @@ export const exchange = (over: Partial<Exchange> = {}): Exchange => ({
   cost: 62.5,
   costCurrency: 'EUR',
   by: ANA,
+  ...over,
+})
+
+/** A photo of the fado night; its file is the three bytes FILE. */
+export const FILE = new Uint8Array([1, 2, 3])
+export const FILE_SHA256 = '039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81'
+
+export const attachment = (over: Partial<Attachment> = {}): Attachment => ({
+  ...meta('file0001'),
+  tripId: TRIP,
+  kind: 'photo',
+  name: 'Fado.jpg',
+  type: 'image/jpeg',
+  size: FILE.length,
+  sha256: FILE_SHA256,
+  takenAt: '2027-03-11T21:04',
+  itemTable: 'activities',
+  itemId: 'todo0001',
+  addedBy: ANA,
   ...over,
 })
 

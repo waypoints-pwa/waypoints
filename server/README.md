@@ -12,9 +12,13 @@ only use links.
 - **Each trip is private to its travellers.** A trip on the server can be seen and changed only by the
   people linked to its travellers. The server checks this on every request, not just the app. With
   four people on the server and a trip for two of them, the other two can't see that it exists.
+- **Photos and documents too.** A trip's photos and documents reach everyone on it: the files are
+  kept in `FILES_DIR`, a folder per trip. The app makes photos smaller (about 1 MB) before adding them,
+  and anything someone marks "only on this phone" never comes here.
 - **Nothing from outside.** No third-party services or keys, and no dependencies besides Node.
-- **Your data stays with you.** Everything is in one JSON file, with a daily copy kept for 30 days.
-  The copies can live on another disk (`FILES_DIR`).
+- **Your data stays with you.** The trips are in one JSON file, with a daily copy kept for 30 days,
+  and the photos and documents are plain files. The copies and the files can live on another disk
+  (`FILES_DIR`): back that folder up with the rest of your files.
 
 ## Run it
 
@@ -27,7 +31,7 @@ services:
     ports: ["8788:8788"]
     volumes:
       - ./data:/data              # trip database + server code (small)
-      - /path/on/big/disk:/files  # daily copies (documents and photos later)
+      - /path/on/big/disk:/files  # photos and documents, daily copies of the database
     environment:
       - ALLOWED_ORIGINS=https://waypoints-pwa.github.io   # the app's origin
     restart: unless-stopped
@@ -80,7 +84,8 @@ nothing they had is lost.
 |---|---|---|
 | `PORT` | `8788` | |
 | `DATA_DIR` | `/data` | The trip database (`store.json`) and the server code (`secrets.json`) |
-| `FILES_DIR` | `/files` | Daily copies of the database in `backups/` (later: documents and photos) |
+| `FILES_DIR` | `/files` | Photos and documents in `trips/`, daily copies of the database in `backups/` |
+| `MAX_FILE_MB` | `25` | The largest photo or document the server takes |
 | `ALLOWED_ORIGINS` | `*` | Comma-separated origins allowed to call the API from a browser |
 | `WAYPOINTS_SERVER_CODE` | generated | Use your own server code instead of the generated one |
 
@@ -98,7 +103,8 @@ marked *public* need no token; all others need `Authorization: Bearer <device to
 | `POST /api/invites` | An invite for someone new (admins), or a sign-in link for a phone |
 | `GET /api/devices` · `POST /api/devices/remove` | Your phones · disconnect one |
 | `POST /api/members/remove` | Take someone off the server (admins) |
-| `POST /api/sync` | Send each trip's changes, get back what changed since `cursor` (last writer wins per record) |
+| `POST /api/sync` | Send each trip's changes, get back what changed since `cursor` (last writer wins per record), and which files the server has |
+| `POST /api/files` · `GET /api/files` | A photo or document's file (or its preview), for the people on its trip, after its record has synced |
 
 ## Development
 

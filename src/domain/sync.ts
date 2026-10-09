@@ -1,4 +1,4 @@
-import { emptyTables, RECORD_TABLES, TRIP_TABLES, type RecordTable, type SyncMeta, type Tables, type Traveller, type Trip, type TripRecord } from '../db/types.ts'
+import { emptyTables, LINK_TABLES, RECORD_TABLES, type RecordTable, type SyncMeta, type Tables, type Traveller, type Trip, type TripRecord } from '../db/types.ts'
 import { checkRecord, DataError } from './records.ts'
 
 /*
@@ -7,6 +7,10 @@ import { checkRecord, DataError } from './records.ts'
  * - Backup files (`Backup`): all trips, or one trip saved as a file. JSON, readable.
  * - Trip links: one trip packed into the link's `#` fragment (see src/lib/tripLink.ts), sent
  *   through any chat app. Its records leave out `tripId`, which is the trip's own id.
+ *
+ * Photos and documents (attachments) go in neither when a trip is sent to someone: their files can't
+ * travel in a link, so trip links and trip files leave out their records too. Backups of this phone
+ * keep the records (names, captions), without the files.
  *
  * Both are merged the same way: record by record, the newer `updatedAt` wins, and deletions are
  * records too. Merging is safe to repeat and in any order, so everyone in a group ends up with the
@@ -63,6 +67,9 @@ export function parseBackup(text: string, now = Date.now()): Backup {
   return { app: 'waypoints', schemaVersion: data.schemaVersion, exportedAt, ...readTables(data, now) }
 }
 
+/** A trip to send to someone as a file: what a link would carry, so no photos and documents. */
+export const forSending = (tables: Tables): Tables => ({ ...tables, attachments: [] })
+
 /** What a trip link holds once decoded. */
 export interface TripLink {
   tables: Tables
@@ -79,7 +86,7 @@ export function encodeLink(tables: Tables, sentBy: string | undefined, now = new
   if (!trip || tables.trips.length !== 1) throw new Error('A trip link holds exactly one trip')
   const payload: Record<string, unknown> = { v: LINK_VERSION, sentAt: now.toISOString(), trip }
   if (sentBy?.trim()) payload.sentBy = sentBy.trim().slice(0, 60)
-  for (const table of TRIP_TABLES) {
+  for (const table of LINK_TABLES) {
     payload[table] = (tables[table] as TripRecord[]).filter((r) => r.tripId === trip.id).map(withoutTripId)
   }
   return payload
@@ -92,7 +99,8 @@ export function decodeLink(raw: unknown, now = Date.now()): TripLink {
 
   const trip = raw.trip
   const source: Record<string, unknown> = { trips: [trip] }
-  for (const table of TRIP_TABLES) {
+  // Only what links carry: anything else in a crafted link is ignored.
+  for (const table of LINK_TABLES) {
     const records = raw[table] ?? []
     if (!Array.isArray(records)) throw new DataError('Some of its data is missing.')
     source[table] = records.map((r) => (isObject(r) ? { ...r, tripId: trip.id } : r))

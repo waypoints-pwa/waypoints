@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Credentials, DeviceSummary, InviteResponse, MemberSummary, SyncResponse } from '../../src/domain/serverProtocol.ts'
-import { stay, traveller, trip } from '../../src/test/fixtures.ts'
+import { attachment, FILE, stay, traveller, trip } from '../../src/test/fixtures.ts'
 import { createApp } from './app.ts'
 import { loadConfig, type Config } from './config.ts'
 import { Store } from './store.ts'
@@ -143,7 +143,8 @@ describe('syncing over HTTP', () => {
     const admin = await registerAdmin()
     const records = { trips: [trip()], travellers: [traveller('max00001', 'Max', { memberId: admin.member.id })], stays: [stay()] }
     const res = await ok<SyncResponse>('/api/sync', { trips: [{ id: 'trip0001', cursor: 0, records }] }, admin.token)
-    expect(res.trips).toEqual([{ id: 'trip0001', cursor: 3, records: {} }])
+    expect(res.trips).toEqual([{ id: 'trip0001', cursor: 3, records: {}, files: [] }])
+    expect(res.fileLimit).toBe(25 * 1024 * 1024)
     expect(await call('/api/sync', { trips: 'all' }, admin.token)).toMatchObject({ status: 400 })
     expect(await readdir(join(dir, 'files', 'backups'))).toHaveLength(1)
 
@@ -158,5 +159,79 @@ describe('syncing over HTTP', () => {
     expect(preflight.status).toBe(204)
     expect(preflight.headers.get('access-control-allow-private-network')).toBe('true')
     expect(preflight.headers.get('access-control-allow-headers')).toContain('Authorization')
+  })
+})
+
+describe('photos and documents', () => {
+  const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2])
+  const filePath = (id = 'file0001', thumb = false) => `/api/files?trip=trip0001&id=${id}${thumb ? '&thumb=1' : ''}`
+  const upload = (token: string, bytes: Uint8Array, id = 'file0001', thumb = false) =>
+    fetch(`${url}${filePath(id, thumb)}`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'image/jpeg' }, body: bytes })
+  const download = (token: string, id = 'file0001', thumb = false) => fetch(`${url}${filePath(id, thumb)}`, { headers: { Authorization: `Bearer ${token}` } })
+
+  /** Max and Ana on a trip with a photo; Cy is on the server but not on the trip. */
+  async function setUp() {
+    const max = await registerAdmin()
+    const ana = await invite(max, 'Ana')
+    const cy = await invite(max, 'Cy')
+    const records = {
+      trips: [trip()],
+      travellers: [traveller('max00001', 'Max', { memberId: max.member.id }), traveller('ana00001', 'Ana', { memberId: ana.member.id })],
+      attachments: [attachment()],
+    }
+    await ok<SyncResponse>('/api/sync', { trips: [{ id: 'trip0001', cursor: 0, records }] }, max.token)
+    return { max, ana, cy }
+  }
+
+  it("go up once their record has, and reach the trip's other members", async () => {
+    const { max, ana } = await setUp()
+    expect((await download(ana.token)).status).toBe(404) // not sent yet
+    expect((await upload(max.token, FILE)).status).toBe(200)
+    expect((await upload(max.token, JPEG, 'file0001', true)).status).toBe(200)
+
+    const res = await ok<SyncResponse>('/api/sync', { trips: [] }, ana.token)
+    expect(res.trips[0].files).toEqual([{ id: 'file0001', thumb: true }])
+    const file = await download(ana.token)
+    expect(file.headers.get('content-type')).toBe('image/jpeg')
+    expect(new Uint8Array(await file.arrayBuffer())).toEqual(FILE)
+    expect(new Uint8Array(await (await download(ana.token, 'file0001', true)).arrayBuffer())).toEqual(JPEG)
+    expect(await readdir(join(dir, 'files', 'trips', 'trip0001'))).toEqual(['file0001', 'file0001.thumb'])
+
+    // Once there, a file stays as it is: another preview sent later changes nothing.
+    expect((await upload(ana.token, new Uint8Array([0xff, 0xd8, 0xff, 9]), 'file0001', true)).status).toBe(200)
+    expect(new Uint8Array(await (await download(max.token, 'file0001', true)).arrayBuffer())).toEqual(JPEG)
+  })
+
+  it('are only for the people on the trip', async () => {
+    const { max, cy } = await setUp()
+    await upload(max.token, FILE)
+    expect((await download(cy.token)).status).toBe(404)
+    expect((await upload(cy.token, FILE)).status).toBe(404)
+    expect((await fetch(`${url}${filePath()}`)).status).toBe(401)
+    expect((await download(max.token, '../store')).status).toBe(400)
+  })
+
+  it('must be the file their record was added with', async () => {
+    const { max } = await setUp()
+    expect((await upload(max.token, new Uint8Array([1, 2, 4]))).status).toBe(422)
+    expect((await upload(max.token, new Uint8Array([1, 2, 3, 4]))).status).toBe(422)
+    expect((await upload(max.token, FILE, 'file0009')).status).toBe(404) // no such attachment
+    expect((await upload(max.token, new Uint8Array([1, 2, 3]), 'file0001', true)).status).toBe(400) // a preview must be a JPEG
+    config.maxFileBytes = 2
+    const tooLarge = await upload(max.token, FILE)
+    expect(tooLarge.status).toBe(413)
+    expect(((await tooLarge.json()) as { error: string }).error).toContain('files up to')
+    expect((await ok<SyncResponse>('/api/sync', { trips: [] }, max.token)).trips[0].files).toEqual([])
+  })
+
+  it('go when their attachment is deleted', async () => {
+    const { max, ana } = await setUp()
+    await upload(max.token, FILE)
+    await upload(max.token, JPEG, 'file0001', true)
+    const deleted = attachment({ deletedAt: '2026-10-02T10:00:00.000Z', updatedAt: '2026-10-02T10:00:00.000Z' })
+    await ok<SyncResponse>('/api/sync', { trips: [{ id: 'trip0001', cursor: 0, records: { attachments: [deleted] } }] }, ana.token)
+    expect(await readdir(join(dir, 'files', 'trips', 'trip0001'))).toEqual([])
+    expect((await download(max.token)).status).toBe(404)
+    expect((await upload(max.token, FILE)).status).toBe(404)
   })
 })
