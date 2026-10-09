@@ -1,6 +1,8 @@
 # waypoints sync server. Build from the repo root:
 #   docker build -f server/Dockerfile -t waypoints-server .
-FROM node:24-alpine
+# Docker Hub's official Node image, through Google's mirror of Docker Hub: CI runners share IP
+# addresses and often hit Docker Hub's limit on anonymous pulls.
+FROM mirror.gcr.io/library/node:24-alpine
 
 WORKDIR /app
 ENV NODE_ENV=production \

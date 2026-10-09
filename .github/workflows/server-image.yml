@@ -20,8 +20,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # Their helper images come from Google's mirror of Docker Hub, as does the Dockerfile's base
+      # image: runners share IP addresses, which often hit Docker Hub's anonymous pull limit.
       - uses: docker/setup-qemu-action@v4
+        with:
+          image: mirror.gcr.io/tonistiigi/binfmt:latest
       - uses: docker/setup-buildx-action@v4
+        with:
+          driver-opts: image=mirror.gcr.io/moby/buildkit:buildx-stable-1
 
       # Smoke test: the image starts, generates its server code and answers health checks.
       - name: Build for smoke test
