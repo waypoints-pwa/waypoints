@@ -9,7 +9,7 @@ import {
   type Transport,
   type Traveller,
   type Trip,
-} from '../db/types'
+} from '../db/types.ts'
 
 /** Test records: a four-day trip to Lisbon and Porto for Ana, Bo and Cy. */
 

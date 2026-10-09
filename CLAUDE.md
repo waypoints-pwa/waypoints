@@ -1,8 +1,10 @@
 # waypoints — notes for Claude
 
 Trip companion PWA. Local-first: all data in IndexedDB via Dexie; hosted as a static site on GitHub
-Pages (https://waypoints-pwa.github.io/waypoints/). There is no server: trips move between phones as links
-(`#/t/<data>`, the trip compressed into the URL fragment) or files, and are merged record by record.
+Pages (https://waypoints-pwa.github.io/waypoints/). Trips move between phones as links (`#/t/<data>`, the
+trip compressed into the URL fragment) or files, and are merged record by record. An optional self-hosted
+sync server (`server/`) keeps trips put on it in sync for the travellers linked to it; links keep working
+alongside, also for people who aren't on the server.
 
 ## People's trips — never lose them
 Once people use the app, their only copy of a trip may be in their browser. Every change must be
@@ -17,13 +19,18 @@ non-destructive for existing data:
   Never host it, or another app, on the same origin as fronds (`timoneiro.github.io`).
 - **Trip links live forever in group chats** (`src/domain/sync.ts`, `src/lib/tripLink.ts`): every
   `LINK_VERSION` ever shipped must keep decoding. Add a version instead of changing one.
+- **Sync protocol** (`src/domain/serverProtocol.ts`): backward compatible both ways (old apps with new
+  servers and vice versa). **Server store** (`server/src/store.ts`): upgrade old formats in `migrate()`;
+  never regenerate the server code. Who may see a server trip follows from its travellers' `memberId`,
+  checked by the server on every request.
 - **Backup format**: add optional fields only; bumping `BACKUP_VERSION` makes older app versions reject
   new files, so it needs a migration in `parseBackup`.
 - **Mixed versions in a group**: records keep fields and kinds/categories they don't know
   (`src/domain/records.ts`), and unknown kinds show as "other". Don't strip unknown fields.
 - **Merges** are record-level: newest `updatedAt` wins, tombstones (`deletedAt`) are records too. Never
-  hard-delete a shared record. All writes go through `src/db/actions.ts`, which marks them unsent and
-  skips saves that change nothing (an unchanged save would override someone else's newer edit).
+  hard-delete a shared record. All writes go through `src/db/actions.ts`, which marks them unsent (for
+  links) and in the outbox (for the server), and skips saves that change nothing (an unchanged save would
+  override someone else's newer edit). Merges from links go into the outbox too.
 - Take a snapshot (`takeSnapshot`) before any operation that removes or overwrites local data.
 - Ship through a PR (CI runs lint, types, tests, build); merging to `main` deploys to users immediately.
 
@@ -33,13 +40,15 @@ top of `CHANGELOG.md`, written for people who use the app (`src/domain/changelog
 entry is missing). The entry is the app's "What's new" card. Internal changes skip the bump.
 
 ## Content-Security-Policy
-The built app ships a CSP `<meta>` (in `vite.config.ts`, build only) with `connect-src 'self'`: the app makes
-no network requests at all. Maps, calendars and booking sites are plain links. Anything that fetches from
-another host (an exchange-rate API, map tiles) needs adding there, and must stay an optional add-on.
+The built app ships a CSP `<meta>` (in `vite.config.ts`, build only) with `connect-src 'self' https:` (plus
+localhost): the only requests are to the sync server whose address people type in, and without one the
+app makes none. Maps, calendars and booking sites are plain links. Anything else that fetches from another
+host (an exchange-rate API, map tiles) needs adding there, and must stay an optional add-on.
 
 ## Principles
-- **No accounts, no API keys, no server.** Core features work without any; anything that needs one is an
-  optional add-on.
+- **No accounts, no API keys.** Core features work without any, and without the sync server, which is an
+  optional, self-hosted add-on (no third parties). A server that can't be reached is normal, not an error:
+  changes wait in the outbox.
 - **Local-first.** Fully usable offline.
 - **Links and files are untrusted input**: validated in `src/domain/records.ts` and size-limited; only
   `http(s)` addresses ever become a clickable href (`safeHttpUrl` in `src/domain/links.ts`).
@@ -54,12 +63,17 @@ another host (an exchange-rate API, map tiles) needs adding there, and must stay
 - `src/domain/` — pure, unit-tested logic. Relative imports use explicit `.ts` extensions. No runtime deps.
 - `src/db/` — Dexie schema, write actions, backup/merge IO, snapshots, local settings.
 - `src/lib/` — browser helpers: trip link codec, share sheet, update prompt, downloads.
+- `src/sync/` — sync server client (`client.ts`: the sync itself; `account.ts`: joining, invites, leaving).
+- `server/` — the sync server: Node HTTP, JSON-file store, no dependencies; runs `src/domain` directly
+  (Node type stripping). Image: `ghcr.io/waypoints-pwa/waypoints-server`. `DATA_DIR` holds the database,
+  `FILES_DIR` (another disk is fine) its daily copies, later documents and photos.
 - `src/ui/` — React. `tripData.ts` loads a trip once for all its pages (`useTrip()`), `TripLayout.tsx`
   has its top bar and tabs, `items/` has one file per kind (form + detail page), `pages/` the rest;
   plain CSS tokens in `src/index.css` (light + dark).
 
 ## Commands
-`npm run dev` · `npm test` · `npm run lint` · `npm run typecheck` · `npm run build`.
+`npm run dev` · `npm test` (app, server, app↔server) · `npm run lint` · `npm run typecheck` · `npm run build`.
+Server locally: `DATA_DIR=./server/data FILES_DIR=./server/files node server/src/main.ts`.
 
 On Windows Git Bash, set `MSYS_NO_PATHCONV=1` when passing `BASE_PATH=/waypoints/` to a local build.
 

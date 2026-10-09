@@ -9,15 +9,17 @@ const { version } = JSON.parse(readFileSync(new URL('./package.json', import.met
 // BASE_PATH is set by the GitHub Pages workflow ("/waypoints/"); self-hosted builds serve from "/".
 const base = process.env.BASE_PATH ?? '/'
 
-// Content-Security-Policy for the built app. Only the app's own scripts and styles run, and it makes
-// no network requests of its own: maps, calendars and booking sites are plain links that open
-// elsewhere. Anything that fetches from another host (an API, an image CDN) must be added here.
+// Content-Security-Policy for the built app. Only the app's own scripts and styles run. Maps,
+// calendars and booking sites are plain links that open elsewhere. The only requests the app makes
+// are to the optional sync server, whose address people type in, so any https: address is allowed
+// (and localhost, for a server run while developing). Without a server, it connects to nothing.
+// Anything else that fetches from another host (an API, an image CDN) must be added here.
 const csp = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self'",
   "img-src 'self' data:",
-  "connect-src 'self'",
+  "connect-src 'self' https: http://localhost:* http://127.0.0.1:*",
   "worker-src 'self'",
   "manifest-src 'self'",
   "object-src 'none'",

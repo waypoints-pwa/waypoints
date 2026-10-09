@@ -25,14 +25,20 @@ export const previewMerge = async (incoming: Tables): Promise<MergePlan> => plan
 /**
  * Merges records from a trip link or file into this phone: new and newer records win. If anything
  * already here gets overwritten or deleted, a safety snapshot is kept first.
+ *
+ * What a merge brings in goes into the outbox (not the unsent list: it came from the group), so a
+ * change from someone who only uses links reaches the sync server through this phone.
  */
 export async function applyMerge(incoming: Tables, reason: string): Promise<MergeCounts> {
   const preview = await previewMerge(incoming)
   if (preview.counts.updated || preview.counts.removed) await takeSnapshot(reason)
-  return db.transaction('rw', RECORD_TABLES.map(recordTable), async () => {
+  return db.transaction('rw', [...RECORD_TABLES.map(recordTable), db.outbox], async () => {
     const plan = planMerge(await localCopies(incoming), incoming)
     for (const table of RECORD_TABLES) {
-      if (plan.changes[table].length) await recordTable(table).bulkPut(plan.changes[table] as never[])
+      const changes = plan.changes[table]
+      if (!changes.length) continue
+      await recordTable(table).bulkPut(changes as never[])
+      await db.outbox.bulkPut(changes.map((r) => ({ table, id: r.id, tripId: 'tripId' in r ? r.tripId : r.id })))
     }
     return plan.counts
   })

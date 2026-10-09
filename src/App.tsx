@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { HashRouter, Link, Outlet, Route, Routes, useLocation, useNavigationType } from 'react-router'
+import { AutoSync } from './sync/useAutoSync'
 import { EmptyState } from './ui/components/bits'
 import { UpdateBanner } from './ui/components/UpdateBanner'
 import { ActivityFormPage, ActivityPage } from './ui/items/activities'
@@ -8,8 +9,10 @@ import { ExpenseFormPage, ExpensePage, MoneyPage } from './ui/items/expenses'
 import { PlaceFormPage, PlacePage, PlacesPage } from './ui/items/places'
 import { StayFormPage, StayPage } from './ui/items/stays'
 import { TransportFormPage, TransportPage } from './ui/items/transport'
+import { MoveToServerPage } from './ui/pages/MoveToServerPage'
 import { OpenPage } from './ui/pages/OpenPage'
 import { PlanPage } from './ui/pages/PlanPage'
+import { ServerPage } from './ui/pages/ServerPage'
 import { SettingsPage } from './ui/pages/SettingsPage'
 import { SharePage } from './ui/pages/SharePage'
 import { TripFormPage } from './ui/pages/TripFormPage'
@@ -25,12 +28,14 @@ export default function App() {
     // links' data in the fragment, which never reaches the server.
     <HashRouter>
       <ScrollToTop />
+      <AutoSync />
       <Routes>
         <Route element={<MainLayout />}>
           <Route index element={<TripsPage />} />
           <Route path="new" element={<TripFormPage />} />
           <Route path="open" element={<OpenPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="server" element={<ServerPage />} />
           <Route path="whats-new" element={<WhatsNewPage />} />
           <Route path="t/:data" element={<TripLinkPage />} />
           <Route path="*" element={<NotFound />} />
@@ -42,6 +47,7 @@ export default function App() {
           <Route path="trip" element={<TripInfoPage />} />
           <Route path="edit" element={<TripFormPage />} />
           <Route path="share" element={<SharePage />} />
+          <Route path="server" element={<MoveToServerPage />} />
           <Route path="stays/new" element={<StayFormPage />} />
           <Route path="stays/:itemId" element={<StayPage />} />
           <Route path="stays/:itemId/edit" element={<StayFormPage />} />

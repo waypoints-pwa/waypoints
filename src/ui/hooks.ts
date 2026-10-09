@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { db, getSetting, isLive } from '../db/db'
+import { getServerConfig, type ServerConfig } from '../db/serverState'
 import type { Day, Trip } from '../db/types'
 import { findRelease, unseenReleases, type Release } from '../domain/changelog'
 import { toDay } from '../domain/time'
@@ -61,3 +62,9 @@ export function useUnseenReleases(): Release[] {
   }
   return unseenReleases(RELEASES, state.lastSeen, __APP_VERSION__)
 }
+
+/** The sync server this phone is connected to: null if none, undefined while loading. */
+export const useServer = (): ServerConfig | null | undefined => useLiveQuery(() => getServerConfig().then((c) => c ?? null), [])
+
+/** Connected, and not disconnected by the server since. */
+export const usable = (server: ServerConfig | null | undefined) => (server && server.lastErrorStatus !== 401 ? server : undefined)

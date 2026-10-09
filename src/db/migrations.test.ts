@@ -38,7 +38,10 @@ it('opening a v0.1 database with the current schema keeps every record', async (
   const { db } = await import('./db')
   await db.open()
 
-  expect(db.verno).toBeGreaterThanOrEqual(1)
+  expect(db.verno).toBeGreaterThanOrEqual(2)
+  // v2 (0.3.0): the sync server's tables start empty; no trip is on a server until someone puts it there.
+  expect(await db.outbox.count()).toBe(0)
+  expect(await db.serverTrips.count()).toBe(0)
   expect(await db.trips.toArray()).toEqual([trip()])
   expect(await db.travellers.toArray()).toEqual([traveller('ana00001', 'Ana')])
   expect(await db.stays.toArray()).toEqual([stay({ deletedAt: '2026-10-02T10:00:00.000Z' })])

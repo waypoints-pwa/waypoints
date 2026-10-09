@@ -3,8 +3,10 @@ import type {
   Activity,
   Exchange,
   Expense,
+  OutboxEntry,
   Place,
   RecordTable,
+  ServerTrip,
   SettingEntry,
   Snapshot,
   Stay,
@@ -25,6 +27,8 @@ export const db = new Dexie('waypoints') as Dexie & {
   expenses: EntityTable<Expense, 'id'>
   exchanges: EntityTable<Exchange, 'id'>
   unsent: Dexie.Table<UnsentEntry, [string, string]>
+  outbox: Dexie.Table<OutboxEntry, [string, string]>
+  serverTrips: EntityTable<ServerTrip, 'tripId'>
   settings: EntityTable<SettingEntry, 'key'>
   snapshots: EntityTable<Snapshot, 'id'>
 }
@@ -46,6 +50,12 @@ db.version(1).stores({
   unsent: '[table+id], tripId',
   settings: 'key',
   snapshots: '++id, createdAt',
+})
+
+/** 0.3.0: the optional sync server. Changes waiting for it, and how far each trip on it has synced. */
+db.version(2).stores({
+  outbox: '[table+id], tripId',
+  serverTrips: 'tripId',
 })
 
 export const recordTable = <T extends RecordTable>(table: T) => db[table] as unknown as Dexie.Table<TableRecords[T], string>
@@ -81,4 +91,8 @@ export const SETTINGS = {
   /** Trip opened most recently: the app opens straight into it while it's on. */
   lastTrip: 'lastTrip',
   lastSeenVersion: 'lastSeenVersion',
+  /** The sync server this phone is connected to (see src/db/serverState.ts). */
+  server: 'server',
+  /** When this phone found out it's no longer on a trip on the server: shown on the trip until dismissed. */
+  serverGone: (tripId: string) => `serverGone:${tripId}`,
 } as const

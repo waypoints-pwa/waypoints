@@ -2,7 +2,7 @@
 
 A trip companion you install on your phone: the bookings, a day-by-day plan, the places you want to see
 and the shared expenses of every trip, in one place. Works offline, needs **no account and no API keys**,
-and never connects to a server of its own.
+and connects to nothing unless you set up its optional, self-hosted sync server.
 
 **Use it:** https://waypoints-pwa.github.io/waypoints/ → open it on your phone → *Add to Home Screen*.
 
@@ -25,7 +25,8 @@ and never connects to a server of its own.
   before the bank shows it: they're marked "cost pending" and estimated until then.
 - **Calendar export**: one `.ics` file with the whole trip for Google or Apple Calendar, or *Add to Google
   Calendar* for a single booking. Importing an updated file updates the events instead of copying them.
-- **Share with your group** through any chat app, without a server (see below).
+- **Share with your group** through any chat app, without a server (see below), or through an optional
+  [sync server](server/README.md) you host yourself, so changes reach everyone by themselves.
 - **Backups**: export all trips to a file and import them on another phone. Safety copies are kept
   automatically before anything gets overwritten.
 
@@ -45,12 +46,21 @@ links, which some chat apps cut short: you can send the trip as a file instead.
 
 Anyone with a link can see everything in that trip, and a sent link can't be taken back.
 
+## Optional sync server
+
+For groups who'd rather not send a link after every change, waypoints has a small
+[self-hosted server](server/README.md) (one Docker container, for a home NAS for example). Trips put
+on it reach everyone on them by themselves, and changes made offline go up once the server can be
+reached. Each trip is visible only to the people on it. Joining is by invite from whoever runs the
+server. It's optional: links keep working alongside it, also for people who aren't on the server.
+
 ## Privacy & data
 
-Everything is stored in your browser (IndexedDB) on your phone. waypoints has no server, no accounts,
-no analytics and no ads. The app is a static website: it makes no network requests of its own, which
-its Content-Security-Policy enforces. Maps, calendars and booking sites are ordinary links that open in
-their own apps when you tap them.
+Everything is stored in your browser (IndexedDB) on your phone. waypoints has no server of its own (the
+sync server is one you run yourself, if you want it), no accounts, no analytics and no ads. The app is a
+static website. Without a sync server it makes no network requests at all, and its Content-Security-Policy
+only lets it reach HTTPS addresses, for the server address you type in. Maps, calendars and booking
+sites are ordinary links that open in their own apps when you tap them.
 
 Browsers can clear website data when space runs low (especially on iPhone), so add the app to your Home
 Screen and export a backup now and then.
@@ -68,7 +78,7 @@ privately, as described in [SECURITY.md](SECURITY.md).
 ```sh
 npm install
 npm run dev        # http://localhost:5173
-npm test           # unit tests (Vitest)
+npm test           # unit tests, the sync server's tests, app↔server tests (Vitest)
 npm run lint       # oxlint
 npm run typecheck
 npm run build      # production build into dist/
@@ -76,7 +86,8 @@ npm run build      # production build into dist/
 
 Stack: React + TypeScript + Vite, Dexie (IndexedDB), vite-plugin-pwa, React Router (hash routing, so deep
 links work on GitHub Pages and trip links stay in the fragment). Pushes to `main` are tested and deployed to
-GitHub Pages by [.github/workflows/deploy.yml](.github/workflows/deploy.yml).
+GitHub Pages by [.github/workflows/deploy.yml](.github/workflows/deploy.yml); the sync server's Docker image
+is built by [.github/workflows/server-image.yml](.github/workflows/server-image.yml).
 
 ```
 src/
@@ -84,7 +95,9 @@ src/
             link and backup formats, merging (unit-tested)
   db/       Dexie schema (append-only versions), write actions, backup import/export, snapshots
   lib/      browser helpers: trip link encoding, share sheet, app updates, downloads
+  sync/     sync server client: syncing, joining, invites, leaving a trip
   ui/       pages, item screens (one file per kind), components
+server/     the optional sync server (Node, no dependencies; shares src/domain)
 ```
 
 ## License

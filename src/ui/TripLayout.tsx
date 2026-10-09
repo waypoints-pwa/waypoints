@@ -3,8 +3,9 @@ import { useEffect } from 'react'
 import { Link, Outlet, useLocation, useParams } from 'react-router'
 import { setSetting, SETTINGS } from '../db/db'
 import { EmptyState } from './components/bits'
+import { ServerGoneNotice } from './components/ServerGoneNotice'
 import { fmtDayRange } from './format'
-import { loadTrip, TripContext, tripPath } from './tripData'
+import { loadTrip, needsLinks, TripContext, tripPath } from './tripData'
 
 const TABS = [
   { key: 'plan', path: '', icon: '🗓️', label: 'Plan' },
@@ -17,7 +18,7 @@ const TABS = [
 function tabOf(section: string | undefined): (typeof TABS)[number]['key'] {
   if (section === 'places') return 'places'
   if (section === 'money' || section === 'expenses' || section === 'exchanges') return 'money'
-  if (section === 'trip' || section === 'edit' || section === 'share') return 'trip'
+  if (section === 'trip' || section === 'edit' || section === 'share' || section === 'server') return 'trip'
   return 'plan'
 }
 
@@ -48,7 +49,7 @@ export function TripLayout() {
 
   const { trip } = data
   const active = tabOf(pathname.split('/')[3])
-  const showUnsent = data.unsent > 0 && data.travellers.length > 1
+  const showUnsent = needsLinks(data)
   return (
     <TripContext.Provider value={data}>
       <header className="topbar">
@@ -73,6 +74,7 @@ export function TripLayout() {
         </div>
       </header>
       <main className="page">
+        <ServerGoneNotice />
         <Outlet />
       </main>
       <nav className="tabbar">

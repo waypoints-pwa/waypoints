@@ -69,3 +69,13 @@ export function currencyName(code: string): string {
     return code
   }
 }
+
+const relative = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
+
+/** "2 minutes ago", "yesterday". */
+export function fmtAgo(iso: string, now = Date.now()): string {
+  const minutes = Math.round((now - Date.parse(iso)) / 60_000)
+  if (minutes < 60) return relative.format(-minutes, 'minute')
+  const hours = Math.round(minutes / 60)
+  return hours < 48 ? relative.format(-hours, 'hour') : relative.format(-Math.round(hours / 24), 'day')
+}

@@ -8,6 +8,24 @@ Heading: "## x.y.z — YYYY-MM-DD". Body: short paragraphs and "- " bullets; inl
 Write for people who use the app, not for developers.
 -->
 
+## 0.3.0 — 2026-10-09
+
+An optional sync server: changes reach the group by themselves.
+
+- **Sync server**: connect to a waypoints server (for example one on a home NAS) in Settings →
+  **Sync server**. The trips you put on it reach everyone on it, and every change after that,
+  without sending links. It's optional: everything works without it, as before.
+- **Private trips**: a trip on the server is seen only by the people on it. Pick them from the
+  server with a tap when you create the trip.
+- **Mixed groups**: someone who isn't on the server is added by name, as before, and gets links.
+  Changes they send you by link go up to the server too.
+- **Put a trip on the server** later from the Trip tab. It keeps working the same, and links already
+  sent still work.
+- **Offline is fine**: changes made without signal wait on your phone and go up the next time the
+  server can be reached.
+- Joining is by invite from whoever runs the server. A trip you leave stays in its group, with your
+  expenses.
+
 ## 0.2.0 — 2026-10-09
 
 Card payments and paying back part of what you owe.

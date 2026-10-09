@@ -25,5 +25,14 @@ Only the latest version is supported. The app updates itself.
 
 Nothing that arrives from outside the phone. Trip links and files can be crafted by anyone, so they're
 validated and size-limited before anything is shown or stored, and only `http(s)` addresses ever become
-clickable links. The Content-Security-Policy allows only the app's own scripts and styles, and no network
-requests at all.
+clickable links. Records from a sync server go through the same checks. The Content-Security-Policy
+allows only the app's own scripts and styles, and network requests only to HTTPS addresses (the sync
+server's, which people type in). Without a server, the app makes none.
+
+## The optional sync server
+
+The server ([server/](server/README.md)) checks on every request that a phone's member is on the trip
+it reads or writes; the app's own checks aren't relied on. Phone tokens are 256 random bits, stored
+only as hashes. Joining needs the server code (admins) or a one-time invite that expires after 7
+days, and repeated wrong codes are slowed down. Records sent to it are validated with the same rules
+as links. Whoever runs a server can read everything on it.

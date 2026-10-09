@@ -1,6 +1,7 @@
+import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { SETTINGS } from '../../db/db'
+import { db, SETTINGS } from '../../db/db'
 import type { Day, Trip } from '../../db/types'
 import { tripPhase } from '../../domain/itinerary'
 import { EmptyState } from '../components/bits'
@@ -18,6 +19,7 @@ export function TripsPage() {
   const lastTrip = useSetting<string>(SETTINGS.lastTrip)
   const today = useToday()
   const navigate = useNavigate()
+  const onServer = useLiveQuery(async () => new Set(await db.serverTrips.toCollection().primaryKeys()), [])
 
   useEffect(() => {
     if (resumed || !launchedAtHome || !trips || !lastTrip) return
@@ -52,9 +54,9 @@ export function TripsPage() {
           + New trip
         </Link>
       </div>
-      <TripGroup title="Now" trips={groups.ongoing} today={today} />
-      <TripGroup title="Coming up" trips={groups.upcoming} today={today} />
-      <TripGroup title="Past trips" trips={groups.past} today={today} />
+      <TripGroup title="Now" trips={groups.ongoing} today={today} onServer={onServer} />
+      <TripGroup title="Coming up" trips={groups.upcoming} today={today} onServer={onServer} />
+      <TripGroup title="Past trips" trips={groups.past} today={today} onServer={onServer} />
       <Link className="btn btn-ghost" to="/open">
         🔗 Open a trip link or file
       </Link>
@@ -62,21 +64,21 @@ export function TripsPage() {
   )
 }
 
-function TripGroup({ title, trips, today }: { title: string; trips: Trip[]; today: Day }) {
+function TripGroup({ title, trips, today, onServer }: { title: string; trips: Trip[]; today: Day; onServer?: Set<string> }) {
   if (!trips.length) return null
   return (
     <section>
       <h3 className="group-title">{title}</h3>
       <ul className="list">
         {trips.map((trip) => (
-          <TripRow key={trip.id} trip={trip} today={today} />
+          <TripRow key={trip.id} trip={trip} today={today} onServer={Boolean(onServer?.has(trip.id))} />
         ))}
       </ul>
     </section>
   )
 }
 
-function TripRow({ trip, today }: { trip: Trip; today: Day }) {
+function TripRow({ trip, today, onServer }: { trip: Trip; today: Day; onServer: boolean }) {
   const phase = tripPhase(trip, today)
   const chip =
     phase.phase === 'upcoming'
@@ -94,7 +96,10 @@ function TripRow({ trip, today }: { trip: Trip; today: Day }) {
         </span>
         <span className="list-text">
           <strong>{trip.name}</strong>
-          <span className="muted small">{fmtDayRange(trip.startDate, trip.endDate)}</span>
+          <span className="muted small">
+            {fmtDayRange(trip.startDate, trip.endDate)}
+            {onServer && ' · 🌐 on the server'}
+          </span>
         </span>
         <span className={`chip chip-${phase.phase}`}>{chip}</span>
       </Link>

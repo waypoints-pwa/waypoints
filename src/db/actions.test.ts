@@ -1,13 +1,15 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { emptyTables } from './types'
-import { addTraveller, clearUnsent, createTrip, deleteRecord, patchRecord, removeTripFromPhone, saveRecord, updateTrip } from './actions'
+import { addTraveller, clearUnsent, createTrip, deleteRecord, moveTripToServer, patchRecord, removeTripFromPhone, saveRecord, updateTrip } from './actions'
 import { applyMerge, previewMerge, readTables } from './backupIO'
-import { db, getSetting, SETTINGS } from './db'
+import { db, getSetting, setSetting, SETTINGS } from './db'
 
 const tripInput = { name: 'Lisbon & Porto', startDate: '2027-03-10', endDate: '2027-03-13', timeZone: 'Europe/Lisbon', currency: 'EUR' }
 const stayInput = { name: 'Casa Azul', kind: 'apartment' as const, checkInDate: '2027-03-10', checkOutDate: '2027-03-12', timeZone: 'Europe/Lisbon' }
+const people = (...names: string[]) => names.map((name) => ({ name }))
 const unsentIds = async (tripId: string) => (await db.unsent.where('tripId').equals(tripId).toArray()).map((u) => u.id).sort()
+const outboxIds = async (tripId: string) => (await db.outbox.where('tripId').equals(tripId).toArray()).map((u) => u.id).sort()
 
 beforeEach(async () => {
   await db.delete()
@@ -16,7 +18,7 @@ beforeEach(async () => {
 
 describe('trips', () => {
   it('are created with their travellers, the first one using this phone', async () => {
-    const tripId = await createTrip(tripInput, ['Ana', 'Bo'])
+    const tripId = await createTrip(tripInput, people('Ana', 'Bo'))
     const travellers = await db.travellers.where('tripId').equals(tripId).toArray()
     expect(travellers.map((t) => t.name).sort()).toEqual(['Ana', 'Bo'])
     expect(await getSetting(SETTINGS.me(tripId))).toBe(travellers.find((t) => t.name === 'Ana')!.id)
@@ -24,7 +26,7 @@ describe('trips', () => {
   })
 
   it('only save what changed when edited', async () => {
-    const tripId = await createTrip(tripInput, ['Ana', 'Bo', 'Cy'])
+    const tripId = await createTrip(tripInput, people('Ana', 'Bo', 'Cy'))
     const before = await db.trips.get(tripId)
     const [ana, bo] = (await db.travellers.toArray()).sort((a, b) => a.name.localeCompare(b.name))
     await clearUnsent(tripId)
@@ -41,14 +43,19 @@ describe('trips', () => {
   })
 
   it('can be removed from this phone only, keeping a snapshot', async () => {
-    const keep = await createTrip({ ...tripInput, name: 'Keep' }, ['Ana'])
-    const tripId = await createTrip(tripInput, ['Ana'])
+    const keep = await createTrip({ ...tripInput, name: 'Keep' }, people('Ana'))
+    const tripId = await createTrip(tripInput, people('Ana'))
     await saveRecord('stays', tripId, stayInput)
+    await db.serverTrips.put({ tripId, cursor: 3, uploaded: true })
+    await setSetting(SETTINGS.serverGone(tripId), '2026-10-09T10:00:00.000Z')
     await removeTripFromPhone((await db.trips.get(tripId))!)
 
     expect(await db.trips.get(tripId)).toBeUndefined()
     expect(await db.stays.count()).toBe(0)
     expect(await unsentIds(tripId)).toEqual([])
+    expect(await outboxIds(tripId)).toEqual([])
+    expect(await db.serverTrips.get(tripId)).toBeUndefined()
+    expect(await getSetting(SETTINGS.serverGone(tripId))).toBeUndefined()
     expect(await getSetting(SETTINGS.me(tripId))).toBeUndefined()
     expect(await db.trips.get(keep)).toBeDefined()
     const [snapshot] = await db.snapshots.toArray()
@@ -59,11 +66,13 @@ describe('trips', () => {
 
 describe('records', () => {
   it('are saved, edited and deleted for the whole group', async () => {
-    const tripId = await createTrip(tripInput, ['Ana'])
+    const tripId = await createTrip(tripInput, people('Ana'))
     await clearUnsent(tripId)
 
     const id = await saveRecord('stays', tripId, { ...stayInput, phone: '+351 21 000 0000' })
     expect(await unsentIds(tripId)).toEqual([id])
+    // The sync server's list is separate: sending a link doesn't clear it.
+    expect(await outboxIds(tripId)).toContain(id)
     const saved = (await db.stays.get(id))!
 
     // Saving the form unchanged keeps the record as it was, so it can't override newer edits from others.
@@ -86,7 +95,7 @@ describe('records', () => {
   })
 
   it('can be patched, e.g. ticking a place as visited', async () => {
-    const tripId = await createTrip(tripInput, ['Ana'])
+    const tripId = await createTrip(tripInput, people('Ana'))
     const id = await saveRecord('places', tripId, { name: 'Livraria Lello', category: 'sight' })
     await patchRecord('places', id, { visited: true })
     expect((await db.places.get(id))!.visited).toBe(true)
@@ -95,7 +104,7 @@ describe('records', () => {
   })
 
   it('travellers can be added by someone joining', async () => {
-    const tripId = await createTrip(tripInput, ['Ana'])
+    const tripId = await createTrip(tripInput, people('Ana'))
     const id = await addTraveller(tripId, 'Bo')
     expect((await db.travellers.get(id))!.name).toBe('Bo')
     expect(await unsentIds(tripId)).toContain(id)
@@ -104,7 +113,7 @@ describe('records', () => {
 
 describe('merging a trip from another phone', () => {
   it('adds the trip, then updates it, and is safe to repeat', async () => {
-    const tripId = await createTrip(tripInput, ['Ana', 'Bo'])
+    const tripId = await createTrip(tripInput, people('Ana', 'Bo'))
     const stayId = await saveRecord('stays', tripId, stayInput)
     const sent = await readTables(tripId)
 
@@ -116,6 +125,8 @@ describe('merging a trip from another phone', () => {
     expect(await readTables(tripId)).toEqual(sent)
     // Merged records came from the group, so they aren't this phone's unsent changes.
     expect(await db.unsent.count()).toBe(0)
+    // …but they go to the sync server through this phone, if the trip is on it.
+    expect(await outboxIds(tripId)).toEqual([tripId, ...sent.travellers.map((t) => t.id), stayId].sort())
     expect(await db.snapshots.count()).toBe(0)
 
     // A later link renames the stay: overwriting a record here keeps a snapshot first.
@@ -127,5 +138,42 @@ describe('merging a trip from another phone', () => {
     expect(await applyMerge(later, 'again')).toEqual({ added: 0, updated: 0, removed: 0 })
     expect(await applyMerge(sent, 'older')).toEqual({ added: 0, updated: 0, removed: 0 })
     expect((await db.stays.get(stayId))!.name).toBe('Casa Verde')
+  })
+})
+
+describe('trips on the sync server', () => {
+  it('are created with travellers linked to server members', async () => {
+    const tripId = await createTrip(tripInput, [{ name: 'Ana', memberId: 'member-ana' }, { name: 'Dee' }], { onServer: true })
+    const travellers = await db.travellers.where('tripId').equals(tripId).sortBy('createdAt')
+    expect(travellers.map((t) => [t.name, t.memberId])).toEqual([
+      ['Ana', 'member-ana'],
+      ['Dee', undefined],
+    ])
+    expect('memberId' in travellers[1]).toBe(false)
+    expect(await db.serverTrips.get(tripId)).toEqual({ tripId, cursor: 0, uploaded: false })
+  })
+
+  it('link and unlink travellers when the trip is edited', async () => {
+    const tripId = await createTrip(tripInput, people('Ana', 'Bo'))
+    const [ana, bo] = await db.travellers.where('tripId').equals(tripId).sortBy('createdAt')
+    await db.outbox.clear()
+
+    await updateTrip(tripId, tripInput, [{ id: ana.id, name: 'Ana', memberId: 'member-ana' }, { id: bo.id, name: 'Bo' }])
+    expect((await db.travellers.get(ana.id))!.memberId).toBe('member-ana')
+    expect(await outboxIds(tripId)).toEqual([ana.id])
+
+    await updateTrip(tripId, tripInput, [{ id: ana.id, name: 'Ana' }, { id: bo.id, name: 'Bo' }])
+    expect('memberId' in (await db.travellers.get(ana.id))!).toBe(false)
+  })
+
+  it('can be moved there later, linking travellers and keeping the trip id', async () => {
+    const tripId = await createTrip(tripInput, people('Ana', 'Bo', 'Cy'))
+    const [ana, bo, cy] = await db.travellers.where('tripId').equals(tripId).sortBy('createdAt')
+    await db.outbox.clear()
+
+    await moveTripToServer(tripId, { [ana.id]: 'member-ana', [bo.id]: 'member-bo', [cy.id]: undefined })
+    expect((await db.travellers.where('tripId').equals(tripId).sortBy('createdAt')).map((t) => t.memberId)).toEqual(['member-ana', 'member-bo', undefined])
+    expect(await outboxIds(tripId)).toEqual([ana.id, bo.id].sort())
+    expect(await db.serverTrips.get(tripId)).toEqual({ tripId, cursor: 0, uploaded: false })
   })
 })

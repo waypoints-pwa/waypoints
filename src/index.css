@@ -245,7 +245,10 @@ textarea.input { resize: vertical; }
 .field > span { font-weight: 600; font-size: 0.9rem; }
 .field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.traveller { display: flex; flex-direction: column; gap: 4px; }
 .traveller-row { display: flex; align-items: center; gap: 6px; }
+/* Which server member a traveller is: smaller than the name above it. */
+.input-link { min-height: 36px; padding: 6px 10px; color: var(--muted); }
 details summary { cursor: pointer; padding: 4px 0; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -412,3 +415,7 @@ a.list-row:hover { border-color: var(--accent); }
 .row-link { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
 .notice-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .notice-row .btn { margin-top: 0; }
+
+/* Sync server */
+.invite { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 10px; background: var(--accent-soft); }
+.invite-code { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.08em; color: var(--accent); }
