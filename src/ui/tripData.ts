@@ -29,6 +29,8 @@ export interface TripData {
   member?: MemberSummary
   /** When this phone found out it's no longer on this trip on the server. */
   serverGone?: string
+  /** Travellers linked to someone still on the sync server (as far as this phone knows). */
+  linked: Traveller[]
   /** Travellers who need links to get changes: everyone, unless the trip is on the server. */
   viaLinks: Traveller[]
   /** Every traveller ever on the trip, removed ones too: old expenses may still name them. */
@@ -62,6 +64,9 @@ export async function loadTrip(tripId: string): Promise<TripData | null> {
     getSetting<string>(SETTINGS.serverGone(tripId)),
   ])
   const member = config?.member
+  // Someone removed from the server keeps their link on old trips, but no longer gets changes.
+  const members = config?.members.length ? new Set(config.members.map((m) => m.id)) : undefined
+  const isLinked = (t: Traveller) => Boolean(t.memberId && (!members || members.has(t.memberId)))
   const travellers = allTravellers.filter(isLive).sort(byCreation)
   const data = {
     stays: stays.filter(isLive),
@@ -89,7 +94,8 @@ export async function loadTrip(tripId: string): Promise<TripData | null> {
     waiting: server ? waiting : 0,
     member,
     serverGone,
-    viaLinks: server ? travellers.filter((t) => !t.memberId) : travellers,
+    linked: travellers.filter(isLinked),
+    viaLinks: server ? travellers.filter((t) => !isLinked(t)) : travellers,
     names: new Map(allTravellers.map((t) => [t.id, t.name])),
     cities: [...new Set(cities)].sort((a, b) => a.localeCompare(b)),
     zones: [...new Set(zones)],

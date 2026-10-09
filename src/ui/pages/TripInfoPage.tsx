@@ -61,7 +61,7 @@ export function TripInfoPage() {
 
       <section className="card">
         <h3>Who's going</h3>
-        <p>{t.travellers.map((x) => (t.server && x.memberId ? '🌐 ' : '') + x.name + (x.id === t.me?.id ? ' (you)' : '')).join(', ')}</p>
+        <p>{t.travellers.map((x) => (t.server && t.linked.includes(x) ? '🌐 ' : '') + x.name + (x.id === t.me?.id ? ' (you)' : '')).join(', ')}</p>
         {t.server && <p className="muted small">🌐 On the sync server: they get changes by themselves.</p>}
         {group && (
           <label className="field">
@@ -194,7 +194,7 @@ function LeaveCard({ t }: { t: TripData }) {
  * phone was taken off it, or never added): then only someone on it can add you.
  */
 function ServerOffer({ t }: { t: TripData }) {
-  const there = t.travellers.filter((x) => x.memberId && x.id !== t.me?.id)
+  const there = t.linked.filter((x) => x.id !== t.me?.id)
   if (there.length) {
     return (
       <p className="muted small">

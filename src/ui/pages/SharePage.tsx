@@ -102,7 +102,7 @@ export function SharePage() {
 /** On a trip on the server, links are only needed for the people who aren't on it. */
 function ServerNote() {
   const t = useTrip()
-  const onServer = t.travellers.filter((x) => x.memberId).map((x) => x.name)
+  const onServer = t.linked.map((x) => x.name)
   const others = t.viaLinks.filter((x) => x.id !== t.me?.id).map((x) => x.name)
   return (
     <p className="notice notice-info small">
