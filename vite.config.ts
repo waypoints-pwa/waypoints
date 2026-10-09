@@ -13,12 +13,13 @@ const base = process.env.BASE_PATH ?? '/'
 // calendars and booking sites are plain links that open elsewhere. The only requests the app makes
 // are to the optional sync server, whose address people type in, so any https: address is allowed
 // (and localhost, for a server run while developing). Without a server, it connects to nothing.
+// Photos and documents are shown from the phone's own storage (blob: URLs), never fetched as images.
 // Anything else that fetches from another host (an API, an image CDN) must be added here.
 const csp = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self'",
-  "img-src 'self' data:",
+  "img-src 'self' data: blob:",
   "connect-src 'self' https: http://localhost:* http://127.0.0.1:*",
   "worker-src 'self'",
   "manifest-src 'self'",

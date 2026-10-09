@@ -11,6 +11,7 @@ const TABS = [
   { key: 'plan', path: '', icon: '🗓️', label: 'Plan' },
   { key: 'places', path: 'places', icon: '📍', label: 'Places' },
   { key: 'money', path: 'money', icon: '💶', label: 'Money' },
+  { key: 'photos', path: 'photos', icon: '📷', label: 'Photos' },
   { key: 'trip', path: 'trip', icon: '🧳', label: 'Trip' },
 ] as const
 
@@ -18,6 +19,7 @@ const TABS = [
 function tabOf(section: string | undefined): (typeof TABS)[number]['key'] {
   if (section === 'places') return 'places'
   if (section === 'money' || section === 'expenses' || section === 'exchanges') return 'money'
+  if (section === 'photos' || section === 'files') return 'photos'
   if (section === 'trip' || section === 'edit' || section === 'share' || section === 'server') return 'trip'
   return 'plan'
 }

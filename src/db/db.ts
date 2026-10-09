@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type {
   Activity,
+  Attachment,
   Exchange,
   Expense,
   OutboxEntry,
@@ -10,6 +11,7 @@ import type {
   SettingEntry,
   Snapshot,
   Stay,
+  StoredFile,
   TableRecords,
   Transport,
   Traveller,
@@ -26,6 +28,8 @@ export const db = new Dexie('waypoints') as Dexie & {
   places: EntityTable<Place, 'id'>
   expenses: EntityTable<Expense, 'id'>
   exchanges: EntityTable<Exchange, 'id'>
+  attachments: EntityTable<Attachment, 'id'>
+  files: EntityTable<StoredFile, 'id'>
   unsent: Dexie.Table<UnsentEntry, [string, string]>
   outbox: Dexie.Table<OutboxEntry, [string, string]>
   serverTrips: EntityTable<ServerTrip, 'tripId'>
@@ -57,6 +61,27 @@ db.version(2).stores({
   outbox: '[table+id], tripId',
   serverTrips: 'tripId',
 })
+
+/**
+ * 0.4.0: photos and documents. Their records, and their files (local only, apart from the records).
+ *
+ * Phones on 0.3.0 skipped the attachments the sync server sent them while moving on past them, so
+ * every trip on the server is pulled again in full, once: merging is safe to repeat. Any version
+ * that adds a table the server syncs must do the same.
+ */
+db.version(3)
+  .stores({
+    attachments: 'id, tripId',
+    files: 'id, tripId',
+  })
+  .upgrade((tx) =>
+    tx
+      .table('serverTrips')
+      .toCollection()
+      .modify((state: { cursor: number }) => {
+        state.cursor = 0
+      }),
+  )
 
 export const recordTable = <T extends RecordTable>(table: T) => db[table] as unknown as Dexie.Table<TableRecords[T], string>
 

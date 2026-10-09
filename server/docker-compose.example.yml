@@ -8,7 +8,7 @@ services:
     volumes:
       # The trip database and the server code: small, next to the compose file.
       - ./data:/data
-      # Daily copies of the database (documents and photos later). Can be on another disk.
+      # Photos and documents, and daily copies of the database. Can be on another disk.
       - ./files:/files
     environment:
       # Only the hosted app may call the server from a browser.

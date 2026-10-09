@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react'
 import { db, getSetting, isLive, recordTable, SETTINGS } from '../db/db'
 import { getServerConfig } from '../db/serverState'
-import type { Activity, Exchange, Expense, Place, ServerTrip, Stay, Transport, Traveller, Trip, TripTable } from '../db/types'
+import type { Activity, Attachment, Exchange, Expense, Place, ServerTrip, Stay, Transport, Traveller, Trip, TripTable } from '../db/types'
 import { rateFinder, type RateOf } from '../domain/expenses'
 import type { MemberSummary } from '../domain/serverProtocol'
 
@@ -15,6 +15,8 @@ export interface TripData {
   places: Place[]
   expenses: Expense[]
   exchanges: Exchange[]
+  /** Photos and documents (their records: the files are in db.files). */
+  attachments: Attachment[]
   /** Converts an expense to the trip's currency: its own rate, else what the exchanges got. */
   rateOf: RateOf
   /** The traveller using this phone, if they've said which one they are. */
@@ -25,6 +27,8 @@ export interface TripData {
   server?: ServerTrip
   /** For a trip on the server: changes here (or from links) that the server hasn't had yet. */
   waiting: number
+  /** For a trip on the server: the server is too old to keep photos and documents. */
+  oldServer: boolean
   /** Who this phone is on the sync server, when connected to one. */
   member?: MemberSummary
   /** When this phone found out it's no longer on this trip on the server. */
@@ -48,7 +52,7 @@ export async function loadTrip(tripId: string): Promise<TripData | null> {
   const trip = await db.trips.get(tripId)
   if (!trip || trip.deletedAt) return null
   const ofTrip = <T extends TripTable>(table: T) => recordTable(table).where('tripId').equals(tripId).toArray()
-  const [allTravellers, stays, transports, activities, places, expenses, exchanges, meId, unsent, server, waiting, config, serverGone] = await Promise.all([
+  const [allTravellers, stays, transports, activities, places, expenses, exchanges, attachments, meId, unsent, server, waiting, config, serverGone] = await Promise.all([
     ofTrip('travellers'),
     ofTrip('stays'),
     ofTrip('transports'),
@@ -56,6 +60,7 @@ export async function loadTrip(tripId: string): Promise<TripData | null> {
     ofTrip('places'),
     ofTrip('expenses'),
     ofTrip('exchanges'),
+    ofTrip('attachments'),
     getSetting<string>(SETTINGS.me(tripId)),
     db.unsent.where('tripId').equals(tripId).count(),
     db.serverTrips.get(tripId),
@@ -75,6 +80,7 @@ export async function loadTrip(tripId: string): Promise<TripData | null> {
     places: places.filter(isLive),
     expenses: expenses.filter(isLive),
     exchanges: exchanges.filter(isLive),
+    attachments: attachments.filter(isLive),
   }
   const cities = [...data.stays, ...data.activities, ...data.places].map((r) => r.city?.trim()).filter((c): c is string => Boolean(c))
   const zones = [
@@ -92,6 +98,7 @@ export async function loadTrip(tripId: string): Promise<TripData | null> {
     unsent,
     server,
     waiting: server ? waiting : 0,
+    oldServer: Boolean(server && config?.lastSyncAt && !config.fileLimit),
     member,
     serverGone,
     linked: travellers.filter(isLinked),

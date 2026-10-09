@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Tables } from '../../src/db/types.ts'
 import type { SyncRequest } from '../../src/domain/serverProtocol.ts'
-import { ANA, BO, CY, place, stay, T0, T1, T2, traveller, trip } from '../../src/test/fixtures.ts'
+import { ANA, attachment, BO, CY, place, stay, T0, T1, T2, traveller, trip } from '../../src/test/fixtures.ts'
 import { emptyData, type Member, type StoreData } from './store.ts'
 import { applySync, BadRequest, parseSyncRequest } from './sync.ts'
 
@@ -168,3 +168,32 @@ describe('sync requests', () => {
   })
 })
 
+
+describe('photos and documents on the server', () => {
+  it('sync like other records, apart from private ones', () => {
+    const data = server()
+    const { response } = sync(data, ANA_M, send({ ...lisbon(), attachments: [attachment(), attachment({ id: 'file0002', private: true })] }))
+    expect(response.rejected).toEqual([{ tripId: TRIP, table: 'attachments', id: 'file0002', reason: 'It is kept only on the phone it was added on.' }])
+    expect(Object.keys(data.trips[TRIP].records.attachments ?? {})).toEqual(['file0001'])
+    expect(sync(data, BO_M).response.trips[0].records.attachments).toEqual([attachment()])
+  })
+
+  it("can't have their file swapped for another", () => {
+    const data = server()
+    sync(data, ANA_M, send({ ...lisbon(), attachments: [attachment()] }))
+    const swapped = attachment({ sha256: 'f'.repeat(64), updatedAt: T1 })
+    const { response } = sync(data, BO_M, send({ attachments: [swapped] }, 5))
+    expect(response.rejected).toMatchObject([{ id: 'file0001', reason: "A photo or document's file can't be changed." }])
+    expect(data.trips[TRIP].records.attachments?.file0001.rec).toEqual(attachment())
+    // Anything else about it can change: a caption, what it belongs to.
+    expect(sync(data, BO_M, send({ attachments: [attachment({ caption: 'Fado!', itemTable: undefined, itemId: undefined, updatedAt: T1 })] }, 5)).response.rejected).toEqual([])
+  })
+
+  it('say which files to delete when they are deleted', () => {
+    const data = server()
+    sync(data, ANA_M, send({ ...lisbon(), attachments: [attachment()] }))
+    const { removedFiles } = sync(data, BO_M, send({ attachments: [attachment({ deletedAt: T2, updatedAt: T2 })] }, 5))
+    expect(removedFiles).toEqual([{ tripId: TRIP, id: 'file0001' }])
+    expect(sync(data, ANA_M, send({ stays: [stay({ name: 'Casa Verde', updatedAt: T1 })] }, 5)).removedFiles).toEqual([])
+  })
+})

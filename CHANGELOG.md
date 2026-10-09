@@ -8,6 +8,27 @@ Heading: "## x.y.z — YYYY-MM-DD". Body: short paragraphs and "- " bullets; inl
 Write for people who use the app, not for developers.
 -->
 
+## 0.4.0 — 2026-10-09
+
+Photos and documents: for the whole trip, or for any stay, journey, activity, place or expense.
+
+- **Photos tab**: the trip's documents at the top (tickets, boarding passes, bookings, insurance),
+  and its photos below, by day.
+- **On any item**: add photos and documents from a stay, a journey, an activity, a place or an
+  expense (a receipt, say). Move one to another item, or to the whole trip, whenever you like.
+- **Offline**: documents are kept on your phone, so they open at the gate without signal.
+- **Shared through the sync server**: on a trip on the server, everyone on it gets them by
+  themselves. Documents come in full; photos come as small previews, and in full once you open
+  one. Links can't carry files, so on a trip that's only on your phone they stay on your phone.
+- **Only on this phone**: keep a passport or your own boarding pass to yourself. It's never sent
+  to the server, and you can share it later if you change your mind.
+- Photos are made smaller when you add them (to about 1 MB), which also leaves out where they were
+  taken. The originals stay in your phone's gallery.
+- Backup files keep their names and captions, but not the files themselves.
+
+If you run a sync server, update it to share photos and documents: an older server keeps
+everything else working, and the files wait on your phone.
+
 ## 0.3.0 — 2026-10-09
 
 An optional sync server: changes reach the group by themselves.

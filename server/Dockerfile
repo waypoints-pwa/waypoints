@@ -18,7 +18,7 @@ COPY src/domain ./src/domain
 COPY server/src ./server/src
 
 # /data: the trip database and the server code (small, written on every change).
-# /files: daily copies of the database (documents and photos later), which can be on another disk.
+# /files: photos and documents, and daily copies of the database, which can be on another disk.
 # Runs as root so bind-mounted folders created by Docker (e.g. from a NAS GUI) are always writable.
 VOLUME ["/data", "/files"]
 EXPOSE 8788

@@ -1,12 +1,16 @@
-import { buildBackup, parseBackup, planMerge, type Backup, type MergeCounts, type MergePlan } from '../domain/sync'
+import { buildBackup, forSending, parseBackup, planMerge, type Backup, type MergeCounts, type MergePlan } from '../domain/sync'
+import { dropDeletedFiles } from './attachments'
 import { db, recordTable } from './db'
 import { readTables, takeSnapshot } from './snapshots'
 import { RECORD_TABLES, type RecordTable, type Tables, type Trip } from './types'
 
 export { readTables, takeSnapshot }
 
-/** All trips, or one trip to send as a file. */
-export const exportBackup = async (tripId?: string): Promise<Backup> => buildBackup(await readTables(tripId))
+/** All trips, as a backup of this phone: photos and documents have their records, without the files. */
+export const exportBackup = async (): Promise<Backup> => buildBackup(await readTables())
+
+/** One trip, to send to someone as a file: what a link would carry. */
+export const exportTripFile = async (tripId: string): Promise<Backup> => buildBackup(forSending(await readTables(tripId)))
 
 type LocalCopies = Parameters<typeof planMerge>[0]
 
@@ -40,19 +44,22 @@ export const previewServerMerge = async (incoming: Tables): Promise<MergePlan> =
  * already here gets overwritten or deleted, a safety snapshot is kept first.
  *
  * What a merge brings in goes into the outbox (not the unsent list: it came from the group), so a
- * change from someone who only uses links reaches the sync server through this phone.
+ * change from someone who only uses links reaches the sync server through this phone. Private photos
+ * and documents (from a backup) stay out of it, and deleted ones lose their files here too.
  */
 export async function applyMerge(incoming: Tables, reason: string): Promise<MergeCounts> {
   const preview = await previewMerge(incoming)
   if (preview.counts.updated || preview.counts.removed) await takeSnapshot(reason)
-  return db.transaction('rw', [...RECORD_TABLES.map(recordTable), db.outbox, db.serverTrips], async () => {
+  return db.transaction('rw', [...RECORD_TABLES.map(recordTable), db.files, db.outbox, db.serverTrips], async () => {
     const plan = await previewMerge(incoming)
     for (const table of RECORD_TABLES) {
       const changes = plan.changes[table]
       if (!changes.length) continue
       await recordTable(table).bulkPut(changes as never[])
-      await db.outbox.bulkPut(changes.map((r) => ({ table, id: r.id, tripId: 'tripId' in r ? r.tripId : r.id })))
+      const shared = changes.filter((r) => !('private' in r && r.private))
+      await db.outbox.bulkPut(shared.map((r) => ({ table, id: r.id, tripId: 'tripId' in r ? r.tripId : r.id })))
     }
+    await dropDeletedFiles(plan.changes.attachments)
     return plan.counts
   })
 }

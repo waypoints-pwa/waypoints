@@ -11,6 +11,7 @@ import { CalendarLinks, MapLinks, PhoneLink, WebLink } from '../components/ItemL
 import { fmtDayTime, plural } from '../format'
 import { labelOf, STAY_KINDS } from '../labels'
 import { tripPath, useTrip, type TripData } from '../tripData'
+import { AttachmentsCard } from '../components/Attachments'
 import { ItemFooter, ItemForm, ItemGone } from './common'
 import { opt, useSave } from './save'
 
@@ -158,6 +159,7 @@ export function StayPage() {
           <p className="prewrap">{stay.notes}</p>
         </section>
       )}
+      <AttachmentsCard table="stays" id={stay.id} />
       <section className="card">
         <h3>Calendar</h3>
         <CalendarLinks event={stayEvent(stay)} calendarName={t.trip.name} />

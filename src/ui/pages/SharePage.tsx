@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { clearUnsent } from '../../db/actions'
-import { exportBackup, readTables } from '../../db/backupIO'
+import { exportTripFile, readTables } from '../../db/backupIO'
 import { downloadJSON, fileSlug } from '../../lib/download'
 import { shareUrl } from '../../lib/shareSheet'
 import { LONG_LINK_CHARS, tripLink } from '../../lib/tripLink'
@@ -42,7 +42,7 @@ export function SharePage() {
     }
   }
 
-  const onSaveFile = async () => downloadJSON(await exportBackup(trip.id), `${fileSlug(trip.name)}.waypoints.json`)
+  const onSaveFile = async () => downloadJSON(await exportTripFile(trip.id), `${fileSlug(trip.name)}.waypoints.json`)
 
   const counts = [
     plural(t.stays.length, 'stay'),

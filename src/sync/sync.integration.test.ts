@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto'
 import Dexie from 'dexie'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { mkdtemp, readdir, rm } from 'node:fs/promises'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -10,6 +11,7 @@ import { loadConfig, type Config } from '../../server/src/config.ts'
 import { Store } from '../../server/src/store.ts'
 import { emptyTables } from '../db/types.ts'
 import type { Credentials, SyncResponse, TripChanges } from '../domain/serverProtocol.ts'
+import { attachment, FILE, FILE_SHA256 } from '../test/fixtures.ts'
 
 /*
  * End to end: the app's real sync client (on fake IndexedDB) against the real server. This phone is
@@ -59,12 +61,21 @@ describe('sync client ↔ server', async () => {
   const { getServerConfig, setServerConfig } = await import('../db/serverState')
   const { runSync, SyncError } = await import('./client')
   const { createInvite, forgetServer, joinWithServerCode, leaveTrip, parseInvite } = await import('./account')
+  const { addAttachments, deleteAttachment } = await import('../db/attachments')
+  const { fetchFull, runFileSync } = await import('./files')
 
   let ana: Credentials
   let anaCursor = 0
   /** Ana's phone: sends changes to a trip, and gets back what changed. */
   const anaSync = async (trips: TripChanges[] = []) => post<SyncResponse>('/api/sync', { trips }, ana.token)
   const serverTrip = (id: string) => store.data.trips[id]
+  const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2])
+  const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
+  const anaGet = (id: string) => fetch(`${url}/api/files?trip=${onServer}&id=${id}`, { headers: { Authorization: `Bearer ${ana.token}` } })
+  const anaPost = async (id: string, bytes: Uint8Array, thumb = false) => {
+    const res = await fetch(`${url}/api/files?trip=${onServer}&id=${id}${thumb ? '&thumb=1' : ''}`, { method: 'POST', headers: { Authorization: `Bearer ${ana.token}` }, body: bytes as BodyInit })
+    if (!res.ok) throw new Error(`upload: ${res.status} ${await res.text()}`)
+  }
   const me = async () => (await getServerConfig())!.member
 
   let phoneOnly: string
@@ -120,6 +131,55 @@ describe('sync client ↔ server', async () => {
     expect((await db.stays.get(stay.id))!.name).toBe('Casa Verde')
     expect(await db.outbox.where('tripId').equals(onServer).count()).toBe(0)
     expect(await db.unsent.count()).toBe(0)
+  })
+
+  it('sends photos and documents with their files, apart from those kept on the phone', async () => {
+    const photo = { kind: 'photo' as const, name: 'Fado.jpg', type: 'image/jpeg', blob: new Blob([FILE], { type: 'image/jpeg' }), thumb: new Blob([JPEG]), sha256: FILE_SHA256 }
+    const [shared] = await addAttachments(onServer, [photo])
+    const [mine] = await addAttachments(onServer, [photo], { private: true })
+    await runSync()
+    await runFileSync()
+
+    expect(Object.keys(serverTrip(onServer).records.attachments ?? {})).toEqual([shared])
+    expect(await readdir(join(dir, 'trips', onServer))).toEqual([shared, `${shared}.thumb`])
+    expect((await db.serverTrips.get(onServer))!.files).toEqual([{ id: shared, thumb: true }])
+    const forAna = await anaGet(shared)
+    expect(new Uint8Array(await forAna.arrayBuffer())).toEqual(FILE)
+    expect((await anaGet(mine)).status).toBe(404)
+  })
+
+  it("fetches the others' documents in full and their photos as previews, and lets deleted ones go", async () => {
+    const pdf = new TextEncoder().encode('%PDF-1.7 tickets')
+    const now = new Date(Date.now() - 60_000).toISOString()
+    const doc = attachment({ id: 'ana-doc-0001', tripId: onServer, kind: 'document', name: 'Tickets.pdf', type: 'application/pdf', size: pdf.length, sha256: sha256(pdf), createdAt: now, updatedAt: now })
+    const photo = attachment({ id: 'ana-photo-01', tripId: onServer, createdAt: now, updatedAt: now })
+    const res = await anaSync([{ id: onServer, cursor: anaCursor, records: { attachments: [doc, photo] } }])
+    anaCursor = res.trips.find((t) => t.id === onServer)!.cursor
+    await anaPost(doc.id, pdf)
+    await anaPost(photo.id, FILE)
+    await anaPost(photo.id, JPEG, true)
+
+    await runSync()
+    await runFileSync()
+    const docFile = (await db.files.get(doc.id))!
+    expect(new Uint8Array(await docFile.blob!.arrayBuffer())).toEqual(pdf)
+    expect(docFile.blob!.type).toBe('application/pdf')
+    const photoFile = (await db.files.get(photo.id))!
+    expect(photoFile.blob).toBeUndefined()
+    expect(new Uint8Array(await photoFile.thumb!.arrayBuffer())).toEqual(JPEG)
+
+    // Opened: in full, and kept.
+    expect(new Uint8Array(await (await fetchFull(photo.id)).arrayBuffer())).toEqual(FILE)
+    expect((await db.files.get(photo.id))!.blob).toBeDefined()
+
+    // Ana deletes the document; this phone deletes a photo.
+    const gone = later(2)
+    anaCursor = (await anaSync([{ id: onServer, cursor: anaCursor, records: { attachments: [{ ...doc, deletedAt: gone, updatedAt: gone }] } }])).trips[0].cursor
+    await deleteAttachment(photo.id)
+    await runSync()
+    expect(await db.files.get(doc.id)).toBeUndefined()
+    const left = await readdir(join(dir, 'trips', onServer))
+    expect(left.filter((f) => f.startsWith('ana-'))).toEqual([])
   })
 
   it("passes on a link from Dee, who isn't on the server", async () => {

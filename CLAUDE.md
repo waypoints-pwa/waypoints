@@ -30,9 +30,19 @@ non-destructive for existing data:
 - **Mixed versions in a group**: records keep fields and kinds/categories they don't know
   (`src/domain/records.ts`), and unknown kinds show as "other". Don't strip unknown fields.
 - **Merges** are record-level: newest `updatedAt` wins, tombstones (`deletedAt`) are records too. Never
-  hard-delete a shared record. All writes go through `src/db/actions.ts`, which marks them unsent (for
-  links) and in the outbox (for the server), and skips saves that change nothing (an unchanged save would
-  override someone else's newer edit). Merges from links go into the outbox too.
+  hard-delete a shared record. All writes go through `src/db/actions.ts` (photos and documents:
+  `attachments.ts`), which marks them unsent (for links) and in the outbox (for the server), and skips
+  saves that change nothing (an unchanged save would override someone else's newer edit). Merges from
+  links go into the outbox too.
+- **Photos and documents** (`src/db/attachments.ts`): their records sync like the others, but only
+  through the server: links and trip files leave them out (`LINK_TABLES`, `forSending`). Their files
+  are kept apart (`db.files`; `FILES_DIR/trips/` on the server) and are in no backup or snapshot, so a
+  file is deleted only with its attachment's tombstone or with its whole trip, and removing a trip
+  warns about files that exist only on this phone. Private ones never leave the phone (the client
+  leaves them out, the server refuses them). A file never changes once added: the server only takes
+  bytes matching the record's `size` and `sha256`, and phones check what they download.
+- **A new table the server syncs**: its Dexie version resets `serverTrips` cursors to 0 (see v3 in
+  `src/db/db.ts`), because older app versions skipped those records while moving past them.
 - Take a snapshot (`takeSnapshot`) before any operation that removes or overwrites local data.
 - Ship through a PR (CI runs lint, types, tests, build); merging to `main` deploys to users immediately.
 
@@ -44,8 +54,9 @@ entry is missing). The entry is the app's "What's new" card. Internal changes sk
 ## Content-Security-Policy
 The built app ships a CSP `<meta>` (in `vite.config.ts`, build only) with `connect-src 'self' https:` (plus
 localhost): the only requests are to the sync server whose address people type in, and without one the
-app makes none. Maps, calendars and booking sites are plain links. Anything else that fetches from another
-host (an exchange-rate API, map tiles) needs adding there, and must stay an optional add-on.
+app makes none. Maps, calendars and booking sites are plain links. Photos and documents show from the
+phone's own storage (`img-src blob:`), never from the server directly. Anything else that fetches from
+another host (an exchange-rate API, map tiles) needs adding there, and must stay an optional add-on.
 
 ## Principles
 - **No accounts, no API keys.** Core features work without any, and without the sync server, which is an
@@ -65,10 +76,11 @@ host (an exchange-rate API, map tiles) needs adding there, and must stay an opti
 - `src/domain/` — pure, unit-tested logic. Relative imports use explicit `.ts` extensions. No runtime deps.
 - `src/db/` — Dexie schema, write actions, backup/merge IO, snapshots, local settings.
 - `src/lib/` — browser helpers: trip link codec, share sheet, update prompt, downloads.
-- `src/sync/` — sync server client (`client.ts`: the sync itself; `account.ts`: joining, invites, leaving).
+- `src/sync/` — sync server client (`client.ts`: the sync itself; `files.ts`: moving photos and documents
+  after it; `account.ts`: joining, invites, leaving).
 - `server/` — the sync server: Node HTTP, JSON-file store, no dependencies; runs `src/domain` directly
   (Node type stripping). Image: `ghcr.io/waypoints-pwa/waypoints-server`. `DATA_DIR` holds the database,
-  `FILES_DIR` (another disk is fine) its daily copies, later documents and photos.
+  `FILES_DIR` (another disk is fine) photos and documents (`trips/`) and the database's daily copies.
 - `src/ui/` — React. `tripData.ts` loads a trip once for all its pages (`useTrip()`), `TripLayout.tsx`
   has its top bar and tabs, `items/` has one file per kind (form + detail page), `pages/` the rest;
   plain CSS tokens in `src/index.css` (light + dark).

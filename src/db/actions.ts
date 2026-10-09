@@ -1,12 +1,13 @@
 import { canonicalJSON } from '../domain/sync'
 import { db, isLive, newId, nowISO, recordTable, setSetting, SETTINGS } from './db'
 import { takeSnapshot } from './snapshots'
-import { RECORD_TABLES, TRIP_TABLES, type RecordTable, type SyncMeta, type TableRecords, type Traveller, type Trip, type TripTable } from './types'
+import { RECORD_TABLES, TRIP_TABLES, type LinkTable, type RecordTable, type SyncMeta, type TableRecords, type Traveller, type Trip } from './types'
 
 /*
- * All writes to trip records go through here (or backupIO), so they're also noted as unsent (changes
- * the rest of the group hasn't had in a link yet) and in the outbox (changes the sync server hasn't
- * had yet). Callers must include db.unsent and db.outbox in any surrounding transaction.
+ * All writes to trip records go through here (or backupIO, or attachments.ts for photos and
+ * documents), so they're also noted as unsent (changes the rest of the group hasn't had in a link yet)
+ * and in the outbox (changes the sync server hasn't had yet). Callers must include db.unsent and
+ * db.outbox in any surrounding transaction.
  *
  * In a merge, the newer copy of a record wins as a whole, so writes touch only records that really
  * changed: saving an unchanged form must not override someone else's newer edit.
@@ -15,12 +16,12 @@ import { RECORD_TABLES, TRIP_TABLES, type RecordTable, type SyncMeta, type Table
 export type Input<T> = Omit<T, keyof SyncMeta | 'tripId'>
 
 /** Drops empty fields, so a cleared form field doesn't linger as "" or undefined. */
-function compact<T extends object>(record: T): T {
+export function compact<T extends object>(record: T): T {
   return Object.fromEntries(Object.entries(record).filter(([, v]) => v !== undefined && v !== '')) as T
 }
 
 /** Same content, ignoring when it was last saved. */
-const sameContent = (a: SyncMeta, b: SyncMeta) => canonicalJSON({ ...a, updatedAt: '' }) === canonicalJSON({ ...b, updatedAt: '' })
+export const sameContent = (a: SyncMeta, b: SyncMeta) => canonicalJSON({ ...a, updatedAt: '' }) === canonicalJSON({ ...b, updatedAt: '' })
 
 /** Travellers are listed by when they were added: a millisecond apart keeps the order they were typed in. */
 const inOrder = (iso: string, index: number) => new Date(Date.parse(iso) + index).toISOString()
@@ -33,7 +34,7 @@ export async function markChanged(table: RecordTable, ids: string[], tripId: str
 }
 
 /** Creates a record, or replaces the editable fields of an existing one. Returns its id. */
-export async function saveRecord<T extends TripTable>(table: T, tripId: string, input: Input<TableRecords[T]>, id?: string): Promise<string> {
+export async function saveRecord<T extends LinkTable>(table: T, tripId: string, input: Input<TableRecords[T]>, id?: string): Promise<string> {
   const store = recordTable(table)
   return db.transaction('rw', store, db.unsent, db.outbox, async () => {
     const existing = id ? await store.get(id) : undefined
@@ -47,7 +48,7 @@ export async function saveRecord<T extends TripTable>(table: T, tripId: string, 
 }
 
 /** Changes a few fields of a record, e.g. ticking a place as visited. */
-export async function patchRecord<T extends TripTable>(table: T, id: string, changes: Partial<Input<TableRecords[T]>>) {
+export async function patchRecord<T extends LinkTable>(table: T, id: string, changes: Partial<Input<TableRecords[T]>>) {
   const store = recordTable(table)
   await db.transaction('rw', store, db.unsent, db.outbox, async () => {
     const existing = await store.get(id)
@@ -60,7 +61,7 @@ export async function patchRecord<T extends TripTable>(table: T, id: string, cha
 }
 
 /** Deletes a record for the whole group: a tombstone that travels in the next link. */
-export async function deleteRecord(table: TripTable, id: string) {
+export async function deleteRecord(table: LinkTable, id: string) {
   const store = recordTable(table)
   await db.transaction('rw', store, db.unsent, db.outbox, async () => {
     const existing = await store.get(id)
@@ -169,13 +170,15 @@ export const clearUnsent = (tripId: string) => db.unsent.where('tripId').equals(
 
 /**
  * Deletes a trip from this phone only, keeping a safety snapshot. Nothing is sent to anyone: the
- * group's copies stay as they are, and a link from them brings the trip back.
+ * group's copies stay as they are, and a link from them brings the trip back. The files of its photos
+ * and documents go too: safety copies can't hold them.
  */
 export async function removeTripFromPhone(trip: Trip) {
   await takeSnapshot(`Before removing “${trip.name}”`)
-  await db.transaction('rw', [...RECORD_TABLES.map(recordTable), db.unsent, db.outbox, db.serverTrips, db.settings], async () => {
+  await db.transaction('rw', [...RECORD_TABLES.map(recordTable), db.files, db.unsent, db.outbox, db.serverTrips, db.settings], async () => {
     await db.trips.delete(trip.id)
     for (const table of TRIP_TABLES) await recordTable(table).where('tripId').equals(trip.id).delete()
+    await db.files.where('tripId').equals(trip.id).delete()
     await db.unsent.where('tripId').equals(trip.id).delete()
     await db.outbox.where('tripId').equals(trip.id).delete()
     await db.serverTrips.delete(trip.id)

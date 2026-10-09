@@ -58,6 +58,13 @@ export const fmtTimestamp = (iso: string) =>
 
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
+/** "820 KB", "2.4 MB". */
+export function fmtBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
+  const mb = bytes / 1024 / 1024
+  return `${mb < 10 ? Math.round(mb * 10) / 10 : Math.round(mb)} MB`
+}
+
 /** "2 new, 1 changed" for a merge. */
 export const mergeSummary = ({ added, updated, removed }: { added: number; updated: number; removed: number }) =>
   [added && `${added} new`, updated && `${updated} changed`, removed && `${removed} deleted`].filter(Boolean).join(', ') || 'small updates'

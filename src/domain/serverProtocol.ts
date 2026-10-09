@@ -95,6 +95,14 @@ export interface RemoveMemberRequest {
   memberId: string
 }
 
+/** A file the server has for one of a trip's photos or documents (attachments). */
+export interface FileInfo {
+  /** The attachment's id. */
+  id: string
+  /** Whether it has the small preview too. */
+  thumb?: boolean
+}
+
 /** One trip's side of a sync. */
 export interface TripChanges {
   /** The trip's id, the same on every phone and on the server. */
@@ -103,7 +111,27 @@ export interface TripChanges {
   cursor: number
   /** Records by table, all of this trip (`tripId`, or the trip's own id for `trips`). */
   records: Partial<Tables>
+  /**
+   * Responses only, from servers that keep files: the trip's attachments whose file the server has.
+   * Phones send what's missing from it and fetch what they lack, so failed transfers, a phone added
+   * later or a server restored from an older copy all sort themselves out.
+   */
+  files?: FileInfo[]
 }
+
+/*
+ * Files of photos and documents (servers from 0.2.0, which send `fileLimit`). An attachment's record
+ * goes first, in a sync. Then:
+ *
+ *   POST /api/files?trip=<tripId>&id=<attachmentId>          the file, as the request body
+ *   POST /api/files?trip=<tripId>&id=<attachmentId>&thumb=1  its preview: a JPEG, up to THUMB_MAX_BYTES
+ *   GET  /api/files?trip=<tripId>&id=<attachmentId>[&thumb=1]  downloads either
+ *
+ * Only members on the trip can do either. The server takes a file only for a live, shared attachment
+ * it has, and only if it matches the record's `size` and `sha256`; files never change after that.
+ * It deletes them when the attachment is deleted.
+ */
+export const THUMB_MAX_BYTES = 512 * 1024
 
 /**
  * POST /api/sync. The phone sends every trip it keeps on the server, with what changed on the phone
@@ -140,6 +168,8 @@ export interface SyncResponse {
   rejected: RejectedRecord[]
   /** Everyone on the server, so trips can be shared with them while offline. */
   members: MemberSummary[]
+  /** The largest file the server takes, in bytes. Absent: an older server, which keeps no files. */
+  fileLimit?: number
 }
 
 /** Codes are shown to people: uppercase, no ambiguous characters, dashes ignored when typed. */

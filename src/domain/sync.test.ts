@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { RECORD_TABLES, type RecordTable, type Tables } from '../db/types'
-import { ANA, BO, exchange, expense, place, stay, T0, T1, T2, tables, traveller, trip } from '../test/fixtures'
+import { ANA, attachment, BO, exchange, expense, place, stay, T0, T1, T2, tables, traveller, trip } from '../test/fixtures'
 import { DataError } from './records'
-import { buildBackup, decodeLink, encodeLink, parseBackup, planMerge } from './sync'
+import { buildBackup, decodeLink, encodeLink, forSending, parseBackup, planMerge } from './sync'
 
 const NOW = Date.parse('2026-10-08T12:00:00.000Z')
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as unknown
@@ -54,6 +54,23 @@ describe('backup files', () => {
   it('accept files with tables missing', () => {
     expect(parseBackup(JSON.stringify({ app: 'waypoints', schemaVersion: 1, trips: [trip()] }), NOW).stays).toEqual([])
   })
+
+  it("keep photos and documents' records, checked like any other", () => {
+    const withFiles = tables({ ...lisbon, attachments: [attachment(), attachment({ id: 'file0002', kind: 'document', type: 'application/pdf', private: true })] })
+    expect(parseBackup(JSON.stringify(buildBackup(withFiles)), NOW).attachments).toEqual(withFiles.attachments)
+    const broken = (patch: object) => JSON.stringify({ ...buildBackup(lisbon), attachments: [{ ...attachment(), ...patch }] })
+    expect(() => parseBackup(broken({ sha256: 'abc' }), NOW)).toThrow('invalid attachment')
+    expect(() => parseBackup(broken({ size: 0 }), NOW)).toThrow('invalid attachment')
+    expect(() => parseBackup(broken({ size: 1.5 }), NOW)).toThrow('invalid attachment')
+    expect(() => parseBackup(broken({ type: 'not a type' }), NOW)).toThrow('invalid attachment')
+    expect(() => parseBackup(broken({ takenAt: '2027-03-11 21:04' }), NOW)).toThrow('invalid attachment')
+    expect(() => parseBackup(broken({ takenAt: '2027-02-30T21:04' }), NOW)).toThrow('invalid attachment')
+  })
+
+  it('leave photos and documents out of a trip sent as a file', () => {
+    const withFiles = tables({ ...lisbon, attachments: [attachment()] })
+    expect(forSending(withFiles)).toEqual(lisbon)
+  })
 })
 
 describe('trip links', () => {
@@ -69,6 +86,15 @@ describe('trip links', () => {
     expect(link.sentBy).toBe('Ana')
     expect(link.sentAt).toBe('2026-10-08T12:00:00.000Z')
     expect(link.tables).toEqual(lisbon)
+  })
+
+  it("never carry photos and documents, which links can't hold the files of", () => {
+    const withFiles = tables({ ...lisbon, attachments: [attachment()] })
+    const payload = encodeLink(withFiles, undefined, new Date(NOW))
+    expect(payload).not.toHaveProperty('attachments')
+    // A crafted link with some is read as if it had none.
+    const crafted = { ...json(payload) as object, attachments: [attachment()] }
+    expect(decodeLink(crafted, NOW).tables).toEqual(lisbon)
   })
 
   it('refuse links from a newer version, and broken ones', () => {

@@ -23,6 +23,7 @@ import { fmtDay, fmtMoney, fmtPlain, plural } from '../format'
 import { useToday } from '../hooks'
 import { EXPENSE_CATEGORIES, labelOf } from '../labels'
 import { nameOf, tripPath, useTrip, type TripData } from '../tripData'
+import { AttachmentsCard } from '../components/Attachments'
 import { ItemFooter, ItemForm, ItemGone } from './common'
 import { opt, useSave } from './save'
 
@@ -694,6 +695,7 @@ export function ExpensePage() {
           <p className="prewrap">{e.notes}</p>
         </section>
       )}
+      <AttachmentsCard table="expenses" id={e.id} />
       <ItemFooter table="expenses" id={e.id} what={e.transfer ? 'payment' : 'expense'} backTo={back} />
     </article>
   )

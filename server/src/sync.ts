@@ -50,8 +50,17 @@ export const memberList = (members: Record<string, Member>): MemberSummary[] =>
     .map(memberSummary)
     .sort((a, b) => a.name.localeCompare(b.name))
 
+/**
+ * Photos and documents: a private one never belongs here, and an attachment's file can't change (the
+ * file the server has was checked against the first `size` and `sha256`).
+ */
+function checkAttachment(rec: StoredRecord, stored: StoredRecord | undefined) {
+  if (rec.private) throw new DataError('It is kept only on the phone it was added on.')
+  if (stored && (rec.sha256 !== stored.sha256 || rec.size !== stored.size)) throw new DataError("A photo or document's file can't be changed.")
+}
+
 /** The trip's records that pass the same checks as links and files; the others are reported. */
-function validRecords(t: TripChanges, now: number, rejected: RejectedRecord[]): [RecordTable, StoredRecord[]][] {
+function validRecords(t: TripChanges, trip: StoredTrip | undefined, now: number, rejected: RejectedRecord[]): [RecordTable, StoredRecord[]][] {
   const out: [RecordTable, StoredRecord[]][] = []
   for (const [table, list] of Object.entries(t.records) as [string, unknown[]][]) {
     if (!(RECORD_TABLES as readonly string[]).includes(table)) {
@@ -64,6 +73,7 @@ function validRecords(t: TripChanges, now: number, rejected: RejectedRecord[]): 
         checkRecord(table as RecordTable, r, now)
         const rec = r as unknown as StoredRecord
         if ((table === 'trips' ? rec.id : rec.tripId) !== t.id) throw new DataError('It belongs to another trip.')
+        if (table === 'attachments') checkAttachment(rec, trip?.records.attachments?.[rec.id]?.rec)
         valid.push(rec)
       } catch (err) {
         rejected.push({ tripId: t.id, table, id: idOf(r), reason: err instanceof DataError ? err.message : 'Invalid record.' })
@@ -88,12 +98,15 @@ function mergeRecord(table: RecordTable, sent: StoredRecord, stored: StoredRecor
 function merge(trip: StoredTrip, incoming: [RecordTable, StoredRecord[]][]) {
   const accepted = new Set<string>()
   const losers = new Map<string, [RecordTable, StoredRecord]>()
+  /** Attachments deleted now: their files go. */
+  const deleted: string[] = []
   for (const [table, records] of incoming) {
     const stored = (trip.records[table] ??= {})
     for (const rec of records) {
       const current = stored[rec.id]
       const kept = current ? mergeRecord(table, rec, current.rec) : rec
       if (!current || canonicalJSON(kept) !== canonicalJSON(current.rec)) stored[rec.id] = { rec: kept, seq: ++trip.seq }
+      if (table === 'attachments' && kept.deletedAt) deleted.push(rec.id)
       if (canonicalJSON(kept) === canonicalJSON(rec)) {
         accepted.add(key(table, rec.id))
         losers.delete(key(table, rec.id))
@@ -102,7 +115,7 @@ function merge(trip: StoredTrip, incoming: [RecordTable, StoredRecord[]][]) {
       }
     }
   }
-  return { accepted, losers }
+  return { accepted, losers, deleted }
 }
 
 /** What changed after `cursor`, leaving out the versions the phone just sent (it has them already). */
@@ -124,12 +137,20 @@ export function newTrip(id: string, createdBy: string, now = new Date()): Stored
   return { id, createdAt: now.toISOString(), createdBy, seq: 0, records: {} }
 }
 
+/** A photo or document whose file the server no longer needs. */
+export interface RemovedFile {
+  tripId: string
+  id: string
+}
+
 /**
  * One phone's sync. Only trips the member is on are read or written; a new trip is created if its
- * travellers include the member. Mutates `data`; `changed` says whether to save.
+ * travellers include the member. Mutates `data`; `changed` says whether to save, and `removedFiles`
+ * which files to delete (of attachments deleted in this sync).
  */
-export function applySync(data: StoreData, member: Member, req: SyncRequest, now = new Date()): { response: SyncResponse; changed: boolean } {
+export function applySync(data: StoreData, member: Member, req: SyncRequest, now = new Date()): { response: SyncResponse; changed: boolean; removedFiles: RemovedFile[] } {
   const response: SyncResponse = { trips: [], gone: [], resend: [], rejected: [], members: memberList(data.members) }
+  const removedFiles: RemovedFile[] = []
   let changed = false
   const isOn = (trip: StoredTrip) => tripMembers(trip, data.members).has(member.id)
 
@@ -147,7 +168,8 @@ export function applySync(data: StoreData, member: Member, req: SyncRequest, now
 
     const trip = existing ?? newTrip(sent.id, member.id, now)
     const before = trip.seq
-    const { accepted, losers } = merge(trip, validRecords(sent, now.getTime(), response.rejected))
+    const { accepted, losers, deleted } = merge(trip, validRecords(sent, existing, now.getTime(), response.rejected))
+    removedFiles.push(...deleted.map((id) => ({ tripId: trip.id, id })))
     if (!isOn(trip)) {
       // A new trip that doesn't include the sender is dropped; an existing one they just left is kept.
       if (existing && trip.seq !== before) changed = true
@@ -171,5 +193,5 @@ export function applySync(data: StoreData, member: Member, req: SyncRequest, now
   for (const trip of Object.values(data.trips)) {
     if (!sentIds.has(trip.id) && isOn(trip)) response.trips.push({ id: trip.id, cursor: trip.seq, records: changesSince(trip, 0) })
   }
-  return { response, changed }
+  return { response, changed, removedFiles }
 }

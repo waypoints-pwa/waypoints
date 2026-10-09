@@ -8,7 +8,7 @@ import { downloadJSON } from '../../lib/download'
 import { LINKS } from '../../lib/links'
 import { requestPersistentStorage } from '../../lib/storage'
 import { Notice } from '../components/bits'
-import { mergeSummary, plural } from '../format'
+import { fmtBytes, mergeSummary, plural } from '../format'
 import { useServer, useSetting } from '../hooks'
 
 const stamp = () => new Date().toLocaleDateString('en-CA')
@@ -20,8 +20,11 @@ export function SettingsPage() {
   const snapshots = useLiveQuery(() => db.snapshots.orderBy('createdAt').reverse().toArray(), [])
   const server = useServer()
 
+  const [used, setUsed] = useState<number>()
+
   useEffect(() => {
     navigator.storage?.persisted?.().then(setPersisted).catch(() => setPersisted(false))
+    navigator.storage?.estimate?.().then((e) => setUsed(e.usage)).catch(() => undefined)
   }, [])
 
   const onExport = async () => {
@@ -81,6 +84,10 @@ export function SettingsPage() {
           Your trips are stored on this phone. Export a backup file to keep them safe or to move them to another phone, then
           import it there. Importing merges: each item keeps its newest version, so importing a file twice changes nothing.
         </p>
+        <p className="muted small">
+          Photos and documents would make backup files huge, so they aren't in them (only their names and captions). Those on a sync
+          server come back from it.
+        </p>
         <div className="stack">
           <button className="btn btn-primary" onClick={() => void onExport()}>
             ⬇️ Export all trips
@@ -124,6 +131,7 @@ export function SettingsPage() {
 
       <section className="card">
         <h3>Storage</h3>
+        {used !== undefined && <p className="small">waypoints uses {fmtBytes(used)} on this phone, photos and documents included.</p>}
         {persisted ? (
           <p className="muted small">✅ Storage is persistent: the browser won't clear your trips to free up space.</p>
         ) : (
