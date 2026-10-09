@@ -1,4 +1,4 @@
-import { previewMerge } from '../db/backupIO'
+import { previewServerMerge } from '../db/backupIO'
 import { db, getSetting, nowISO, recordTable, setSetting, SETTINGS } from '../db/db'
 import { getServerConfig, setServerConfig, type ServerConfig } from '../db/serverState'
 import { readTables } from '../db/snapshots'
@@ -99,7 +99,7 @@ async function applyPulled(trip: TripChanges) {
       if (belongs) (tables[table] as unknown[]).push(record)
     }
   }
-  const plan = await previewMerge(tables)
+  const plan = await previewServerMerge(tables)
   for (const table of RECORD_TABLES) {
     if (plan.changes[table].length) await recordTable(table).bulkPut(plan.changes[table] as never[])
   }

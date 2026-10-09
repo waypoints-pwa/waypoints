@@ -114,3 +114,37 @@ describe('planMerge', () => {
     expect(plan.changes.stays).toEqual([])
   })
 })
+
+describe("planMerge and travellers' server links", () => {
+  const linkedAna = traveller(ANA, 'Ana', { updatedAt: T1, memberId: 'member-ana', linkedAt: T1 })
+
+  it('keeps a link when someone renames the traveller from an older copy', () => {
+    const renamedFromOldCopy = traveller(ANA, 'Ana M.', { updatedAt: T2 })
+    const plan = planMerge(local(tables({ travellers: [linkedAna] })), tables({ travellers: [renamedFromOldCopy] }))
+    expect(plan.changes.travellers).toEqual([{ ...renamedFromOldCopy, memberId: 'member-ana', linkedAt: T1 }])
+  })
+
+  it('takes a newer link or unlink, even onto a copy edited more recently here', () => {
+    const renamedHere = { ...linkedAna, name: 'Ana M.', updatedAt: T2 }
+    const unlinkedThere = traveller(ANA, 'Ana', { updatedAt: '2026-10-02T12:00:00.000Z', linkedAt: '2026-10-02T12:00:00.000Z' })
+    const plan = planMerge(local(tables({ travellers: [{ ...renamedHere, linkedAt: T0 }] })), tables({ travellers: [unlinkedThere] }))
+    expect(plan.changes.travellers).toEqual([{ ...renamedHere, memberId: undefined, linkedAt: '2026-10-02T12:00:00.000Z' }])
+    expect('memberId' in plan.changes.travellers[0]).toBe(false)
+    expect(plan.counts).toEqual({ added: 0, updated: 1, removed: 0 })
+    // And the same again changes nothing.
+    expect(planMerge(local(tables({ travellers: plan.changes.travellers })), tables({ travellers: [unlinkedThere] })).changes.travellers).toEqual([])
+  })
+
+  it("doesn't let links or files change who's on a trip kept on the server", () => {
+    const onServer = new Set(['trip0001'])
+    const pointedElsewhere = traveller(ANA, 'Ana', { updatedAt: T2, memberId: 'member-eve', linkedAt: T2 })
+    const newWithLink = traveller(BO, 'Bo', { memberId: 'member-eve', linkedAt: T2 })
+    const plan = planMerge(local(tables({ travellers: [linkedAna] })), tables({ travellers: [pointedElsewhere, newWithLink] }), onServer)
+    expect(plan.changes.travellers.map((t) => [t.id, t.memberId])).toEqual([
+      [ANA, 'member-ana'],
+      [BO, undefined],
+    ])
+    // A trip that isn't on the server here takes them as they come.
+    expect(planMerge(local(tables({ travellers: [linkedAna] })), tables({ travellers: [pointedElsewhere] })).changes.travellers).toEqual([pointedElsewhere])
+  })
+})

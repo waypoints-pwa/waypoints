@@ -9,7 +9,8 @@ import type { Tables } from '../db/types.ts'
  * Model: the server has members (people), each with their own devices (one token per phone).
  * Members who joined with the server code are admins: only they invite new people. A trip on the
  * server can be seen and changed only by the members linked to its travellers (`Traveller.memberId`),
- * which the server checks on every request.
+ * which the server checks on every request. That link merges on its own clock (`linkedAt`), apart
+ * from the rest of the traveller, on both sides (see withNewerLink in ./sync.ts).
  */
 
 export const PROTOCOL_VERSION = 1

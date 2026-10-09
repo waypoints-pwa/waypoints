@@ -91,6 +91,26 @@ describe('a trip on the server', () => {
     expect(data.trips[TRIP].records.travellers?.[ANA].rec.memberId).toBeUndefined()
   })
 
+  it("keeps a traveller's link when someone renames them from an older copy, and takes a newer unlink", () => {
+    const data = server()
+    const linked = { ...lisbon(), travellers: [traveller(ANA, 'Ana', { memberId: ANA_M, linkedAt: T0 }), traveller(BO, 'Bo', { memberId: BO_M, linkedAt: T0 })] }
+    sync(data, ANA_M, send(linked))
+
+    // From a copy without the link (a link sent before the trip went on the server).
+    const renamed = traveller(BO, 'Bo M.', { updatedAt: T1 })
+    const { response } = sync(data, ANA_M, send({ travellers: [renamed] }, 3))
+    expect(data.trips[TRIP].records.travellers?.[BO].rec).toMatchObject({ name: 'Bo M.', memberId: BO_M, linkedAt: T0 })
+    // The phone gets the merged copy back, link included.
+    expect(response.trips[0].records.travellers).toEqual([{ ...renamed, memberId: BO_M, linkedAt: T0 }])
+    expect(sync(data, BO_M).response.trips).toHaveLength(1)
+
+    // Taking Bo off from a copy that's older except for the link still takes him off.
+    sync(data, ANA_M, send({ travellers: [traveller(BO, 'Bo', { updatedAt: T0, linkedAt: T2 })] }, 4))
+    expect(data.trips[TRIP].records.travellers?.[BO].rec).toMatchObject({ name: 'Bo M.', linkedAt: T2 })
+    expect(data.trips[TRIP].records.travellers?.[BO].rec.memberId).toBeUndefined()
+    expect(sync(data, BO_M).response.trips).toEqual([])
+  })
+
   it('closes to members removed from the server', () => {
     const data = server()
     sync(data, ANA_M, send(lisbon()))

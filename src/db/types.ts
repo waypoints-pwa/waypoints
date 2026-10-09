@@ -41,6 +41,11 @@ export interface Traveller extends TripRecord {
    * seen only by the members its travellers are linked to. Travellers without one use links.
    */
   memberId?: string
+  /**
+   * When `memberId` was last set or cleared. The link merges on this clock, apart from the rest of the
+   * traveller, so an edit made on an older copy (a rename, say) can't undo a link or an unlink.
+   */
+  linkedAt?: ISODate
 }
 
 /*

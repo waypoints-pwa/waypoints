@@ -22,7 +22,9 @@ non-destructive for existing data:
 - **Sync protocol** (`src/domain/serverProtocol.ts`): backward compatible both ways (old apps with new
   servers and vice versa). **Server store** (`server/src/store.ts`): upgrade old formats in `migrate()`;
   never regenerate the server code. Who may see a server trip follows from its travellers' `memberId`,
-  checked by the server on every request.
+  checked by the server on every request. That link merges on its own clock (`linkedAt`, see
+  `withNewerLink` in `src/domain/sync.ts`) so an edit from an older copy can't undo it, and links and
+  files never change it on trips the phone keeps on the server: only the server does.
 - **Backup format**: add optional fields only; bumping `BACKUP_VERSION` makes older app versions reject
   new files, so it needs a migration in `parseBackup`.
 - **Mixed versions in a group**: records keep fields and kinds/categories they don't know

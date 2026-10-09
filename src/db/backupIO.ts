@@ -20,7 +20,20 @@ async function localCopies(incoming: Tables): Promise<LocalCopies> {
   return local as LocalCopies
 }
 
-export const previewMerge = async (incoming: Tables): Promise<MergePlan> => planMerge(await localCopies(incoming), incoming)
+/** Trips among `incoming` that this phone keeps on the sync server. */
+async function serverTripsIn(incoming: Tables): Promise<Set<string>> {
+  const ids = [...new Set([...incoming.trips.map((t) => t.id), ...incoming.travellers.map((t) => t.tripId)])]
+  return new Set((await db.serverTrips.bulkGet(ids)).filter((s) => s !== undefined).map((s) => s.tripId))
+}
+
+/**
+ * What merging a link or file would change. On trips this phone keeps on the sync server, it never
+ * changes who's linked to whom: that only changes through the server.
+ */
+export const previewMerge = async (incoming: Tables): Promise<MergePlan> => planMerge(await localCopies(incoming), incoming, await serverTripsIn(incoming))
+
+/** What merging records from the sync server changes: everything newer, server links included. */
+export const previewServerMerge = async (incoming: Tables): Promise<MergePlan> => planMerge(await localCopies(incoming), incoming)
 
 /**
  * Merges records from a trip link or file into this phone: new and newer records win. If anything
@@ -32,8 +45,8 @@ export const previewMerge = async (incoming: Tables): Promise<MergePlan> => plan
 export async function applyMerge(incoming: Tables, reason: string): Promise<MergeCounts> {
   const preview = await previewMerge(incoming)
   if (preview.counts.updated || preview.counts.removed) await takeSnapshot(reason)
-  return db.transaction('rw', [...RECORD_TABLES.map(recordTable), db.outbox], async () => {
-    const plan = planMerge(await localCopies(incoming), incoming)
+  return db.transaction('rw', [...RECORD_TABLES.map(recordTable), db.outbox, db.serverTrips], async () => {
+    const plan = await previewMerge(incoming)
     for (const table of RECORD_TABLES) {
       const changes = plan.changes[table]
       if (!changes.length) continue

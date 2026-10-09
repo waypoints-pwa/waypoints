@@ -159,11 +159,19 @@ describe('trips on the sync server', () => {
     await db.outbox.clear()
 
     await updateTrip(tripId, tripInput, [{ id: ana.id, name: 'Ana', memberId: 'member-ana' }, { id: bo.id, name: 'Bo' }])
-    expect((await db.travellers.get(ana.id))!.memberId).toBe('member-ana')
+    const linked = (await db.travellers.get(ana.id))!
+    expect(linked.memberId).toBe('member-ana')
+    expect(linked.linkedAt).toBe(linked.updatedAt)
     expect(await outboxIds(tripId)).toEqual([ana.id])
 
-    await updateTrip(tripId, tripInput, [{ id: ana.id, name: 'Ana' }, { id: bo.id, name: 'Bo' }])
-    expect('memberId' in (await db.travellers.get(ana.id))!).toBe(false)
+    // A rename leaves the link's own clock alone; unlinking moves it.
+    await updateTrip(tripId, tripInput, [{ id: ana.id, name: 'Ana M.', memberId: 'member-ana' }, { id: bo.id, name: 'Bo' }])
+    expect((await db.travellers.get(ana.id))!.linkedAt).toBe(linked.linkedAt)
+    await new Promise((r) => setTimeout(r, 2))
+    await updateTrip(tripId, tripInput, [{ id: ana.id, name: 'Ana M.' }, { id: bo.id, name: 'Bo' }])
+    const unlinked = (await db.travellers.get(ana.id))!
+    expect('memberId' in unlinked).toBe(false)
+    expect(unlinked.linkedAt! > linked.linkedAt!).toBe(true)
   })
 
   it('can be moved there later, linking travellers and keeping the trip id', async () => {

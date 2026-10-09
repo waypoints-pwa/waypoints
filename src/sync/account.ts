@@ -1,5 +1,5 @@
 import { patchRecord, removeTripFromPhone } from '../db/actions'
-import { db } from '../db/db'
+import { db, nowISO } from '../db/db'
 import { getServerConfig, setServerConfig, type ServerConfig } from '../db/serverState'
 import { takeSnapshot } from '../db/snapshots'
 import {
@@ -155,7 +155,7 @@ export async function leaveTrip(tripId: string) {
   const trip = await db.trips.get(tripId)
   if (!trip) return
   const mine = (await db.travellers.where('tripId').equals(tripId).toArray()).filter((t) => !t.deletedAt && t.memberId === cfg.member.id)
-  for (const traveller of mine) await patchRecord('travellers', traveller.id, { memberId: undefined })
+  for (const traveller of mine) await patchRecord('travellers', traveller.id, { memberId: undefined, linkedAt: nowISO() })
   await runSync()
   if (await db.serverTrips.get(tripId)) throw new SyncError("Couldn't leave the trip on the server. Try again.")
   await removeTripFromPhone(trip)

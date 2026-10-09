@@ -54,7 +54,7 @@ const SPECS: { [T in RecordTable]: Record<string, { check: Check; required: bool
     currency: required(currency),
     notes: optional(LONG),
   },
-  travellers: { tripId: required(isId), name: required(text(60)), memberId: optional(isId) },
+  travellers: { tripId: required(isId), name: required(text(60)), memberId: optional(isId), linkedAt: optional(isTimestamp) },
   stays: {
     tripId: required(isId),
     name: required(SHORT),
@@ -147,7 +147,7 @@ export function checkRecord<T extends RecordTable>(table: T, raw: unknown, now =
   const invalid = () => new DataError(`It contains an invalid ${table.replace(/s$/, '')}.`)
   if (!isObject(raw) || !isId(raw.id) || !isTimestamp(raw.createdAt) || !isTimestamp(raw.updatedAt)) throw invalid()
   if (raw.deletedAt !== undefined && !isTimestamp(raw.deletedAt)) throw invalid()
-  if (Date.parse(raw.updatedAt) > now + MAX_FUTURE_MS) {
+  if (Date.parse(raw.updatedAt) > now + MAX_FUTURE_MS || (typeof raw.linkedAt === 'string' && Date.parse(raw.linkedAt) > now + MAX_FUTURE_MS)) {
     throw new DataError("It has changes dated in the future. Check the date and time on the phone that sent it.")
   }
   for (const [field, { check, required }] of Object.entries(SPECS[table])) {

@@ -1,5 +1,6 @@
-import { RECORD_TABLES, type RecordTable, type Tables } from '../../src/db/types.ts'
+import { RECORD_TABLES, type RecordTable, type Tables, type Traveller } from '../../src/db/types.ts'
 import { checkRecord, DataError, isId } from '../../src/domain/records.ts'
+import { canonicalJSON, withNewerLink } from '../../src/domain/sync.ts'
 import type { MemberSummary, RejectedRecord, SyncRequest, SyncResponse, TripChanges } from '../../src/domain/serverProtocol.ts'
 import type { Member, StoreData, StoredRecord, StoredTrip } from './store.ts'
 
@@ -73,9 +74,16 @@ function validRecords(t: TripChanges, now: number, rejected: RejectedRecord[]): 
   return out
 }
 
+/** The copy the server keeps: the newer one, with a traveller's newer server link (see withNewerLink). */
+function mergeRecord(table: RecordTable, sent: StoredRecord, stored: StoredRecord): StoredRecord {
+  const [winner, other] = sent.updatedAt > stored.updatedAt ? [sent, stored] : [stored, sent]
+  return table === 'travellers' ? (withNewerLink(winner as unknown as Traveller, other as unknown as Traveller) as unknown as StoredRecord) : winner
+}
+
 /**
  * Record-level last-writer-wins, the same rule as merging a link: a newer `updatedAt` replaces the
- * server's copy; an older one loses, and the server's copy goes back to the phone.
+ * server's copy. Whatever the server ends up with that differs from what the phone sent goes back to
+ * the phone, so both sides converge even with clock skew.
  */
 function merge(trip: StoredTrip, incoming: [RecordTable, StoredRecord[]][]) {
   const accepted = new Set<string>()
@@ -84,12 +92,13 @@ function merge(trip: StoredTrip, incoming: [RecordTable, StoredRecord[]][]) {
     const stored = (trip.records[table] ??= {})
     for (const rec of records) {
       const current = stored[rec.id]
-      if (!current || rec.updatedAt > current.rec.updatedAt) {
-        stored[rec.id] = { rec, seq: ++trip.seq }
+      const kept = current ? mergeRecord(table, rec, current.rec) : rec
+      if (!current || canonicalJSON(kept) !== canonicalJSON(current.rec)) stored[rec.id] = { rec: kept, seq: ++trip.seq }
+      if (canonicalJSON(kept) === canonicalJSON(rec)) {
         accepted.add(key(table, rec.id))
         losers.delete(key(table, rec.id))
-      } else if (rec.updatedAt < current.rec.updatedAt) {
-        losers.set(key(table, rec.id), [table, current.rec])
+      } else {
+        losers.set(key(table, rec.id), [table, kept])
       }
     }
   }

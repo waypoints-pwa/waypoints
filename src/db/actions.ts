@@ -1,3 +1,4 @@
+import { canonicalJSON } from '../domain/sync'
 import { db, isLive, newId, nowISO, recordTable, setSetting, SETTINGS } from './db'
 import { takeSnapshot } from './snapshots'
 import { RECORD_TABLES, TRIP_TABLES, type RecordTable, type SyncMeta, type TableRecords, type Traveller, type Trip, type TripTable } from './types'
@@ -18,15 +19,8 @@ function compact<T extends object>(record: T): T {
   return Object.fromEntries(Object.entries(record).filter(([, v]) => v !== undefined && v !== '')) as T
 }
 
-const canonical = (value: unknown): unknown =>
-  Array.isArray(value)
-    ? value.map(canonical)
-    : value && typeof value === 'object'
-      ? Object.fromEntries(Object.keys(value).sort().map((k) => [k, canonical((value as Record<string, unknown>)[k])]))
-      : value
-
 /** Same content, ignoring when it was last saved. */
-const sameContent = (a: SyncMeta, b: SyncMeta) => JSON.stringify(canonical({ ...a, updatedAt: '' })) === JSON.stringify(canonical({ ...b, updatedAt: '' }))
+const sameContent = (a: SyncMeta, b: SyncMeta) => canonicalJSON({ ...a, updatedAt: '' }) === canonicalJSON({ ...b, updatedAt: '' })
 
 /** Travellers are listed by when they were added: a millisecond apart keeps the order they were typed in. */
 const inOrder = (iso: string, index: number) => new Date(Date.parse(iso) + index).toISOString()
@@ -77,6 +71,9 @@ export async function deleteRecord(table: TripTable, id: string) {
   })
 }
 
+/** A traveller linked to (or unlinked from) a server member now: the link has its own clock. */
+const linked = (traveller: Traveller, memberId: string | undefined, now: string): Traveller => compact({ ...traveller, memberId, linkedAt: now })
+
 export interface TravellerDraft {
   id?: string
   name: string
@@ -91,7 +88,10 @@ export interface TravellerDraft {
 export async function createTrip(input: Input<Trip>, travellerDrafts: TravellerDraft[], options: { onServer?: boolean } = {}): Promise<string> {
   const now = nowISO()
   const tripId = newId()
-  const travellers: Traveller[] = travellerDrafts.map((t, i) => compact({ id: newId(), tripId, name: t.name, memberId: t.memberId, createdAt: inOrder(now, i), updatedAt: now }))
+  const travellers: Traveller[] = travellerDrafts.map((t, i) => {
+    const traveller: Traveller = { id: newId(), tripId, name: t.name, createdAt: inOrder(now, i), updatedAt: now }
+    return t.memberId ? linked(traveller, t.memberId, now) : traveller
+  })
   await db.transaction('rw', [db.trips, db.travellers, db.unsent, db.outbox, db.settings, db.serverTrips], async () => {
     await db.trips.add(compact({ ...input, id: tripId, createdAt: now, updatedAt: now }))
     await db.travellers.bulkAdd(travellers)
@@ -121,9 +121,12 @@ export async function updateTrip(tripId: string, input: Input<Trip>, travellers:
     for (const draft of travellers) {
       const existing = draft.id ? current.get(draft.id) : undefined
       if (!existing) {
-        changed.push(compact({ id: newId(), tripId, name: draft.name, memberId: draft.memberId, createdAt: inOrder(now, added++), updatedAt: now }))
-      } else if (existing.name !== draft.name || existing.memberId !== draft.memberId) {
-        changed.push(compact({ ...existing, name: draft.name, memberId: draft.memberId, updatedAt: now }))
+        const traveller: Traveller = { id: newId(), tripId, name: draft.name, createdAt: inOrder(now, added++), updatedAt: now }
+        changed.push(draft.memberId ? linked(traveller, draft.memberId, now) : traveller)
+      } else if (existing.memberId !== draft.memberId) {
+        changed.push(linked({ ...existing, name: draft.name, updatedAt: now }, draft.memberId, now))
+      } else if (existing.name !== draft.name) {
+        changed.push({ ...existing, name: draft.name, updatedAt: now })
       }
       if (existing) current.delete(existing.id)
     }
@@ -152,7 +155,7 @@ export async function moveTripToServer(tripId: string, links: Record<string, str
   await db.transaction('rw', [db.travellers, db.unsent, db.outbox, db.serverTrips], async () => {
     const now = nowISO()
     const travellers = (await db.travellers.where('tripId').equals(tripId).toArray()).filter(isLive)
-    const changed = travellers.filter((t) => t.id in links && links[t.id] !== t.memberId).map((t) => compact({ ...t, memberId: links[t.id], updatedAt: now }))
+    const changed = travellers.filter((t) => t.id in links && links[t.id] !== t.memberId).map((t) => linked({ ...t, updatedAt: now }, links[t.id], now))
     await db.travellers.bulkPut(changed)
     await markChanged('travellers', changed.map((t) => t.id), tripId)
     await db.serverTrips.put({ tripId, cursor: 0, uploaded: false })

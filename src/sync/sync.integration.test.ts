@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from '../../server/src/app.ts'
 import { loadConfig, type Config } from '../../server/src/config.ts'
 import { Store } from '../../server/src/store.ts'
+import { emptyTables } from '../db/types.ts'
 import type { Credentials, SyncResponse, TripChanges } from '../domain/serverProtocol.ts'
 
 /*
@@ -49,11 +50,11 @@ async function post<T>(path: string, body: object, token?: string): Promise<T> {
 }
 
 const tripInput = { name: 'Lisbon & Porto', startDate: '2027-03-10', endDate: '2027-03-13', timeZone: 'Europe/Lisbon', currency: 'EUR' }
-const later = () => new Date(Date.now() + 1000).toISOString()
+const later = (seconds = 1) => new Date(Date.now() + seconds * 1000).toISOString()
 
 describe('sync client ↔ server', async () => {
   const { db, getSetting, SETTINGS } = await import('../db/db')
-  const { createTrip, moveTripToServer, saveRecord } = await import('../db/actions')
+  const { createTrip, moveTripToServer, saveRecord, updateTrip } = await import('../db/actions')
   const { applyMerge, readTables } = await import('../db/backupIO')
   const { getServerConfig, setServerConfig } = await import('../db/serverState')
   const { runSync, SyncError } = await import('./client')
@@ -128,6 +129,40 @@ describe('sync client ↔ server', async () => {
     await applyMerge(fromDee, 'test')
     await runSync()
     expect(serverTrip(onServer).records.places?.['place-from-dee']).toBeDefined()
+  })
+
+  it('puts Dee on the trip when she joins the server, as the traveller she already was', async () => {
+    const dee = await post<Credentials>('/api/register', { inviteCode: (await createInvite()).code, name: 'Dee', deviceLabel: 'Pixel' })
+    const deeSync = (trips: TripChanges[] = []) => post<SyncResponse>('/api/sync', { trips }, dee.token)
+    expect((await deeSync()).trips).toEqual([])
+
+    // Joining the server doesn't let her claim a traveller herself, even knowing the trip.
+    const deeTraveller = (await db.travellers.where('tripId').equals(onServer).toArray()).find((t) => t.name === 'Dee')!
+    const claim = await deeSync([{ id: onServer, cursor: 0, records: { travellers: [{ ...deeTraveller, memberId: dee.member.id, linkedAt: later(), updatedAt: later() }] } }])
+    expect(claim.gone).toEqual([onServer])
+    expect(serverTrip(onServer).records.travellers?.[deeTraveller.id].rec.memberId).toBeUndefined()
+
+    // Someone on the trip links her: she gets it as that traveller, expenses and all.
+    await runSync()
+    const travellers = await db.travellers.where('tripId').equals(onServer).sortBy('createdAt')
+    await updateTrip(onServer, (await db.trips.get(onServer))!, travellers.map((t) => ({ id: t.id, name: t.name, memberId: t.id === deeTraveller.id ? dee.member.id : t.memberId })))
+    await runSync()
+    const forDee = (await deeSync()).trips.find((t) => t.id === onServer)!
+    expect(forDee.records.travellers!.find((t) => t.memberId === dee.member.id)!.id).toBe(deeTraveller.id)
+  })
+
+  it("doesn't let a link change who's on a trip on the server", async () => {
+    const anaTraveller = (await db.travellers.where('tripId').equals(onServer).toArray()).find((t) => t.name === 'Ana')!
+    // Renamed on a copy from before Ana was linked: she stays on the trip.
+    const { memberId: _drop, linkedAt: _dropToo, ...unlinked } = anaTraveller
+    await applyMerge({ ...emptyTables(), travellers: [{ ...unlinked, name: 'Ana M.', updatedAt: later(2) }] }, 'test')
+    // A crafted link pointing her traveller at someone else changes nothing either.
+    await applyMerge({ ...emptyTables(), travellers: [{ ...anaTraveller, name: 'Ana M.', memberId: 'someone-else', linkedAt: later(3), updatedAt: later(3) }] }, 'test')
+    await runSync()
+
+    const stored = serverTrip(onServer).records.travellers![anaTraveller.id].rec
+    expect(stored).toMatchObject({ name: 'Ana M.', memberId: ana.member.id, linkedAt: anaTraveller.linkedAt })
+    expect((await anaSync()).trips.map((t) => t.id)).toContain(onServer)
   })
 
   it('moves a phone-only trip to the server, with the same id', async () => {
