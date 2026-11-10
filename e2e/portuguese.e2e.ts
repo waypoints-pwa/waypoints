@@ -52,6 +52,39 @@ test('?lang=pt shows the trip, its forms, packing and Trip tab in Portuguese', a
   await expect(page.getByRole('heading', { name: 'Quem vai' })).toBeVisible()
 })
 
+test('?lang=pt shows Money, Files, Reviews and the report in Portuguese', async ({ page }) => {
+  const backup = await importDemoTrip(page)
+  const id = backup.trips[0].id
+
+  await page.goto(`?lang=pt#/trips/${id}/money`)
+  await expect(page.getByRole('heading', { name: 'Despesas' })).toBeVisible()
+
+  await page.goto(`?lang=pt#/trips/${id}/expenses/new`)
+  await expect(page.getByRole('heading', { name: 'Nova despesa' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Guardar' })).toBeVisible()
+
+  await page.goto(`?lang=pt#/trips/${id}/expenses/new?transfer=1`)
+  await expect(page.getByRole('heading', { name: 'Novo pagamento' })).toBeVisible()
+
+  await page.goto(`?lang=pt#/trips/${id}/exchanges/new`)
+  await expect(page.getByRole('heading', { name: 'Novo câmbio' })).toBeVisible()
+
+  await page.goto(`?lang=pt#/trips/${id}/photos`)
+  await expect(page.getByRole('heading', { name: 'Ficheiros' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Documentos' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Fotos' })).toBeVisible()
+  await expectNoEnglish(page)
+
+  await page.goto(`?lang=pt#/trips/${id}/reviews`)
+  await expect(page.getByRole('heading', { name: 'Avaliações' })).toBeVisible()
+
+  await page.goto(`?lang=pt#/trips/${id}/report`)
+  await expect(page.getByRole('heading', { name: 'Relatório da viagem' })).toBeVisible()
+  await expect(page.getByText('Relatório completo')).toBeVisible()
+  await expect(page.getByText('Para partilhar')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'A viagem em números' })).toBeVisible()
+})
+
 test('an unknown language stays English', async ({ page }) => {
   await page.goto('?lang=fr#/settings')
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
