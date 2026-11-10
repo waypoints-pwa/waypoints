@@ -164,7 +164,8 @@ The patterns are samples that catch a forgotten text; the rule is "every text pe
      `src/ui/items/expenses.tsx` lines 1 to 328 (`MoneyPage`, `RatesCard`, `SettleRow`,
      `splitSummary`, `ExpenseRow`) into `money`, and use `expenseTitle` in `ExpenseRow`.
    - Depends on: none
-   - Done when: this prints 0, and `npm run typecheck`, `npm run lint` and `npm test` pass:
+   - Done when: this prints 2 (the "owes" sentence in `ExpenseForm` and `'Cash'` in `ExpensePage`, which task 2
+     moves; after task 2 it prints 0), and `npm run typecheck`, `npm run lint` and `npm test` pass:
      ```sh
      t src/ui/items/expenses.tsx "Spent so far|\+ Expense|Your part|Not noted <|Changed money or withdrew|>Balances<|\+ Payment|gets back|owes |'square'|Settle up|Everyone is square|is an estimate|>Expenses<|Note what you spend|Exchange rates|\+ Exchange|can't be counted yet|waiting for what the bank|cost pending<|average of|what you got'|Cash left|Cash converts at|> pays <|Record payment|split by everyone|no rate yet|'Cash'"
      ```
