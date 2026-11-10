@@ -19,7 +19,10 @@ export const files: Messages['files'] = {
     name ? `⏳ Ainda não está no servidor: o telemóvel de ${name} ainda não o enviou` : '⏳ Ainda não está no servidor: o telemóvel ainda não o enviou',
   notOnThisPhone: '📱 Não está neste telemóvel',
   oldServer: '⚠️ O servidor de sincronização é demasiado antigo para fotos e documentos: precisa de ser atualizado',
-  nSelected: (n) => `${n} ${n === 1 ? 'selecionado' : 'selecionados'}`,
+  nSelected: {
+    photo: (n) => `${n} ${n === 1 ? 'selecionada' : 'selecionadas'}`,
+    document: (n) => `${n} ${n === 1 ? 'selecionado' : 'selecionados'}`,
+  },
   selectAll: 'Selecionar tudo',
   deleteSome: {
     photo: (n) => `Eliminar ${plural(n, 'foto', 'fotos')}?`,

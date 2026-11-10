@@ -172,7 +172,7 @@ function DayView({ day, today }: { day: PlanDay; today: Day }) {
   return (
     <section className={`day${day.day === today ? ' day-today' : ''}`}>
       <div className="day-head">
-        <h3>{fmtDay(day.day)}</h3>
+        <h3>{day.day === today ? m.plan.dayToday(fmtDay(day.day)) : fmtDay(day.day)}</h3>
         <span className="muted small">{day.inTrip ? m.plan.dayN(day.number) : day.number < 1 ? m.plan.beforeTrip : m.plan.afterTrip}</span>
       </div>
       {day.entries.length > 0 ? (

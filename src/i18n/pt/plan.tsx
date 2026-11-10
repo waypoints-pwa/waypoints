@@ -25,6 +25,7 @@ export const plan: Messages['plan'] = {
   dayOf: (day, length) => `Dia ${day} de ${length}`,
   nothingElseToday: 'Mais nada com hora hoje.',
   tonight: 'Esta noite:',
+  dayToday: (date) => `${date} · Hoje`,
   dayN: (n) => `Dia ${n}`,
   beforeTrip: 'Antes da viagem',
   afterTrip: 'Depois da viagem',
