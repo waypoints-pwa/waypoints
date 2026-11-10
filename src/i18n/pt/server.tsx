@@ -48,7 +48,7 @@ export const server: Messages['server'] = {
   signInAs: (name) => `Entrar como ${name}`,
   connect: 'Ligar',
   safetyCopyNote:
-    'Primeiro é guardada uma cópia de segurança das tuas viagens (Definições → Cópia de segurança). As viagens que já estão neste telemóvel ficam só nele até as pores no servidor.',
+    'Primeiro é guardada uma cópia de salvaguarda das tuas viagens (Definições → Cópia de segurança). As viagens que já estão neste telemóvel ficam só nele até as pores no servidor.',
   disconnectedFrom: (host, waiting) =>
     `Este telemóvel foi desligado do servidor em ${host}: foi removido dos teus telemóveis, ou foste removido do servidor. As tuas viagens continuam aqui${waiting > 0 ? `, com ${plural(waiting, 'alteração', 'alterações')} que nunca ${waiting === 1 ? 'chegou' : 'chegaram'} ao servidor` : ''}. Os links continuam a funcionar.`,
   forgetServer: 'Esquecer este servidor',
