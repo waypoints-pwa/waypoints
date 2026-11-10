@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { m } from '../../i18n'
 import { addAttachments, deleteAttachments, type AttachedTo } from '../../db/attachments'
 import type { AttachableTable, Attachment, AttachmentKind, StoredFile } from '../../db/types'
 import { FileProblem, prepareDocument, preparePhoto } from '../../lib/files'
@@ -25,7 +26,7 @@ import {
   type FileState,
   type ItemRef,
 } from '../attachments'
-import { fmtBytes, fmtDay, plural } from '../format'
+import { fmtBytes, fmtDay } from '../format'
 import { usable, useServer } from '../hooks'
 import { tripPath, useTrip } from '../tripData'
 import { Notice } from './bits'
@@ -136,7 +137,7 @@ export function SelectBar({
   onDeleted,
 }: {
   shown: Attachment[]
-  noun: string
+  noun: 'photo' | 'document'
   selection: Selection
   onDeleted: (n: number) => void
 }) {
@@ -146,24 +147,24 @@ export function SelectBar({
   const n = picked.length
   const onDelete = async () => {
     if (!n) return
-    const everyLeg = picked.some((a) => ownerOf(a)?.booking) ? ' Those of a whole booking go from every journey on it.' : ''
-    const forEveryone = t.server && picked.some((a) => !a.private) ? ' They will be deleted for everyone on the trip.' : ''
-    if (!confirm(`Delete ${plural(n, noun)}?${everyLeg}${forEveryone}`)) return
+    const everyLeg = picked.some((a) => ownerOf(a)?.booking) ? m.files.wholeBookingGoes : ''
+    const forEveryone = t.server && picked.some((a) => !a.private) ? m.files.deletedForEveryone : ''
+    if (!confirm([m.files.deleteSome[noun](n), everyLeg, forEveryone].filter(Boolean).join(' '))) return
     await deleteAttachments(picked.map((a) => a.id))
     selection.stop()
     onDeleted(n)
   }
   return (
     <div className="select-bar">
-      <strong>{n} selected</strong>
+      <strong>{m.files.nSelected(n)}</strong>
       <button type="button" className="btn btn-small" onClick={() => selection.setAll(shown.map((a) => a.id))}>
-        Select all
+        {m.files.selectAll}
       </button>
       <button type="button" className="btn btn-small btn-danger" disabled={n === 0} onClick={() => void onDelete()}>
-        Delete
+        {m.common.delete}
       </button>
       <button type="button" className="btn btn-small btn-ghost" onClick={selection.stop}>
-        Cancel
+        {m.common.cancel}
       </button>
     </div>
   )
@@ -230,9 +231,9 @@ export function BelongsToField({ value, onChange }: { value: string; onChange: (
   const t = useTrip()
   const items = [...attachableItems(t).values()]
   return (
-    <Field label="Belongs to">
+    <Field label={m.files.belongsTo}>
       <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">{t.trip.emoji ?? '🧳'} The whole trip</option>
+        <option value="">{t.trip.emoji ?? '🧳'} {m.files.wholeTrip}</option>
         {(Object.entries(ITEM_GROUPS) as [AttachableTable, string][]).map(([table, label]) => {
           const list = items.filter((i) => i.table === table).sort((a, b) => (a.day ?? '').localeCompare(b.day ?? '') || a.title.localeCompare(b.title))
           if (!list.length) return null
@@ -262,25 +263,25 @@ export function WholeBookingField(props: { target: string; booking?: Booking; ki
   if (itemTable !== 'transports') return null
   if (!props.booking) {
     if (props.kind !== 'document') return null
-    const what = t.transports.find((r) => r.id === itemId)?.mode === 'flight' ? 'Connecting flights' : 'Bought with other journeys'
-    return <p className="muted small">{what}? Give them all the same booking ref, and a document can show on each of them.</p>
+    const what = t.transports.find((r) => r.id === itemId)?.mode === 'flight' ? 'flight' : 'journey'
+    return <p className="muted small">{m.files.shareBooking[what]}</p>
   }
   const others = props.booking.legs.filter((l) => l.id !== itemId)
   return (
     <label className="check">
       <input type="checkbox" checked={props.value} onChange={(e) => props.onChange(e.target.checked)} />
       <span>
-        For every {props.booking.noun} on booking {props.booking.ref}
-        <small>Also shows on {others.map((l) => l.title).join(', ')}.</small>
+        {m.files.forEvery[props.booking.noun](props.booking.ref)}
+        <small>{m.files.alsoShowsOn(others.map((l) => l.title).join(', '))}</small>
       </span>
     </label>
   )
 }
 
 const PICK: Record<AttachmentKind, { label: string; accept?: string }> = {
-  photo: { label: '📷 Add photos', accept: 'image/*' },
+  photo: { label: m.files.addPhotos, accept: 'image/*' },
   // Any file: PDFs, screenshots, wallet passes…
-  document: { label: '📄 Add documents' },
+  document: { label: m.files.addDocuments },
 }
 
 /**
@@ -296,7 +297,7 @@ export function AddAttachments({ to, choose = false }: { to?: AttachedTo; choose
   const [onlyHere, setOnlyHere] = useState(false)
   const [wholeBooking, setWholeBooking] = useState<boolean>()
   const [progress, setProgress] = useState<string>()
-  const [result, setResult] = useState<{ added: string; problems: string[] }>()
+  const [result, setResult] = useState<{ added: number; kind: AttachmentKind; problems: string[] }>()
   // Whether it goes to the server is a question only where there's a server.
   const askPrivacy = Boolean(t.server || server)
   const limit = t.server ? server?.fileLimit : undefined
@@ -317,11 +318,11 @@ export function AddAttachments({ to, choose = false }: { to?: AttachedTo; choose
     const problems: string[] = []
     let added = 0
     for (const [i, file] of picked.files.entries()) {
-      setProgress(picked.files.length > 1 ? `Adding ${i + 1} of ${picked.files.length}…` : 'Adding…')
+      setProgress(picked.files.length > 1 ? m.files.addingOf(i + 1, picked.files.length) : m.files.adding)
       try {
         const ready = picked.kind === 'photo' ? await preparePhoto(file) : await prepareDocument(file)
         if (limit && !onlyHere && ready.blob.size > limit) {
-          throw new FileProblem(`${file.name} is larger than the sync server takes (${fmtBytes(limit)}). Keep it only on this phone, or make it smaller.`)
+          throw new FileProblem(m.files.tooLarge(file.name, fmtBytes(limit)))
         }
         // One at a time: what's added stays added, even if a later file fails.
         await addAttachments(t.trip.id, [ready], {
@@ -332,12 +333,12 @@ export function AddAttachments({ to, choose = false }: { to?: AttachedTo; choose
         })
         added++
       } catch (err) {
-        problems.push(err instanceof FileProblem ? err.message : `${file.name} couldn't be added.`)
+        problems.push(err instanceof FileProblem ? err.message : m.files.couldntBeAdded(file.name))
       }
     }
     setProgress(undefined)
     setPicked(undefined)
-    setResult({ added: added ? plural(added, picked.kind === 'photo' ? 'photo' : 'document') : '', problems })
+    setResult({ added, kind: picked.kind, problems })
   }
 
   return (
@@ -361,35 +362,32 @@ export function AddAttachments({ to, choose = false }: { to?: AttachedTo; choose
           ))}
         </div>
       )}
-      {result && result.added && !result.problems.length && <Notice kind="ok">Added {result.added}.</Notice>}
+      {result && result.added && !result.problems.length && <Notice kind="ok">{m.files.added[result.kind](result.added)}</Notice>}
       {result && result.problems.length > 0 && (
         <Notice kind="error">
-          {result.added && `Added ${result.added}. `}
-          {result.problems.join(' ')}
+          {[...(result.added ? [m.files.added[result.kind](result.added)] : []), ...result.problems].join(' ')}
         </Notice>
       )}
       {picked && (
         <div className="add-panel stack">
           <strong>
-            Add {plural(picked.files.length, picked.kind === 'photo' ? 'photo' : 'document')}
+            {m.files.addSome[picked.kind](picked.files.length)}
             {picked.files.length <= 3 && <span className="muted small"> · {picked.files.map((f) => f.name).join(', ')}</span>}
           </strong>
           {choose && <BelongsToField value={target} onChange={setTarget} />}
           <WholeBookingField target={target} booking={booking} kind={picked.kind} value={whole} onChange={setWholeBooking} />
           {picked.files.length === 1 && (
-            <Field label="Caption">
-              <input className="input" value={caption} maxLength={10_000} placeholder="Optional" onChange={(e) => setCaption(e.target.value)} />
+            <Field label={m.files.caption}>
+              <input className="input" value={caption} maxLength={10_000} placeholder={m.files.optional} onChange={(e) => setCaption(e.target.value)} />
             </Field>
           )}
           {askPrivacy && (
             <label className="check">
               <input type="checkbox" checked={onlyHere} onChange={(e) => setOnlyHere(e.target.checked)} />
               <span>
-                Only on this phone
+                {m.files.onlyOnThisPhone}
                 <small>
-                  {t.server
-                    ? "Not sent to the server, so the others don't see it: for a passport, say."
-                    : 'It stays here even if the trip goes on the sync server later: for a passport, say.'}
+                  {t.server ? m.files.notSentToServer : m.files.staysHere}
                 </small>
               </span>
             </label>
@@ -399,10 +397,10 @@ export function AddAttachments({ to, choose = false }: { to?: AttachedTo; choose
           ) : (
             <div className="form-actions">
               <button type="button" className="btn btn-ghost" onClick={() => setPicked(undefined)}>
-                Cancel
+                {m.common.cancel}
               </button>
               <button type="button" className="btn btn-primary" onClick={() => void add()}>
-                Add
+                {m.common.add}
               </button>
             </div>
           )}
@@ -419,7 +417,7 @@ export function AttachmentsCard({ table, id }: { table: AttachableTable; id: str
   const mine = t.attachments.filter((a) => showsOn(ownerOf(a), table, id))
   return (
     <section className="card">
-      <h3>Photos & documents</h3>
+      <h3>{m.files.photosAndDocuments}</h3>
       <AttachmentList attachments={mine} />
       {/* Afresh for each item: going from one item's page straight to another's keeps this card. */}
       <AddAttachments key={`${table}:${id}`} to={{ itemTable: table, itemId: id }} />

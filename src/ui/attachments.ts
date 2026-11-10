@@ -5,8 +5,9 @@ import { db } from '../db/db'
 import { ATTACHABLE_TABLES, type AttachableTable, type Attachment, type AttachmentKind, type StoredFile } from '../db/types'
 import { bookingLegs, legNoun, route } from '../domain/bookings'
 import { toDay } from '../domain/time'
+import { m } from '../i18n'
 import { SEGMENT } from './items/save'
-import { EXPENSE_CATEGORIES, labelOf, PLACE_CATEGORIES, STAY_KINDS, TRANSPORT_MODES } from './labels'
+import { EXPENSE_CATEGORIES, expenseTitle, labelOf, PLACE_CATEGORIES, STAY_KINDS, TRANSPORT_MODES } from './labels'
 import { nameOf, tripPath, type TripData } from './tripData'
 
 /** Photos and documents in the trip's pages: what they belong to, where their files are, in what order. */
@@ -59,7 +60,7 @@ export interface Booking {
   /** The booking ref, as the first journey has it. */
   ref: string
   /** "flight" when they're all flights, else "journey". */
-  noun: string
+  noun: 'flight' | 'journey'
   /** "LIS → FRA → NRT". */
   route: string
   /** In the order they leave. */
@@ -67,11 +68,11 @@ export interface Booking {
 }
 
 export const ITEM_GROUPS: Record<AttachableTable, string> = {
-  stays: 'Stays',
-  transports: 'Journeys',
-  activities: 'Activities',
-  places: 'Places',
-  expenses: 'Expenses',
+  stays: m.files.groups.stays,
+  transports: m.files.groups.transports,
+  activities: m.files.groups.activities,
+  places: m.files.groups.places,
+  expenses: m.files.groups.expenses,
 }
 
 /** Every item of the trip a photo or document can belong to, by `table:id`. */
@@ -85,7 +86,7 @@ export function attachableItems(t: TripData): Map<string, ItemRef> {
     ...t.transports.map((r) => ref('transports', r.id, labelOf(TRANSPORT_MODES, r.mode).emoji, `${r.from} → ${r.to}`, r.departDate)),
     ...t.activities.map((r) => ref('activities', r.id, '🎟️', r.title, r.date)),
     ...t.places.map((r) => ref('places', r.id, labelOf(PLACE_CATEGORIES, r.category).emoji, r.name)),
-    ...t.expenses.map((r) => ref('expenses', r.id, labelOf(EXPENSE_CATEGORIES, r.category).emoji, r.title, r.date)),
+    ...t.expenses.map((r) => ref('expenses', r.id, labelOf(EXPENSE_CATEGORIES, r.category).emoji, expenseTitle(r), r.date)),
   ])
 }
 
@@ -189,19 +190,19 @@ export function stateFinder(t: TripData) {
 export function stateText(state: FileState, a: Attachment, t: TripData): string | undefined {
   switch (state) {
     case 'private':
-      return '🔒 Only on this phone'
+      return m.files.onlyOnThisPhoneState
     case 'waiting':
-      return '⏳ Waiting to go up to the server'
+      return m.files.waitingToGoUp
     case 'refused':
-      return "⚠️ The server didn't take it"
+      return m.files.serverDidntTakeIt
     case 'shared':
-      return '🌐 Shared with the trip'
+      return m.files.sharedWithTrip
     case 'remote':
-      return '🌐 On the server'
+      return m.files.onServer
     case 'missing':
-      return t.server ? `⏳ Not on the server yet: ${a.addedBy ? `${nameOf(t, a.addedBy)}'s` : 'the'} phone hasn't sent it` : '📱 Not on this phone'
+      return t.server ? m.files.notOnServerYet(a.addedBy ? nameOf(t, a.addedBy) : undefined) : m.files.notOnThisPhone
     case 'oldServer':
-      return '⚠️ The sync server is too old for photos and documents: it needs updating'
+      return m.files.oldServer
     case 'local':
       return undefined
   }

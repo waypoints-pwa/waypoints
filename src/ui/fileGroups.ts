@@ -1,16 +1,17 @@
 import type { AttachableTable } from '../db/types'
+import { m } from '../i18n'
 import type { ItemRef } from './attachments'
 
 /** What a file belongs to: the whole trip, or one kind of item. */
 export type FileGroup = 'trip' | AttachableTable
 
 export const FILE_GROUPS: { key: FileGroup; label: string }[] = [
-  { key: 'trip', label: 'Whole trip' },
-  { key: 'stays', label: 'Stays' },
-  { key: 'transports', label: 'Journeys' },
-  { key: 'activities', label: 'Activities' },
-  { key: 'places', label: 'Places' },
-  { key: 'expenses', label: 'Expenses' },
+  { key: 'trip', label: m.files.groups.trip },
+  { key: 'stays', label: m.files.groups.stays },
+  { key: 'transports', label: m.files.groups.transports },
+  { key: 'activities', label: m.files.groups.activities },
+  { key: 'places', label: m.files.groups.places },
+  { key: 'expenses', label: m.files.groups.expenses },
 ]
 
 export const isFileGroup = (s: string | undefined): s is FileGroup => FILE_GROUPS.some((g) => g.key === s)
@@ -62,7 +63,7 @@ export function sectionFiles<T>(list: T[], ownerOf: (x: T) => ItemRef | undefine
         key,
         group,
         day: owner?.day,
-        title: owner ? owner.title : 'Whole trip',
+        title: owner ? owner.title : m.files.groups.trip,
         emoji: owner?.emoji,
         seeAll: !owner
           ? ['photos', 'trip']

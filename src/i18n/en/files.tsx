@@ -1,0 +1,60 @@
+import { plural } from '../plural'
+
+export const files = {
+  groups: {
+    trip: 'Whole trip',
+    stays: 'Stays',
+    transports: 'Journeys',
+    activities: 'Activities',
+    places: 'Places',
+    expenses: 'Expenses',
+  },
+  onlyOnThisPhoneState: '🔒 Only on this phone',
+  waitingToGoUp: '⏳ Waiting to go up to the server',
+  serverDidntTakeIt: "⚠️ The server didn't take it",
+  sharedWithTrip: '🌐 Shared with the trip',
+  onServer: '🌐 On the server',
+  notOnServerYet: (name: string | undefined): string => `⏳ Not on the server yet: ${name ? `${name}'s` : 'the'} phone hasn't sent it`,
+  notOnThisPhone: '📱 Not on this phone',
+  oldServer: '⚠️ The sync server is too old for photos and documents: it needs updating',
+  nSelected: (n: number): string => `${n} selected`,
+  selectAll: 'Select all',
+  deleteSome: {
+    photo: (n: number): string => `Delete ${plural(n, 'photo')}?`,
+    document: (n: number): string => `Delete ${plural(n, 'document')}?`,
+  },
+  wholeBookingGoes: 'Those of a whole booking go from every journey on it.',
+  deletedForEveryone: 'They will be deleted for everyone on the trip.',
+  belongsTo: 'Belongs to',
+  wholeTrip: 'The whole trip',
+  shareBooking: {
+    flight: 'Connecting flights? Give them all the same booking ref, and a document can show on each of them.',
+    journey: 'Bought with other journeys? Give them all the same booking ref, and a document can show on each of them.',
+  },
+  forEvery: {
+    flight: (ref: string): string => `For every flight on booking ${ref}`,
+    journey: (ref: string): string => `For every journey on booking ${ref}`,
+  },
+  alsoShowsOn: (titles: string): string => `Also shows on ${titles}.`,
+  addPhotos: '📷 Add photos',
+  addDocuments: '📄 Add documents',
+  adding: 'Adding…',
+  addingOf: (i: number, n: number): string => `Adding ${i} of ${n}…`,
+  tooLarge: (name: string, limit: string): string =>
+    `${name} is larger than the sync server takes (${limit}). Keep it only on this phone, or make it smaller.`,
+  couldntBeAdded: (name: string): string => `${name} couldn't be added.`,
+  added: {
+    photo: (n: number): string => `Added ${plural(n, 'photo')}.`,
+    document: (n: number): string => `Added ${plural(n, 'document')}.`,
+  },
+  addSome: {
+    photo: (n: number): string => `Add ${plural(n, 'photo')}`,
+    document: (n: number): string => `Add ${plural(n, 'document')}`,
+  },
+  caption: 'Caption',
+  optional: 'Optional',
+  onlyOnThisPhone: 'Only on this phone',
+  notSentToServer: "Not sent to the server, so the others don't see it: for a passport, say.",
+  staysHere: 'It stays here even if the trip goes on the sync server later: for a passport, say.',
+  photosAndDocuments: 'Photos & documents',
+}
