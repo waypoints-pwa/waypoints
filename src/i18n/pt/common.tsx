@@ -43,4 +43,7 @@ export const common: Messages['common'] = {
   website: 'Site',
   phone: 'Telefone',
   someone: 'Alguém',
+  day: 'Dia',
+  select: 'Selecionar',
+  photos: 'Fotos',
 }

@@ -38,4 +38,7 @@ export const common = {
   website: 'Website',
   phone: 'Phone',
   someone: 'Someone',
+  day: 'Day',
+  select: 'Select',
+  photos: 'Photos',
 }

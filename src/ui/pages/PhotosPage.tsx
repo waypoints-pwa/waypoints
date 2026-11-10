@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { m } from '../../i18n'
 import { isPhoto, ownerFinder, sortDocuments, stateFinder, tripPhotos, useTripFiles } from '../attachments'
 import { Notice } from '../components/bits'
 import { AddAttachments, DocumentRow, PhotoTile, SelectBar, selectOf, useSelection } from '../components/Attachments'
 import { sectionFiles } from '../fileGroups'
-import { fmtBytes, plural } from '../format'
+import { fmtBytes } from '../format'
 import { tripPath, useTrip } from '../tripData'
 
 /** The trip's documents and photos: those of the whole trip and of each item, in one place. */
@@ -22,7 +23,7 @@ export function PhotosPage() {
   const shownDocs = docGroups.flatMap((g) => g.sections.flatMap((s) => s.items))
   const shownPhotos = photoGroups.flatMap((g) => g.sections.flatMap((s) => s.items.slice(0, 3)))
   const shown = view === 'documents' ? shownDocs : shownPhotos
-  const noun = view === 'documents' ? 'document' : 'photo'
+  const noun = view === 'documents' ? ('document' as const) : ('photo' as const)
   const switchView = (next: Record<string, string>) => {
     selection.stop()
     setDeleted(undefined)
@@ -35,27 +36,24 @@ export function PhotosPage() {
 
   return (
     <>
-      <h2>Files</h2>
+      <h2>{m.files.title}</h2>
       {!t.server && t.travellers.length > 1 && (
-        <p className="muted small">
-          They stay on this phone: links can't carry them. To share them with the group, put the trip on a sync server (Trip tab).
-        </p>
+        <p className="muted small">{m.files.staysOnPhone}</p>
       )}
       {t.oldServer && (
-        <Notice kind="warn">The sync server is too old to keep photos and documents. Update it to share them: until then they stay on this phone.</Notice>
+        <Notice kind="warn">{m.files.oldServerNotice}</Notice>
       )}
       {t.server && !t.oldServer && (waiting > 0 || refused > 0) && (
         <p className="muted small">
-          {waiting > 0 && `⏳ ${plural(waiting, 'file')} waiting to go up to the server. `}
-          {refused > 0 && `⚠️ The server didn't take ${plural(refused, 'file')}: open ${refused === 1 ? 'it' : 'them'} to see why.`}
+          {[waiting > 0 && m.files.waitingFiles(waiting), refused > 0 && m.files.refusedFiles(refused)].filter(Boolean).join(' ')}
         </p>
       )}
 
       <AddAttachments choose />
 
-      <div className="segmented" role="tablist" aria-label="View">
+      <div className="segmented" role="tablist" aria-label={m.files.viewLabel}>
         <button role="tab" aria-selected={view === 'documents'} className={view === 'documents' ? 'active' : ''} onClick={() => switchView({})}>
-          Documents
+          {m.files.documentsTab}
         </button>
         <button
           role="tab"
@@ -63,7 +61,7 @@ export function PhotosPage() {
           className={view === 'photos' ? 'active' : ''}
           onClick={() => switchView({ view: 'photos' })}
         >
-          Photos
+          {m.common.photos}
         </button>
       </div>
 
@@ -77,7 +75,7 @@ export function PhotosPage() {
               selection.start()
             }}
           >
-            Select
+            {m.common.select}
           </button>
         </div>
       )}
@@ -85,7 +83,7 @@ export function PhotosPage() {
 
       {view === 'documents' ? (
         <section className="stack">
-          {docGroups.length === 0 && <p className="muted small">Tickets, boarding passes, bookings, insurance… They open here without signal.</p>}
+          {docGroups.length === 0 && <p className="muted small">{m.files.emptyDocuments}</p>}
           {docGroups.map((g) => (
             <div key={g.group} className="stack" style={{ gap: 6 }}>
               <h3 className="group-title">{g.label}</h3>
@@ -112,13 +110,13 @@ export function PhotosPage() {
         </section>
       ) : (
         <section className="stack">
-          {photoGroups.length === 0 && <p className="muted small">Photos of the trip, by day. Add them here, or to a stay, an activity or a place.</p>}
+          {photoGroups.length === 0 && <p className="muted small">{m.files.emptyPhotos}</p>}
           {photoGroups.map((g) => (
             <div key={g.group} className="stack" style={{ gap: 6 }}>
               {g.sections.map((s) => {
                 const seeAll = s.items.length > 3 && (
                   <Link className="link small" to={tripPath(t.trip.id, ...s.seeAll)}>
-                    See all {s.items.length} ›
+                    {m.files.seeAll(s.items.length)}
                   </Link>
                 )
                 return (
@@ -152,9 +150,9 @@ export function PhotosPage() {
         </section>
       )}
 
-      {selection.active && <SelectBar shown={shown} noun={noun} selection={selection} onDeleted={(n) => setDeleted(`Deleted ${plural(n, noun)}.`)} />}
+      {selection.active && <SelectBar shown={shown} noun={noun} selection={selection} onDeleted={(n) => setDeleted(m.files.deletedNotice[noun](n))} />}
 
-      {used > 0 && <p className="muted small">They take {fmtBytes(used)} on this phone.</p>}
+      {used > 0 && <p className="muted small">{m.files.takeSpace(fmtBytes(used))}</p>}
     </>
   )
 }

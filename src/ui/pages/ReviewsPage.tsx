@@ -5,7 +5,7 @@ import { averageStars, plannedPlaces, reviewsOf, reviewTargets, toReview, whenOv
 import { EmptyState } from '../components/bits'
 import { AverageStars, MyReview, ReviewList, WhoAreYou } from '../components/Reviews'
 import { describeTarget } from '../entries'
-import { plural } from '../format'
+import { m } from '../../i18n'
 import { useNow } from '../hooks'
 import { tripPath, useTrip } from '../tripData'
 
@@ -38,22 +38,20 @@ export function ReviewsPage() {
 
   return (
     <article className="stack">
-      <h2>Reviews</h2>
+      <h2>{m.reviews.title}</h2>
       {!t.me && <WhoAreYou />}
 
       {listed.length === 0 && reviewed.length === 0 ? (
         <EmptyState>
           <p className="big-emoji">⭐</p>
-          <p>Nothing to review yet.</p>
-          <p className="muted small">
-            Activities, stays and journeys show up here once they're over, and places once someone ticks them as “Been there”.
-          </p>
+          <p>{m.reviews.nothingToReview}</p>
+          <p className="muted small">{m.reviews.showUpHere}</p>
         </EmptyState>
       ) : (
         <>
           <section className="stack">
             <h3 className="group-title">
-              To review <span className="count">{pending.length}</span>
+              {m.reviews.toReview} <span className="count">{pending.length}</span>
             </h3>
             {listed.length ? (
               <ul className="list">
@@ -62,20 +60,20 @@ export function ReviewsPage() {
                 ))}
               </ul>
             ) : (
-              <p className="muted small">You're all caught up. New things show up here once they're over.</p>
+              <p className="muted small">{m.reviews.allCaughtUp}</p>
             )}
           </section>
 
           {reviewed.length > 0 && (
             <section className="stack">
               <div className="section-head">
-                <h3 className="group-title">Reviewed</h3>
-                <div className="chips" aria-label="Order">
+                <h3 className="group-title">{m.reviews.reviewed}</h3>
+                <div className="chips" aria-label={m.reviews.order}>
                   <button className="toggle-chip" aria-pressed={sort === 'latest'} onClick={() => setParams({}, { replace: true })}>
-                    Latest
+                    {m.reviews.latest}
                   </button>
                   <button className="toggle-chip" aria-pressed={sort === 'stars'} onClick={() => setParams({ sort: 'stars' }, { replace: true })}>
-                    Top rated
+                    {m.reviews.topRated}
                   </button>
                 </div>
               </div>
@@ -87,7 +85,7 @@ export function ReviewsPage() {
             </section>
           )}
           {targets.some((x) => x.table === 'places' && planned.has(x.record.id)) && (
-            <p className="muted small">Places in the plan are reviewed through their activities.</p>
+            <p className="muted small">{m.reviews.reviewedThroughActivities}</p>
           )}
         </>
       )}
@@ -117,7 +115,7 @@ function ToReviewRow({ target, done, onReview }: { target: ReviewTarget; done: b
     <li className="card review-row">
       <div className="row nowrap spread">
         <Heading target={target} />
-        {done && <span className="chip">✓ Saved</span>}
+        {done && <span className="chip">{m.reviews.saved}</span>}
       </div>
       {t.me && <MyReview target={target} onSave={onReview} />}
     </li>
@@ -146,16 +144,18 @@ export function ReviewsLink({ now }: { now: number }) {
   const names = pending.map((x) => describeTarget(x, t).title)
   const detail = pending.length
     ? names.length > 2
-      ? `${names.slice(0, 2).join(', ')} and ${plural(names.length - 2, 'more', 'more')}`
-      : names.join(' and ')
-    : `All caught up · ${plural(reviewed, 'thing')} reviewed`
+      ? m.reviews.namesAndMore(names[0], names[1], names.length - 2)
+      : names.length === 2
+        ? m.reviews.twoNames(names[0], names[1])
+        : names[0]
+    : m.reviews.caughtUpReviewed(reviewed)
   return (
     <Link className={`list-row${pending.length ? ' list-row-nudge' : ''}`} to={tripPath(t.trip.id, 'reviews')}>
       <span className="list-emoji" aria-hidden>
         ⭐
       </span>
       <span className="list-text">
-        <strong>{pending.length ? `${pending.length} to review` : 'Reviews'}</strong>
+        <strong>{pending.length ? m.reviews.nToReview(pending.length) : m.reviews.title}</strong>
         <span className="muted small">{detail}</span>
       </span>
       <span className="muted" aria-hidden>

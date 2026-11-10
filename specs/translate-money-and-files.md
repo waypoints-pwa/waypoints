@@ -1,6 +1,6 @@
 # Money, files, reviews and the report in both languages (Portuguese, part 3)
 
-Status: ready
+Status: shipped
 Issue: https://github.com/waypoints-pwa/waypoints/issues/75
 Builds after: none
 
@@ -164,7 +164,8 @@ The patterns are samples that catch a forgotten text; the rule is "every text pe
      `src/ui/items/expenses.tsx` lines 1 to 328 (`MoneyPage`, `RatesCard`, `SettleRow`,
      `splitSummary`, `ExpenseRow`) into `money`, and use `expenseTitle` in `ExpenseRow`.
    - Depends on: none
-   - Done when: this prints 0, and `npm run typecheck`, `npm run lint` and `npm test` pass:
+   - Done when: this prints 2 (the "owes" sentence in `ExpenseForm` and `'Cash'` in `ExpensePage`, which task 2
+     moves; after task 2 it prints 0), and `npm run typecheck`, `npm run lint` and `npm test` pass:
      ```sh
      t src/ui/items/expenses.tsx "Spent so far|\+ Expense|Your part|Not noted <|Changed money or withdrew|>Balances<|\+ Payment|gets back|owes |'square'|Settle up|Everyone is square|is an estimate|>Expenses<|Note what you spend|Exchange rates|\+ Exchange|can't be counted yet|waiting for what the bank|cost pending<|average of|what you got'|Cash left|Cash converts at|> pays <|Record payment|split by everyone|no rate yet|'Cash'"
      ```
@@ -338,3 +339,20 @@ The patterns are samples that catch a forgotten text; the rule is "every text pe
 - Overlap: the draft specs `trip-budget` and `expenses-csv-export` touch the Money screens moved
   here. Whichever is built later follows the CLAUDE.md rule (text in both
   languages); if one lands first, its text is moved here like the rest.
+- As shipped: task 1's check printed 2 after task 1 alone, because its pattern also matches two
+  texts in `ExpenseForm` and `ExpensePage` (task 2's part of `expenses.tsx`). Task 2 moved them, and
+  every check prints 0 on the finished branch.
+- As shipped: "Add" in Portuguese prose is "Adicionar" / "Adiciona" everywhere (a rate, what the
+  bank charged), the same word as `common.add`.
+- As shipped: sentences about photos or documents that change with gender in Portuguese are records
+  keyed by `'photo' | 'document'` beyond the ones listed in Context: `wholeBookingGoes`,
+  `deletedForEveryone`, `addedLabel`, `deletedNotice`, `keepThis`, `editTitle`, `deleteThis`, and the
+  "Added N photos." notice (the form now keeps the count and the kind, not the finished sentence).
+- As shipped: `common` gained `day`, `select` and `photos`. "You" in a list of reviews is its own
+  message (`reviews.you`), because `trip.you` is lowercase.
+- As shipped: terms chosen while building were added to the Glossary in
+  `specs/translation-layer.md`; "Settling up" (report) shares the "Settle up" row.
+- Known gaps in the preview, for a later part: at 360px the selection bar ("4 selecionados ·
+  Selecionar tudo · Eliminar · Cancelar") is wider than the screen, so "Cancelar" is cut off
+  (needs `src/index.css` or shorter wording); "N selecionados" is also used for photos, where
+  "selecionadas" would agree.

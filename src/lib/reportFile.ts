@@ -30,10 +30,10 @@ function appStyles(): string {
 }
 
 /**
- * `node` (the report) as an HTML file. Elements marked `no-export` are left out, folded parts open,
+ * `node` (the report) as an HTML file in language `lang`. Elements marked `no-export` are left out, folded parts open,
  * and each `img[data-photo]` gets its photo from `photos` (or goes, with its tile, if there's none).
  */
-export async function reportFile(node: HTMLElement, title: string, photos: Map<string, Blob>): Promise<Blob> {
+export async function reportFile(node: HTMLElement, title: string, photos: Map<string, Blob>, lang: string): Promise<Blob> {
   const copy = node.cloneNode(true) as HTMLElement
   for (const el of copy.querySelectorAll('.no-export')) el.remove()
   for (const details of copy.querySelectorAll('details')) details.setAttribute('open', '')
@@ -49,7 +49,7 @@ export async function reportFile(node: HTMLElement, title: string, photos: Map<s
     }
   }
   const html = `<!doctype html>
-<html lang="en">
+<html lang="${escapeHtml(lang)}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

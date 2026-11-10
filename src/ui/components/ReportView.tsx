@@ -1,7 +1,8 @@
 import type { StoredFile } from '../../db/types'
 import { bestAndWorst, type ReportItem, type TripReport } from '../../domain/report'
 import { useObjectUrl } from '../attachments'
-import { fmtDay, fmtDayRange, fmtDuration, fmtLongDay, fmtMoney, fmtMoneyShort, plural } from '../format'
+import { m } from '../../i18n'
+import { fmtDay, fmtDayRange, fmtDuration, fmtLongDay, fmtMoney, fmtMoneyShort } from '../format'
 import { EXPENSE_CATEGORIES, labelOf, PLACE_CATEGORIES, STAY_KINDS, TRANSPORT_MODES } from '../labels'
 import { Stars } from './Reviews'
 
@@ -38,50 +39,50 @@ export function ReportView({ report, shareable, costs, files }: Props) {
         </p>
         <h2>{trip.name}</h2>
         <p className="muted">
-          {fmtDayRange(trip.startDate, trip.endDate)} · {plural(report.days, 'day')}
+          {fmtDayRange(trip.startDate, trip.endDate)} · {m.report.days(report.days)}
         </p>
         {report.cities.length > 0 && <p className="report-route">{report.cities.join(' → ')}</p>}
-        <p className="muted small">{shareable ? plural(report.travellers.length, 'traveller') : report.travellers.join(', ')}</p>
+        <p className="muted small">{shareable ? m.report.travellers(report.travellers.length) : report.travellers.join(', ')}</p>
       </header>
 
       <section className="card">
-        <h3>The trip in numbers</h3>
+        <h3>{m.report.inNumbers}</h3>
         <dl className="tiles">
-          <Tile label="Days" value={report.days} />
-          {report.cities.length > 0 && <Tile label={report.cities.length === 1 ? 'City' : 'Cities'} value={report.cities.length} />}
-          {nights > 0 && <Tile label={nights === 1 ? 'Night away' : 'Nights away'} value={nights} />}
-          {report.activities > 0 && <Tile label={report.activities === 1 ? 'Activity' : 'Activities'} value={report.activities} />}
-          {report.placesVisited > 0 && <Tile label="Places visited" value={report.placesVisited} />}
-          {journeys.count > 0 && <Tile label={journeys.count === 1 ? 'Journey' : 'Journeys'} value={journeys.count} />}
-          {journeys.minutes > 0 && <Tile label="Travelling" value={fmtDuration(journeys.minutes * 60_000)} />}
-          {reviews > 0 && <Tile label={reviews === 1 ? 'Review' : 'Reviews'} value={reviews} />}
-          {!shareable && report.photos.count > 0 && <Tile label={report.photos.count === 1 ? 'Photo' : 'Photos'} value={report.photos.count} />}
-          {showMoney && money.total > 0 && <Tile label="Spent" value={fmtMoneyShort(money.total, trip.currency)} />}
+          <Tile label={m.report.tileDays} value={report.days} />
+          {report.cities.length > 0 && <Tile label={m.report.tileCities(report.cities.length)} value={report.cities.length} />}
+          {nights > 0 && <Tile label={m.report.tileNights(nights)} value={nights} />}
+          {report.activities > 0 && <Tile label={m.report.tileActivities(report.activities)} value={report.activities} />}
+          {report.placesVisited > 0 && <Tile label={m.report.tilePlaces} value={report.placesVisited} />}
+          {journeys.count > 0 && <Tile label={m.report.tileJourneys(journeys.count)} value={journeys.count} />}
+          {journeys.minutes > 0 && <Tile label={m.report.tileTravelling} value={fmtDuration(journeys.minutes * 60_000)} />}
+          {reviews > 0 && <Tile label={m.report.tileReviews(reviews)} value={reviews} />}
+          {!shareable && report.photos.count > 0 && <Tile label={m.report.tilePhotos(report.photos.count)} value={report.photos.count} />}
+          {showMoney && money.total > 0 && <Tile label={m.report.tileSpent} value={fmtMoneyShort(money.total, trip.currency)} />}
         </dl>
         <ul className="report-facts">
           {report.busiestDay && (
             <Fact emoji="📅">
-              Busiest day: {fmtDay(report.busiestDay.day)}, with {report.busiestDay.count} things on
+              {m.report.busiestDay(fmtDay(report.busiestDay.day), report.busiestDay.count)}
             </Fact>
           )}
           {longest && (
             <Fact emoji={labelOf(TRANSPORT_MODES, longest.mode).emoji}>
-              Longest journey: {longest.from} → {longest.to}, {fmtDuration(longest.minutes * 60_000)}
+              {m.report.longestJourney(longest.from, longest.to, fmtDuration(longest.minutes * 60_000))}
             </Fact>
           )}
           {showMoney && priciest && money.byDay.length > 1 && (
             <Fact emoji="💸">
-              Priciest day: {fmtDay(priciest.day)}, {fmtMoney(priciest.amount, trip.currency)}
+              {m.report.priciestDay(fmtDay(priciest.day), fmtMoney(priciest.amount, trip.currency))}
             </Fact>
           )}
           {showMoney && money.biggestMeal && (
             <Fact emoji="🍽️">
-              Most expensive meal: {money.biggestMeal.title}, {fmtMoney(money.biggestMeal.amount, trip.currency)}
+              {m.report.priciestMeal(money.biggestMeal.title, fmtMoney(money.biggestMeal.amount, trip.currency))}
             </Fact>
           )}
           {showMoney && money.biggest && money.biggest.category !== 'food' && (
             <Fact emoji={labelOf(EXPENSE_CATEGORIES, money.biggest.category).emoji}>
-              Biggest expense: {money.biggest.title}, {fmtMoney(money.biggest.amount, trip.currency)}
+              {m.report.biggestExpense(money.biggest.title, fmtMoney(money.biggest.amount, trip.currency))}
             </Fact>
           )}
         </ul>
@@ -92,8 +93,8 @@ export function ReportView({ report, shareable, costs, files }: Props) {
       <StaysSection report={report} />
       {report.ideas.length > 0 && (
         <section className="card">
-          <h3>Ideas for next time</h3>
-          <p className="muted small">Saved, but never visited.</p>
+          <h3>{m.report.ideas}</h3>
+          <p className="muted small">{m.report.ideasHint}</p>
           <ul className="report-list">
             {report.ideas.map((idea) => (
               <li key={idea.id}>
@@ -104,7 +105,7 @@ export function ReportView({ report, shareable, costs, files }: Props) {
                   <strong>{idea.name}</strong>
                   {idea.city && <span className="muted small">{idea.city}</span>}
                 </span>
-                {idea.mustSee && <span className="chip chip-must">must-see</span>}
+                {idea.mustSee && <span className="chip chip-must">{m.report.mustSee}</span>}
               </li>
             ))}
           </ul>
@@ -112,7 +113,7 @@ export function ReportView({ report, shareable, costs, files }: Props) {
       )}
       {photos.length > 0 && (
         <section className="card">
-          <h3>Photos</h3>
+          <h3>{m.common.photos}</h3>
           <div className="photo-grid">
             {photos.map((id) => (
               <ReportPhoto key={id} id={id} file={files!.get(id)!} />
@@ -120,7 +121,7 @@ export function ReportView({ report, shareable, costs, files }: Props) {
           </div>
         </section>
       )}
-      <p className="report-foot muted small">📍 Made with waypoints · {fmtLongDay(report.madeAt.slice(0, 10))}</p>
+      <p className="report-foot muted small">{m.report.madeWith(fmtLongDay(report.madeAt.slice(0, 10)))}</p>
     </>
   )
 }
@@ -149,12 +150,12 @@ function MoneySection({ report, shareable }: { report: TripReport; shareable: bo
   const people = Math.max(1, report.travellers.length)
   return (
     <section className="card">
-      <h3>Money</h3>
+      <h3>{m.report.money}</h3>
       <div>
         <p className="big-number">{fmtMoney(money.total, cur)}</p>
         {money.total > 0 && (
           <p className="muted small">
-            {fmtMoney(money.total / people / Math.max(1, report.days), cur)} a day{people > 1 && ' per person'}
+            {m.report.perDay(fmtMoney(money.total / people / Math.max(1, report.days), cur), people > 1)}
           </p>
         )}
       </div>
@@ -182,38 +183,37 @@ function MoneySection({ report, shareable }: { report: TripReport; shareable: bo
 
       {!shareable && money.people.length > 1 && (
         <>
-          <h4>Who paid what</h4>
+          <h4>{m.report.whoPaid}</h4>
           <ul className="history">
             {money.people.map((p) => (
               <li key={p.id}>
                 <span>{p.name}</span>
                 <span className="money small">
-                  paid {fmtMoney(p.paid, cur)} · their part {fmtMoney(p.share, cur)}
+                  {m.report.paidTheirPart(fmtMoney(p.paid, cur), fmtMoney(p.share, cur))}
                 </span>
               </li>
             ))}
           </ul>
-          <h4>Settling up</h4>
+          <h4>{m.report.settling}</h4>
           {money.toSettle.length ? (
             <ul className="history">
               {money.toSettle.map((p) => (
                 <li key={`${p.from}-${p.to}`}>
-                  <span>
-                    <strong>{p.from}</strong> pays <strong>{p.to}</strong>
-                  </span>
+                  <span>{m.report.paysTo(p.from, p.to)}</span>
                   <span className="money">{fmtMoney(p.amount, cur)}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="small">Everyone is square. 🎉</p>
+            <p className="small">{m.report.everyoneSquare}</p>
           )}
         </>
       )}
       {(money.uncounted > 0 || money.estimated > 0) && (
         <p className="muted small">
-          {money.uncounted > 0 && `${plural(money.uncounted, 'expense')} in a currency without a rate yet ${money.uncounted === 1 ? "isn't" : "aren't"} counted. `}
-          {money.estimated > 0 && `${plural(money.estimated, 'card payment')} ${money.estimated === 1 ? 'counts' : 'count'} at an estimate, until what the bank charged is added.`}
+          {money.uncounted > 0 && m.report.uncounted(money.uncounted)}
+          {money.uncounted > 0 && money.estimated > 0 && ' '}
+          {money.estimated > 0 && m.report.estimated(money.estimated)}
         </p>
       )}
     </section>
@@ -227,7 +227,7 @@ function DayChart({ days, currency }: { days: { day: string; amount: number }[];
   const labelEvery = days.length <= 10 ? 1 : Math.ceil(days.length / 7)
   return (
     <div className="stack" style={{ gap: 6 }}>
-      <h4>By day</h4>
+      <h4>{m.report.byDay}</h4>
       <div className="day-chart" aria-hidden>
         {days.map((d) => (
           <div key={d.day} className="day-col" title={`${fmtDay(d.day)}: ${fmtMoney(d.amount, currency)}`}>
@@ -242,7 +242,7 @@ function DayChart({ days, currency }: { days: { day: string; amount: number }[];
         ))}
       </div>
       <details>
-        <summary className="small muted">Every day's spending</summary>
+        <summary className="small muted">{m.report.everyDay}</summary>
         <ul className="history">
           {days.map((d) => (
             <li key={d.day}>
@@ -260,24 +260,24 @@ function ReviewsSection({ report, shareable }: { report: TripReport; shareable: 
   const { best, worst, rest } = bestAndWorst(report.reviewed)
   return (
     <section className="card">
-      <h3>Reviews</h3>
-      {report.reviewed.length === 0 && <p className="muted small">Nobody reviewed anything.</p>}
+      <h3>{m.report.reviews}</h3>
+      {report.reviewed.length === 0 && <p className="muted small">{m.report.nobodyReviewed}</p>}
       {best.length > 0 && (
         <>
-          <h4>⭐ Best of the trip</h4>
+          <h4>{m.report.bestOfTrip}</h4>
           <ReviewedList items={best} shareable={shareable} />
         </>
       )}
       {worst.length > 0 && (
         <>
-          <h4>👎 Not worth it</h4>
+          <h4>{m.report.notWorthIt}</h4>
           <ReviewedList items={worst} shareable={shareable} />
         </>
       )}
       {rest.length > 0 &&
         (best.length || worst.length ? (
           <details>
-            <summary>Everything else ({rest.length})</summary>
+            <summary>{m.report.everythingElse(rest.length)}</summary>
             <ReviewedList items={rest} shareable={shareable} />
           </details>
         ) : (
@@ -300,7 +300,7 @@ function Average({ value }: { value?: number }) {
   if (value === undefined) return null
   const rounded = Math.round(value * 10) / 10
   return (
-    <span className="stars" aria-label={`Average ${rounded} of 5 stars`}>
+    <span className="stars" aria-label={m.reviews.averageStarsOf(rounded, 5)}>
       ★ <span className="stars-number">{rounded}</span>
     </span>
   )
@@ -327,14 +327,14 @@ function ReviewedList({ items, shareable }: { items: ReportItem[]; shareable: bo
               <Average value={item.average} />
             </div>
             {shareable ? (
-              <p className="muted small">{[rated > 0 && plural(rated, 'review'), missed > 0 && `${missed} didn't go`].filter(Boolean).join(' · ')}</p>
+              <p className="muted small">{[rated > 0 && m.report.reviewCount(rated), missed > 0 && m.report.didntGoCount(missed)].filter(Boolean).join(' · ')}</p>
             ) : (
               <ul className="review-list">
                 {item.reviews.map((r) => (
                   <li key={r.by}>
                     <span className="row">
                       <strong>{r.name}</strong>
-                      {r.missed ? <span className="muted small">didn't go</span> : r.stars !== undefined && <Stars value={r.stars} />}
+                      {r.missed ? <span className="muted small">{m.reviews.didntGoList}</span> : r.stars !== undefined && <Stars value={r.stars} />}
                     </span>
                     {r.note && <span className="prewrap small">{r.note}</span>}
                   </li>
@@ -353,7 +353,7 @@ function StaysSection({ report }: { report: TripReport }) {
   if (!stays.length && !journeys.count) return null
   return (
     <section className="card">
-      <h3>Stays & journeys</h3>
+      <h3>{m.report.staysJourneys}</h3>
       {stays.length > 0 && (
         <ul className="report-list">
           {stays.map((s) => (
@@ -363,7 +363,7 @@ function StaysSection({ report }: { report: TripReport }) {
               </span>
               <span className="list-text">
                 <strong>{s.name}</strong>
-                <span className="muted small">{[s.city, plural(s.nights, 'night')].filter(Boolean).join(' · ')}</span>
+                <span className="muted small">{[s.city, m.report.nights(s.nights)].filter(Boolean).join(' · ')}</span>
               </span>
               <Average value={s.average} />
             </li>
@@ -373,9 +373,9 @@ function StaysSection({ report }: { report: TripReport }) {
       {journeys.count > 0 && (
         <>
           <p>
-            {plural(journeys.count, 'journey')}
-            {journeys.minutes > 0 && `, ${fmtDuration(journeys.minutes * 60_000)} travelling`}
-            {journeys.untimed > 0 && journeys.minutes > 0 && <span className="muted small"> (and {journeys.untimed} without times)</span>}
+            {m.report.journeyCount(journeys.count)}
+            {journeys.minutes > 0 && m.report.travelling(fmtDuration(journeys.minutes * 60_000))}
+            {journeys.untimed > 0 && journeys.minutes > 0 && <span className="muted small">{m.report.withoutTimes(journeys.untimed)}</span>}
           </p>
           <div className="chips">
             {journeys.byMode.map(({ mode, count }) => {

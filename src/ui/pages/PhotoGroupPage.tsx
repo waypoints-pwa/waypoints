@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { ATTACHABLE_TABLES } from '../../db/types'
+import { m } from '../../i18n'
 import { attachableItems, bookingOf, ownerFinder, tripPhotos } from '../attachments'
 import { Notice } from '../components/bits'
 import { PhotosByDay, SelectBar, useSelection } from '../components/Attachments'
 import { FILE_GROUPS, isFileGroup } from '../fileGroups'
-import { plural } from '../format'
 import { ItemGone } from '../items/common'
 import { tripPath, useTrip } from '../tripData'
 
@@ -25,15 +25,15 @@ export function PhotoGroupPage() {
       <h2>{label}</h2>
       {photos.length === 0 ? (
         <>
-          <p className="muted small">No photos here any more.</p>
+          <p className="muted small">{m.files.noPhotosHere}</p>
           <Link className="link small" to={back}>
-            Back to photos
+            {m.files.backToPhotos}
           </Link>
         </>
       ) : (
         <>
           <div className="row spread">
-            <p className="muted small">{plural(photos.length, 'photo')}</p>
+            <p className="muted small">{m.files.photoCount(photos.length)}</p>
             {!selection.active && (
               <button
                 type="button"
@@ -43,13 +43,13 @@ export function PhotoGroupPage() {
                   selection.start()
                 }}
               >
-                Select
+                {m.common.select}
               </button>
             )}
           </div>
           {deleted && <Notice kind="ok">{deleted}</Notice>}
           <PhotosByDay photos={photos} selection={selection} />
-          {selection.active && <SelectBar shown={photos} noun="photo" selection={selection} onDeleted={(n) => setDeleted(`Deleted ${plural(n, 'photo')}.`)} />}
+          {selection.active && <SelectBar shown={photos} noun="photo" selection={selection} onDeleted={(n) => setDeleted(m.files.deletedNotice.photo(n))} />}
         </>
       )}
     </>
@@ -87,15 +87,15 @@ export function PhotoItemPage() {
       </h2>
       {photos.length === 0 ? (
         <>
-          <p className="muted small">No photos here any more.</p>
+          <p className="muted small">{m.files.noPhotosHere}</p>
           <Link className="link small" to={back}>
-            Back to photos
+            {m.files.backToPhotos}
           </Link>
         </>
       ) : (
         <>
           <div className="row spread">
-            <p className="muted small">{plural(photos.length, 'photo')}</p>
+            <p className="muted small">{m.files.photoCount(photos.length)}</p>
             {!selection.active && (
               <button
                 type="button"
@@ -105,13 +105,13 @@ export function PhotoItemPage() {
                   selection.start()
                 }}
               >
-                Select
+                {m.common.select}
               </button>
             )}
           </div>
           {deleted && <Notice kind="ok">{deleted}</Notice>}
           <PhotosByDay photos={photos} selection={selection} />
-          {selection.active && <SelectBar shown={photos} noun="photo" selection={selection} onDeleted={(n) => setDeleted(`Deleted ${plural(n, 'photo')}.`)} />}
+          {selection.active && <SelectBar shown={photos} noun="photo" selection={selection} onDeleted={(n) => setDeleted(m.files.deletedNotice.photo(n))} />}
         </>
       )}
     </>
