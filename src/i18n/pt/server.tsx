@@ -1,0 +1,91 @@
+import type { Messages } from '../en'
+import { plural } from '../plural'
+
+export const server: Messages['server'] = {
+  disconnected: 'Este telemóvel foi desligado do servidor de sincronização. As tuas viagens continuam aqui.',
+  serverSettings: 'Definições do servidor de sincronização',
+  couldntSync: (ago, reason) => `Não foi possível sincronizar${ago ? ` (da última vez ${ago})` : ''}: ${reason}`,
+  savedWillGoUp: (n) => `${plural(n, 'alteração guardada', 'alterações guardadas')} aqui ${n === 1 ? 'será enviada' : 'serão enviadas'} quando o servidor estiver acessível.`,
+  synced: (ago) => `✅ Sincronizado ${ago}`,
+  waitingFirstSync: 'A aguardar a primeira sincronização…',
+  toSend: (n) => `${plural(n, 'alteração', 'alterações')} por enviar`,
+  refused: (n, reason) =>
+    `O servidor recusou ${plural(n, 'alteração', 'alterações')}: ${reason} ${n === 1 ? 'Fica' : 'Ficam'} neste telemóvel e ${n === 1 ? 'é enviada' : 'são enviadas'} outra vez em cada sincronização, por isso atualizar o servidor pode resolver.`,
+  syncing: 'A sincronizar…',
+  syncNow: '🔄 Sincronizar agora',
+  noLongerOnTrip:
+    'Já não estás nesta viagem no servidor de sincronização: alguém te retirou dela, ou foste removido do servidor. A tua cópia fica neste telemóvel, e os links continuam a trazer-te as alterações do grupo.',
+  tripIsOnServer: (name) => `🌐 “${name}” está no servidor.`,
+  backToTrip: 'Voltar à viagem',
+  connectFirst: 'Liga primeiro este telemóvel a um servidor de sincronização.',
+  putTripOnServer: (name) => `Pôr “${name}” no servidor`,
+  moveIntro:
+    'Indica quem é cada viajante no servidor. Recebem a viagem, e todas as alterações a seguir, automaticamente. Quem não está no servidor continua a receber links, e os links já enviados continuam a funcionar.',
+  whosWho: 'Quem é quem',
+  chooseWhichYouAre: 'Escolhe qual dos viajantes és tu: o servidor só mostra a viagem às pessoas que estão nele.',
+  moveNote:
+    'Só as pessoas ligadas aqui podem ver a viagem no servidor. Se não for possível contactar o servidor agora, a viagem é enviada da próxima vez que for.',
+  moveFilesNote: 'As fotos e os documentos também são enviados, e os outros no servidor veem-nos. Os marcados como “só neste telemóvel” ficam aqui.',
+  connectIntro:
+    'Opcional. Com um servidor de sincronização waypoints (num NAS em casa, por exemplo), as viagens que puseres nele chegam sozinhas aos outros que o usam: sem ter de enviar um link depois de cada alteração. As tuas viagens ficam neste telemóvel e funcionam offline de qualquer forma, e os links continuam a funcionar, também para quem não está no servidor.',
+  haveInvite: 'Tenho um convite',
+  runServer: 'O servidor é meu',
+  inviteLabel: 'Link ou código de convite',
+  inviteHint: 'Vem do administrador do servidor. Colar o link inteiro preenche o resto.',
+  invitePlaceholder: 'Um link, ou um código como K7QM-2XRP-9HTW',
+  serverAddress: 'Endereço do servidor',
+  serverCode: 'Código do servidor',
+  serverCodeHint: 'Aparece no registo do servidor quando este arranca. Guarda-o para ti: quem o tiver é administrador.',
+  whoAreYou: 'Quem és tu?',
+  someoneNew: 'Alguém novo',
+  alreadyOnServer: 'Já estás no servidor, com um telemóvel perdido ou novo? Escolhe-te a ti para entrar neste telemóvel como tu.',
+  signsYouIn: (name) => `Este link faz entrar este telemóvel como ${name}.`,
+  yourNameHint: 'Como os outros no servidor te veem, quando te adicionam a uma viagem.',
+  phoneName: 'Nome deste telemóvel',
+  phoneNameHint: 'Aparece na tua lista de telemóveis no servidor.',
+  connecting: 'A ligar…',
+  continue: 'Continuar',
+  signInAs: (name) => `Entrar como ${name}`,
+  connect: 'Ligar',
+  safetyCopyNote:
+    'Primeiro é guardada uma cópia de salvaguarda das tuas viagens (Definições → Cópia de segurança). As viagens que já estão neste telemóvel ficam só nele até as pores no servidor.',
+  disconnectedFrom: (host, waiting) =>
+    `Este telemóvel foi desligado do servidor em ${host}: foi removido dos teus telemóveis, ou foste removido do servidor. As tuas viagens continuam aqui${waiting > 0 ? `, com ${plural(waiting, 'alteração', 'alterações')} que nunca ${waiting === 1 ? 'chegou' : 'chegaram'} ao servidor` : ''}. Os links continuam a funcionar.`,
+  forgetServer: 'Esquecer este servidor',
+  disconnectConfirm: (admin) =>
+    `Desligar este telemóvel do servidor? As viagens ficam aqui, como viagens só neste telemóvel, e os links continuam a funcionar. Para voltares a ligar, vais precisar ${admin ? 'do código do servidor' : 'de um link de acesso do administrador, ou de outro dos teus telemóveis'}.`,
+  alreadyConnected: (name) => `Este telemóvel já está ligado a um servidor, como ${name}. Para usar esse convite, desliga-o primeiro.`,
+  adminChip: 'admin',
+  onHost: (host, trips) => `Em ${host} · ${plural(trips, 'viagem', 'viagens')} no servidor`,
+  disconnectThisPhone: 'Desligar este telemóvel do servidor',
+  stopsSyncing: 'Deixa de sincronizar neste telemóvel. As viagens ficam aqui, e os outros mantêm as deles.',
+  disconnect: 'Desligar do servidor',
+  inviteShareText: (memberName) =>
+    memberName ? `Entra no servidor de sincronização waypoints como ${memberName} com este link:` : 'Junta-te ao meu servidor de sincronização waypoints com este link:',
+  inviteIntro: (memberName) =>
+    memberName ? `Um link de acesso para um telemóvel de ${memberName}. Abre-o nesse telemóvel.` : 'Um convite para alguém novo: pede o nome da pessoa.',
+  worksOnceUntil: (date) => `Funciona uma só vez, até ${date}.`,
+  shareTitle: 'servidor de sincronização waypoints',
+  shareTheLink: '🔗 Partilhar o link',
+  removeFromServerConfirm: (name) =>
+    `Remover ${name} do servidor? Todos os telemóveis da pessoa deixam de sincronizar de imediato. As viagens ficam nos telemóveis dela, e ela continua nas despesas das viagens.`,
+  peopleOnServer: 'Pessoas no servidor',
+  peopleText: (admin) =>
+    `Uma viagem no servidor só é vista pelas pessoas que estão nela. ${admin ? 'Como administrador, convidas as pessoas novas.' : 'As pessoas novas são convidadas pelo administrador.'}`,
+  signInLink: 'Link de acesso',
+  inviteSomeone: '+ Convidar alguém',
+  lostPhone: 'Perdeste um telemóvel? Um link de acesso põe um telemóvel novo de volta como a mesma pessoa, com todas as viagens.',
+  disconnectPhoneConfirm: (label) => `Desligar “${label}” do servidor? Deixa de sincronizar de imediato. As viagens ficam nele.`,
+  yourPhones: 'Os teus telemóveis',
+  yourPhonesText: 'Usa o servidor também noutro telemóvel ou tablet: um link de acesso liga-o como tu.',
+  addAnotherPhone: '+ Adicionar outro telemóvel',
+  connectedPhones: 'Telemóveis ligados',
+  thisPhoneChip: 'este telemóvel',
+  active: (ago) => `Ativo ${ago}`,
+  added: (ago) => `Adicionado ${ago}`,
+  changeAddressText: 'Se o servidor passou a ser acessível noutro endereço, escreve-o aqui. Nada mais muda. Cada telemóvel precisa do novo endereço.',
+  newServerAddress: 'Novo endereço do servidor',
+  checking: 'A verificar…',
+  saveAddress: 'Guardar endereço',
+  changeAddress: 'Alterar endereço',
+}

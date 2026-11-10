@@ -17,7 +17,10 @@ export const files = {
   notOnServerYet: (name: string | undefined): string => `⏳ Not on the server yet: ${name ? `${name}'s` : 'the'} phone hasn't sent it`,
   notOnThisPhone: '📱 Not on this phone',
   oldServer: '⚠️ The sync server is too old for photos and documents: it needs updating',
-  nSelected: (n: number): string => `${n} selected`,
+  nSelected: {
+    photo: (n: number): string => `${n} selected`,
+    document: (n: number): string => `${n} selected`,
+  },
   selectAll: 'Select all',
   deleteSome: {
     photo: (n: number): string => `Delete ${plural(n, 'photo')}?`,

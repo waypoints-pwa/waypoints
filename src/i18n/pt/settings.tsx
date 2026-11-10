@@ -21,7 +21,7 @@ export const settings: Messages['settings'] = {
   connectedAs: (name, host, disconnected) => (
     <>
       🌐 Ligado como {name} a {host}
-      {disconnected ? ', mas este telemóvel foi desligado.' : '.'}
+      {disconnected ? ', mas este telemóvel foi desligado do servidor.' : '.'}
     </>
   ),
   serverOptional: 'Opcional. Com um servidor waypoints, as viagens que lá puseres chegam sozinhas aos outros que o usam, sem enviar links.',

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { runSync } from '../../sync/client'
-import { fmtAgo, plural } from '../format'
+import { m } from '../../i18n'
+import { fmtAgo } from '../format'
 import { useNow, useServer } from '../hooks'
 
 /** When the last sync was, what's waiting, and what went wrong, with a "Sync now" button. */
@@ -14,9 +15,9 @@ export function ServerStatus({ waiting }: { waiting: number }) {
   if (server.lastErrorStatus === 401) {
     return (
       <div className="notice notice-warn small" role="status">
-        <p>This phone was disconnected from the sync server. Your trips are still here.</p>
+        <p>{m.server.disconnected}</p>
         <Link className="btn btn-small" to="/server">
-          Sync server settings
+          {m.server.serverSettings}
         </Link>
       </div>
     )
@@ -37,23 +38,22 @@ export function ServerStatus({ waiting }: { waiting: number }) {
     <div className="stack">
       {server.lastError ? (
         <p className="notice notice-warn small">
-          Couldn't sync{server.lastSyncAt ? ` (last time ${fmtAgo(server.lastSyncAt, now)})` : ''}: {server.lastError}
-          {waiting > 0 && ` ${plural(waiting, 'change')} saved here will go up once the server can be reached.`}
+          {m.server.couldntSync(server.lastSyncAt ? fmtAgo(server.lastSyncAt, now) : undefined, server.lastError)}
+          {waiting > 0 && ` ${m.server.savedWillGoUp(waiting)}`}
         </p>
       ) : (
         <p className="muted small">
-          {server.lastSyncAt ? `✅ Synced ${fmtAgo(server.lastSyncAt, now)}` : 'Waiting for the first sync…'}
-          {waiting > 0 && ` · ${plural(waiting, 'change')} to send`}
+          {server.lastSyncAt ? m.server.synced(fmtAgo(server.lastSyncAt, now)) : m.server.waitingFirstSync}
+          {waiting > 0 && ` · ${m.server.toSend(waiting)}`}
         </p>
       )}
       {server.rejected && server.rejected.length > 0 && (
         <p className="notice notice-warn small">
-          The server refused {plural(server.rejected.length, 'change')}: {server.rejected[0].reason} They stay on this phone and are
-          sent again at each sync, so updating the server may fix it.
+          {m.server.refused(server.rejected.length, server.rejected[0].reason)}
         </p>
       )}
       <button className="btn btn-small" style={{ alignSelf: 'flex-start' }} disabled={busy} onClick={() => void syncNow()}>
-        {busy ? 'Syncing…' : '🔄 Sync now'}
+        {busy ? m.server.syncing : m.server.syncNow}
       </button>
     </div>
   )

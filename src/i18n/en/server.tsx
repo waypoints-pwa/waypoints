@@ -1,0 +1,91 @@
+import { plural } from '../plural'
+
+export const server = {
+  disconnected: 'This phone was disconnected from the sync server. Your trips are still here.',
+  serverSettings: 'Sync server settings',
+  couldntSync: (ago: string | undefined, reason: string): string => `Couldn't sync${ago ? ` (last time ${ago})` : ''}: ${reason}`,
+  savedWillGoUp: (n: number): string => `${plural(n, 'change')} saved here will go up once the server can be reached.`,
+  synced: (ago: string): string => `✅ Synced ${ago}`,
+  waitingFirstSync: 'Waiting for the first sync…',
+  toSend: (n: number): string => `${plural(n, 'change')} to send`,
+  refused: (n: number, reason: string): string =>
+    `The server refused ${plural(n, 'change')}: ${reason} They stay on this phone and are sent again at each sync, so updating the server may fix it.`,
+  syncing: 'Syncing…',
+  syncNow: '🔄 Sync now',
+  noLongerOnTrip:
+    "You're no longer on this trip on the sync server: someone took you off it, or you were removed from the server. Your copy stays on this phone, and links still bring you the group's changes.",
+  tripIsOnServer: (name: string): string => `🌐 “${name}” is on the server.`,
+  backToTrip: 'Back to the trip',
+  connectFirst: 'Connect this phone to a sync server first.',
+  putTripOnServer: (name: string): string => `Put “${name}” on the server`,
+  moveIntro:
+    'Say who each traveller is on the server. They get the trip, and every change after it, by themselves. Anyone not on the server keeps getting links, and links already sent keep working.',
+  whosWho: "Who's who",
+  chooseWhichYouAre: 'Choose which traveller you are: the server only shows the trip to the people on it.',
+  moveNote:
+    "Only the people linked here can see the trip on the server. If the server can't be reached right now, the trip goes up the next time it can.",
+  moveFilesNote: 'Its photos and documents go up too, and the others on the server see them. Those marked “only on this phone” stay here.',
+  // Sync server page
+  connectIntro:
+    "Optional. With a waypoints sync server (on a home NAS, for example), the trips you put on it reach the others on it by themselves: no more sending a link after every change. Your trips stay on this phone and work offline either way, and links keep working, also for people who aren't on the server.",
+  haveInvite: 'I have an invite',
+  runServer: 'I run the server',
+  inviteLabel: 'Invite link or code',
+  inviteHint: "From the server's admin. Pasting the whole link fills in the rest.",
+  invitePlaceholder: 'A link, or a code like K7QM-2XRP-9HTW',
+  serverAddress: 'Server address',
+  serverCode: 'Server code',
+  serverCodeHint: "Printed in the server's log when it starts. Keep it to yourself: whoever has it is an admin.",
+  whoAreYou: 'Who are you?',
+  someoneNew: 'Someone new',
+  alreadyOnServer: 'Already on the server, on a lost or new phone? Pick yourself to sign this phone in as you.',
+  signsYouIn: (name: string): string => `This link signs this phone in as ${name}.`,
+  yourNameHint: 'How the others on the server see you, when they add you to a trip.',
+  phoneName: "This phone's name",
+  phoneNameHint: 'Shown in your list of phones on the server.',
+  connecting: 'Connecting…',
+  continue: 'Continue',
+  signInAs: (name: string): string => `Sign in as ${name}`,
+  connect: 'Connect',
+  safetyCopyNote:
+    'A safety copy of your trips is kept first (Settings → Backup). Trips already on this phone stay only on it until you put them on the server.',
+  disconnectedFrom: (host: string, waiting: number): string =>
+    `This phone was disconnected from the server at ${host}: it was removed from your phones, or you were removed from the server. Your trips are still here${waiting > 0 ? `, with ${plural(waiting, 'change')} that never reached the server` : ''}. Links keep working.`,
+  forgetServer: 'Forget this server',
+  disconnectConfirm: (admin: boolean): string =>
+    `Disconnect this phone from the server? Its trips stay here, as phone-only trips, and links keep working. To connect again, you'll need ${admin ? 'the server code' : 'a sign-in link from the admin, or from another of your phones'}.`,
+  alreadyConnected: (name: string): string => `This phone is already connected to a server, as ${name}. To use that invite, disconnect first.`,
+  adminChip: 'admin',
+  onHost: (host: string, trips: number): string => `On ${host} · ${plural(trips, 'trip')} on the server`,
+  disconnectThisPhone: 'Disconnect this phone',
+  stopsSyncing: 'Stops syncing on this phone. Its trips stay here, and the others keep theirs.',
+  disconnect: 'Disconnect',
+  inviteShareText: (memberName: string | undefined): string =>
+    memberName ? `Sign in to the waypoints sync server as ${memberName} with this link:` : 'Join my waypoints sync server with this link:',
+  inviteIntro: (memberName: string | undefined): string =>
+    memberName ? `A sign-in link for a phone of ${memberName}. Open it on that phone.` : 'An invite for someone new: it asks for their name.',
+  worksOnceUntil: (date: string): string => `It works once, until ${date}.`,
+  shareTitle: 'waypoints sync server',
+  shareTheLink: '🔗 Share the link',
+  removeFromServerConfirm: (name: string): string =>
+    `Remove ${name} from the server? All their phones stop syncing right away. Their trips stay on their phones, and they stay in the trips' expenses.`,
+  peopleOnServer: 'People on the server',
+  peopleText: (admin: boolean): string =>
+    `A trip on the server is seen only by the people on it. ${admin ? 'As the admin, you invite new people.' : 'New people are invited by the admin.'}`,
+  signInLink: 'Sign-in link',
+  inviteSomeone: '+ Invite someone',
+  lostPhone: 'Lost a phone? A sign-in link puts a new phone back in as the same person, with all their trips.',
+  disconnectPhoneConfirm: (label: string): string => `Disconnect “${label}”? It stops syncing right away. Its trips stay on it.`,
+  yourPhones: 'Your phones',
+  yourPhonesText: 'Use the server on another phone or tablet too: a sign-in link connects it as you.',
+  addAnotherPhone: '+ Add another phone',
+  connectedPhones: 'Connected phones',
+  thisPhoneChip: 'this phone',
+  active: (ago: string): string => `Active ${ago}`,
+  added: (ago: string): string => `Added ${ago}`,
+  changeAddressText: 'If the server is now reached at a new address, enter it here. Nothing else changes. Each phone needs the new address.',
+  newServerAddress: 'New server address',
+  checking: 'Checking…',
+  saveAddress: 'Save address',
+  changeAddress: 'Change address',
+}

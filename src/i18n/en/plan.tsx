@@ -25,6 +25,7 @@ export const plan = {
   dayOf: (day: number, length: number): string => `Day ${day} of ${length}`,
   nothingElseToday: 'Nothing else with a time today.',
   tonight: 'Tonight:',
+  dayToday: (date: string): string => `${date} · Today`,
   dayN: (n: number): string => `Day ${n}`,
   beforeTrip: 'Before the trip',
   afterTrip: 'After the trip',

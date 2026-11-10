@@ -167,6 +167,30 @@ Glossary (PT-PT; use these words, also in later parts):
 | Night(s) away | Noite(s) fora | Travelling | Em viagem |
 | Spent | Gasto | Busiest day | Dia mais cheio |
 | Priciest day | Dia mais caro | | |
+| invite / Invite someone | convite / Convidar alguém | admin (chip) / the admin | admin / o administrador |
+| sign-in link | link de acesso | Sign in as Ana | Entrar como Ana |
+| Connect / Connecting… | Ligar / A ligar… | Disconnect (button) | Desligar do servidor |
+| Disconnect this phone | Desligar este telemóvel do servidor | disconnected (a phone) | desligado do servidor |
+| server address | endereço do servidor (never "morada") | server code | código do servidor |
+| Sync now / Syncing… / Synced | Sincronizar agora / A sincronizar… / Sincronizado | change / changes | alteração / alterações |
+| Forget this server | Esquecer este servidor | Continue / Checking… | Continuar / A verificar… |
+| I have an invite / I run the server | Tenho um convite / O servidor é meu | Who are you? / Someone new | Quem és tu? / Alguém novo |
+| People on the server / Your phones | Pessoas no servidor / Os teus telemóveis | this phone (chip) | este telemóvel |
+| Add another phone / Connected phones | Adicionar outro telemóvel / Telemóveis ligados | This phone's name | Nome deste telemóvel |
+| Change address / Save address | Alterar endereço / Guardar endereço | Who's who | Quem é quem |
+| your copy | a tua cópia | group chat | conversa de grupo |
+| Share trip link / Share the link | Partilhar link da viagem / Partilhar o link | Link copied / Shared | Link copiado / Partilhado |
+| Save as a file | Guardar como ficheiro | Send update | Enviar atualização |
+| Open a trip / Open link / Open a file | Abrir uma viagem / Abrir link / Abrir um ficheiro | Paste / Paste trip link | Colar / Colar link da viagem |
+| Add to my trips / Update my copy | Adicionar às minhas viagens / Atualizar a minha cópia | Open the trip | Abrir a viagem |
+| Add me / Skip for now | Adicionar-me / Agora não | phone-only trip | viagem só neste telemóvel |
+| Open in the waypoints app | Abrir na app waypoints | Today | Hoje |
+| server log | registo do servidor | Active (a phone) | Ativo |
+| characters (link length) | carateres | reachable (server) | acessível |
+| Put on the server | Pôr no servidor | Remove from the server | Remover do servidor |
+| refused (by the server) | recusou | Waiting for first sync… | A aguardar a primeira sincronização… |
+| Add to Home Screen | Adicionar ao ecrã principal | unsent change(s) | alteração / alterações por enviar |
+| chat app | app de conversa | tablet | tablet |
 
 Style: address the person as "tu" ("Ainda não tens viagens"), buttons in the infinitive ("Exportar
 todas as viagens"), European forms only (ecrã, ficheiro, telemóvel, partilhar, guardar, "a carregar";
@@ -321,12 +345,14 @@ Do not touch: `src/domain/`, `src/db/`, `src/sync/`, `src/lib/`, `server/`, `scr
   2. plan and items: trip tabs, Plan, stays, journeys, activities, places and import, trip form and
      info, packing, shared form fields;
   3. money, files, reviews, votes and the trip report (page and exported file);
-  4. sharing and server: open/share/link pages, server pages and notices, text in `src/lib`,
-     `src/sync`, `src/db` and `src/domain` (error reasons become codes), sync server reasons as codes
-     (new server image), calendar export;
-  5. the switch: Language in Settings (Automatic / English / Português), Portuguese on phones set to
-     Portuguese, dates and numbers following the app's language, `<html lang>`, What's new notes in
-     both languages (CI-enforced), the guide and its screenshots in Portuguese, version bump.
+  4. sharing and server screens: open/share/link pages, server pages and notices
+     (`translate-sharing-and-server`);
+  5. text outside the screens: text in `src/lib`, `src/sync`, `src/db` and `src/domain` (error
+     reasons become codes), sync server reasons as codes (new server image), packing templates,
+     calendar export;
+  6. the switch: Language in Settings (Automatic / English / Português), Portuguese on phones set
+     to Portuguese, dates and numbers following the app's language, `<html lang>`, What's new notes
+     in both languages (CI-enforced), the guide and its screenshots in Portuguese, version bump.
 - Decided with Ricardo: phone's language plus a Settings override; What's new, the guide and sync
   server messages are translated too; informal "tu"; trajeto, link, locais, telemóvel; a series with
   the switch at the end, so nobody sees a half-translated app.

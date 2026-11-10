@@ -156,7 +156,7 @@ export function SelectBar({
   }
   return (
     <div className="select-bar">
-      <strong>{m.files.nSelected(n)}</strong>
+      <strong>{m.files.nSelected[noun](n)}</strong>
       <button type="button" className="btn btn-small" onClick={() => selection.setAll(shown.map((a) => a.id))}>
         {m.files.selectAll}
       </button>

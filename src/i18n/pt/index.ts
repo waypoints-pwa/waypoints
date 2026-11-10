@@ -13,8 +13,10 @@ import { places } from './places'
 import { plan } from './plan'
 import { report } from './report'
 import { reviews } from './reviews'
+import { server } from './server'
 import { settings } from './settings'
+import { share } from './share'
 import { stays } from './stays'
 import { trip } from './trip'
 
-export const pt: Messages = { activities, common, fields, files, home, items, journeys, labels, money, packing, places, plan, report, reviews, settings, stays, trip }
+export const pt: Messages = { activities, common, fields, files, home, items, journeys, labels, money, packing, places, plan, report, reviews, server, settings, share, stays, trip }

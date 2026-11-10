@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { moveTripToServer } from '../../db/actions'
 import type { ServerConfig } from '../../db/serverState'
+import { m } from '../../i18n'
 import { EmptyState } from '../components/bits'
 import { Field, FormError } from '../components/fields'
 import { usable, useServer } from '../hooks'
@@ -16,9 +17,9 @@ export function MoveToServerPage() {
   if (t.server) {
     return (
       <EmptyState>
-        <p>🌐 “{t.trip.name}” is on the server.</p>
+        <p>{m.server.tripIsOnServer(t.trip.name)}</p>
         <Link className="btn" to={tripPath(t.trip.id, 'trip')}>
-          Back to the trip
+          {m.server.backToTrip}
         </Link>
       </EmptyState>
     )
@@ -26,9 +27,9 @@ export function MoveToServerPage() {
   if (!connected) {
     return (
       <EmptyState>
-        <p>Connect this phone to a sync server first.</p>
+        <p>{m.server.connectFirst}</p>
         <Link className="btn btn-primary" to="/server">
-          Sync server
+          {m.settings.syncServer}
         </Link>
       </EmptyState>
     )
@@ -65,7 +66,7 @@ function MoveForm({ t, server }: { t: TripData; server: ServerConfig }) {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!used.has(server.member.id)) return setError('Choose which traveller you are: the server only shows the trip to the people on it.')
+    if (!used.has(server.member.id)) return setError(m.server.chooseWhichYouAre)
     setBusy(true)
     try {
       await moveTripToServer(t.trip.id, Object.fromEntries(t.travellers.map((x) => [x.id, links[x.id]])))
@@ -77,27 +78,24 @@ function MoveForm({ t, server }: { t: TripData; server: ServerConfig }) {
 
   return (
     <form className="form" onSubmit={(e) => void onSubmit(e)}>
-      <h2>Put “{t.trip.name}” on the server</h2>
-      <p className="muted">
-        Say who each traveller is on the server. They get the trip, and every change after it, by themselves. Anyone not on the server
-        keeps getting links, and links already sent keep working.
-      </p>
+      <h2>{m.server.putTripOnServer(t.trip.name)}</h2>
+      <p className="muted">{m.server.moveIntro}</p>
 
-      <div className="stack" role="group" aria-label="Who's who">
+      <div className="stack" role="group" aria-label={m.server.whosWho}>
         {t.travellers.map((traveller) => (
-          <Field key={traveller.id} label={traveller.name + (traveller.id === t.me?.id ? ' (you)' : '')}>
+          <Field key={traveller.id} label={traveller.name + (traveller.id === t.me?.id ? m.trip.youParen : '')}>
             <select
               className="input"
               value={links[traveller.id] ?? ''}
               onChange={(e) => setLinks((current) => ({ ...current, [traveller.id]: e.target.value || undefined }))}
             >
-              <option value="">Not on the server: gets links</option>
+              <option value="">{m.trip.notOnServerGetsLinks}</option>
               {members
-                .filter((m) => m.id === links[traveller.id] || !used.has(m.id))
-                .map((m) => (
-                  <option key={m.id} value={m.id}>
-                    🌐 {m.name}
-                    {m.id === server.member.id ? ' (you)' : ''}
+                .filter((x) => x.id === links[traveller.id] || !used.has(x.id))
+                .map((x) => (
+                  <option key={x.id} value={x.id}>
+                    🌐 {x.name}
+                    {x.id === server.member.id ? m.trip.youParen : ''}
                   </option>
                 ))}
             </select>
@@ -105,22 +103,17 @@ function MoveForm({ t, server }: { t: TripData; server: ServerConfig }) {
         ))}
       </div>
 
-      <p className="muted small">
-        Only the people linked here can see the trip on the server. If the server can't be reached right now, the trip goes up the
-        next time it can.
-      </p>
+      <p className="muted small">{m.server.moveNote}</p>
       {t.attachments.some((a) => !a.private) && (
-        <p className="muted small">
-          Its photos and documents go up too, and the others on the server see them. Those marked “only on this phone” stay here.
-        </p>
+        <p className="muted small">{m.server.moveFilesNote}</p>
       )}
       <FormError error={error} />
       <div className="form-actions">
         <button type="button" className="btn btn-ghost" onClick={() => navigate(tripPath(t.trip.id, 'trip'))}>
-          Cancel
+          {m.common.cancel}
         </button>
         <button type="submit" className="btn btn-primary" disabled={busy}>
-          🌐 Put it on the server
+          {m.trip.putOnServer}
         </button>
       </div>
     </form>
