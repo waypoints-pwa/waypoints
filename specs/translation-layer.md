@@ -1,6 +1,6 @@
 # Translation layer (Portuguese, part 1)
 
-Status: ready
+Status: building
 Issue: https://github.com/waypoints-pwa/waypoints/issues/69
 Builds after: none
 
