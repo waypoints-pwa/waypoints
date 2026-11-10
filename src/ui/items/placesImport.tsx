@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { m } from '../../i18n'
 import { addRecords, patchRecord } from '../../db/actions'
 import { SETTINGS } from '../../db/db'
 import type { PlaceCategory } from '../../db/types'
@@ -9,7 +10,6 @@ import { cityAt, reverseAddressOnline } from '../../lib/places'
 import { GOOGLE_UNREACHABLE, lookUpGoogleMaps } from '../../sync/googleMaps'
 import { BackLink, Notice } from '../components/bits'
 import { ChoiceChips, TextField } from '../components/fields'
-import { plural } from '../format'
 import { useSetting } from '../hooks'
 import { PLACE_CATEGORIES } from '../labels'
 import { tripPath, useTrip } from '../tripData'
@@ -59,11 +59,11 @@ export function PlacesImportPage() {
     const url = pasted.trim()
     if (!url || looking) return
     setLookupError(undefined)
-    if (!safeHttpUrl(url) || !isGoogleMapsUrl(url)) return setLookupError("That's not a Google Maps link.")
+    if (!safeHttpUrl(url) || !isGoogleMapsUrl(url)) return setLookupError(m.places.notAGoogleLink)
     setLooking(true)
     try {
       const answer = await lookUpGoogleMaps(url)
-      if (answer.kind === 'place') return setLookupError("That's a single place: add it with + Place.")
+      if (answer.kind === 'place') return setLookupError(m.places.import.singlePlace)
       const towns = new Map<string, string>()
       await Promise.all(
         answer.places.map(async (p) => {
@@ -121,43 +121,43 @@ export function PlacesImportPage() {
 
   return (
     <div className="stack">
-      <BackLink to={back}>Places</BackLink>
-      <h2>Import a Google Maps list</h2>
+      <BackLink to={back}>{m.places.title}</BackLink>
+      <h2>{m.places.import.importTitle}</h2>
       {added !== undefined ? (
         <>
-          <Notice kind="ok">Added {plural(added, 'place')}.</Notice>
+          <Notice kind="ok">{m.places.import.added(added)}</Notice>
           {progress && (
             <p className="muted small">
-              Finding addresses… {progress.done} of {progress.total}
+              {m.places.import.findingAddresses(progress.done, progress.total)}
             </p>
           )}
           <button type="button" className="btn btn-primary" style={{ alignSelf: 'flex-start' }} onClick={() => navigate(back)}>
-            Done
+            {m.common.done}
           </button>
         </>
       ) : !found ? (
         <>
           <TextField
-            label="Shared Google Maps list link"
+            label={m.places.import.listLink}
             type="url"
             value={pasted}
             onChange={setPasted}
             placeholder="https://maps.app.goo.gl/…"
             maxLength={2000}
-            hint="In Google Maps, open the list, tap Share → Copy link."
+            hint={m.places.import.listHint}
           />
           <button type="button" className="btn btn-small btn-primary" style={{ alignSelf: 'flex-start' }} disabled={looking || !pasted.trim()} onClick={() => void lookUp()}>
-            Look it up
+            {m.places.import.lookItUp}
           </button>
-          {looking && <p className="muted small">Looking it up…</p>}
+          {looking && <p className="muted small">{m.places.lookingItUp}</p>}
           {lookupError && <Notice kind="warn">{lookupError}</Notice>}
         </>
       ) : (
         <>
           <h3>
-            {found.name || 'Shared list'} <span className="count">{plural(rows.length, 'place')}</span>
+            {found.name || m.places.import.sharedList} <span className="count">{m.places.import.placeCount(rows.length)}</span>
           </h3>
-          <ChoiceChips label="Kind" options={PLACE_CATEGORIES} value={category} onChange={setCategory} />
+          <ChoiceChips label={m.places.kind} options={PLACE_CATEGORIES} value={category} onChange={setCategory} />
           <ul className="list">
             {rows.map(({ place, existing }) => {
               const on = isTicked(place.link, existing)
@@ -169,7 +169,7 @@ export function PlacesImportPage() {
                     <span>
                       {place.name}
                       {sub && <small>{sub}</small>}
-                      {existing && <small>Already in the trip</small>}
+                      {existing && <small>{m.places.import.alreadyInTrip}</small>}
                     </span>
                   </label>
                 </li>
@@ -178,10 +178,10 @@ export function PlacesImportPage() {
           </ul>
           <div className="actions">
             <button type="button" className="btn btn-primary" disabled={adding || ticked.length === 0} onClick={() => void add()}>
-              Add {plural(ticked.length, 'place')}
+              {m.places.import.addCount(ticked.length)}
             </button>
             <Link className="btn" to={back}>
-              Cancel
+              {m.common.cancel}
             </Link>
           </div>
         </>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
+import { m } from '../../i18n'
 import { patchRecord } from '../../db/actions'
 import type { Place, PlaceCategory } from '../../db/types'
 import { SETTINGS } from '../../db/db'
@@ -12,7 +13,7 @@ import { DetailHead, EmptyState, Notice } from '../components/bits'
 import { ChoiceChips, NotesField, TextField } from '../components/fields'
 import { AddressField, CityField } from '../components/PlaceFields'
 import { MapLinks, WebLink } from '../components/ItemLinks'
-import { fmtDayTime, plural } from '../format'
+import { fmtDayTime } from '../format'
 import { usable, useServer, useSetting } from '../hooks'
 import { labelOf, PLACE_CATEGORIES } from '../labels'
 import { tripPath, useTrip } from '../tripData'
@@ -57,46 +58,46 @@ export function PlacesPage() {
     <>
       <div className="section-head">
         <h2>
-          Places <span className="count">{t.places.length}</span>
+          {m.places.title} <span className="count">{t.places.length}</span>
         </h2>
         <div className="actions">
           {server && (
             <Link className="btn btn-small" to={tripPath(t.trip.id, 'places', 'import')}>
-              Import list
+              {m.places.importList}
             </Link>
           )}
           <Link className="btn btn-small btn-primary" to={tripPath(t.trip.id, 'places', 'new')}>
-            + Place
+            {m.places.addPlace}
           </Link>
         </div>
       </div>
       {t.places.length === 0 ? (
         <EmptyState>
           <p className="big-emoji">📍</p>
-          <p>Save the places you want to check out: sights, restaurants, bars, viewpoints.</p>
-          <p className="muted small">Paste a Google or Apple Maps link to open them in one tap later.</p>
+          <p>{m.places.emptyIntro}</p>
+          <p className="muted small">{m.places.emptyHint}</p>
           {server && (
             <p className="muted small">
-              Have a shared Google Maps list? <Link className="link" to={tripPath(t.trip.id, 'places', 'import')}>Import it</Link>
+              {m.places.haveSharedList} <Link className="link" to={tripPath(t.trip.id, 'places', 'import')}>{m.places.importIt}</Link>
             </p>
           )}
         </EmptyState>
       ) : (
         <>
           {cities.length > 1 && (
-            <div className="chips" aria-label="City">
+            <div className="chips" aria-label={m.places.city}>
               <button className="toggle-chip" aria-pressed={city === null} onClick={() => setFilter('city', null)}>
-                All cities
+                {m.places.allCities}
               </button>
               {cities.map((c) => (
                 <button key={c} className="toggle-chip" aria-pressed={city === c} onClick={() => setFilter('city', city === c ? null : c)}>
-                  {c || 'No city'}
+                  {c || m.places.noCity}
                 </button>
               ))}
             </div>
           )}
           {categories.length > 1 && (
-            <div className="chips" aria-label="Category">
+            <div className="chips" aria-label={m.places.category}>
               {categories.map((c) => (
                 <button key={c} className="toggle-chip" aria-pressed={category === c} onClick={() => setFilter('category', category === c ? null : c)}>
                   {PLACE_CATEGORIES[c].emoji} {PLACE_CATEGORIES[c].label}
@@ -107,13 +108,13 @@ export function PlacesPage() {
           {visited > 0 && (
             <label className="check small">
               <input type="checkbox" checked={hideVisited} onChange={(e) => setFilter('visited', e.target.checked ? 'hide' : null)} />
-              <span>Hide the {plural(visited, 'place')} you've been to</span>
+              <span>{m.places.hideVisited(visited)}</span>
             </label>
           )}
           {group && t.votes.length > 0 && (
             <div className="chips">
               <button className="toggle-chip" aria-pressed={wanted} onClick={() => setFilter('sort', wanted ? null : 'wanted')}>
-                Most wanted first
+                {m.places.mostWanted}
               </button>
             </div>
           )}
@@ -121,7 +122,7 @@ export function PlacesPage() {
             .filter((c) => shown.some((p) => cityOf(p) === c))
             .map((c) => (
               <section key={c}>
-                {cities.length > 1 && <h3 className="group-title">{c || 'No city'}</h3>}
+                {cities.length > 1 && <h3 className="group-title">{c || m.places.noCity}</h3>}
                 <ul className="list">
                   {(() => {
                     const ordered = shown
@@ -134,7 +135,7 @@ export function PlacesPage() {
                 </ul>
               </section>
             ))}
-          {shown.length === 0 && <p className="muted">No places match these filters.</p>}
+          {shown.length === 0 && <p className="muted">{m.places.noMatch}</p>}
         </>
       )}
     </>
@@ -153,7 +154,7 @@ function PlaceRow({ place }: { place: Place }) {
         </span>
         <span className="list-text">
           <strong>{place.name}</strong>
-          <span className="muted small">{[place.mustSee && '⭐ Must see', wants > 0 && wantLabel(wants), place.notes?.split('\n')[0] || place.address || category.label].filter(Boolean).join(' · ')}</span>
+          <span className="muted small">{[place.mustSee && m.places.mustSee, wants > 0 && wantLabel(wants), place.notes?.split('\n')[0] || place.address || category.label].filter(Boolean).join(' · ')}</span>
         </span>
       </Link>
       <WantToGo place={place} variant="row" />
@@ -161,7 +162,7 @@ function PlaceRow({ place }: { place: Place }) {
         type="button"
         className="icon-btn"
         aria-pressed={Boolean(place.visited)}
-        aria-label={place.visited ? `Mark ${place.name} as not visited` : `Mark ${place.name} as visited`}
+        aria-label={place.visited ? m.places.markNotVisited(place.name) : m.places.markVisited(place.name)}
         onClick={() => void patchRecord('places', place.id, { visited: place.visited ? undefined : true })}
       >
         <span className="tick" aria-hidden>
@@ -202,11 +203,11 @@ function PlaceForm({ existing }: { existing?: Place }) {
     const url = input.trim()
     if (!url || looking) return
     setLookupError(undefined)
-    if (!safeHttpUrl(url) || !isGoogleMapsUrl(url)) return setLookupError("That's not a Google Maps link.")
+    if (!safeHttpUrl(url) || !isGoogleMapsUrl(url)) return setLookupError(m.places.notAGoogleLink)
     setLooking(true)
     try {
       const answer = await lookUpGoogleMaps(url)
-      if (answer.kind === 'list') return setLookupError("That's a list, not a place.")
+      if (answer.kind === 'list') return setLookupError(m.places.isAList)
       const { place } = answer
       setName(place.name)
       setLink(place.link)
@@ -229,8 +230,8 @@ function PlaceForm({ existing }: { existing?: Place }) {
   }
 
   const onSubmit = () => {
-    if (!name.trim()) return setError('Give the place a name.')
-    if (link.trim() && !safeHttpUrl(link)) return setError('The link should be a web address, like a Google Maps link.')
+    if (!name.trim()) return setError(m.places.giveName)
+    if (link.trim() && !safeHttpUrl(link)) return setError(m.places.linkNotWeb)
     void save({
       name: name.trim(),
       category: category as PlaceCategory,
@@ -246,11 +247,11 @@ function PlaceForm({ existing }: { existing?: Place }) {
   }
 
   return (
-    <ItemForm title={existing ? 'Edit place' : 'New place'} error={error} busy={busy} onSubmit={onSubmit}>
+    <ItemForm title={existing ? m.places.editTitle : m.places.newTitle} error={error} busy={busy} onSubmit={onSubmit}>
       {!existing && server && (
         <div className="stack">
           <TextField
-            label="Paste a Google Maps link"
+            label={m.places.pasteLink}
             type="url"
             value={pasted}
             onChange={setPasted}
@@ -263,17 +264,17 @@ function PlaceForm({ existing }: { existing?: Place }) {
             }}
             placeholder="https://maps.app.goo.gl/…"
             maxLength={2000}
-            hint="In Google Maps, tap Share → Copy link."
+            hint={m.places.pasteHint}
           />
           <button type="button" className="btn btn-small" style={{ alignSelf: 'flex-start' }} disabled={looking || !pasted.trim()} onClick={() => void fillIn(pasted)}>
-            Fill in
+            {m.places.fillIn}
           </button>
-          {looking && <p className="muted small">Looking it up…</p>}
+          {looking && <p className="muted small">{m.places.lookingItUp}</p>}
           {lookupError && <Notice kind="warn">{lookupError}</Notice>}
         </div>
       )}
-      <TextField label="Name" value={name} onChange={setName} placeholder="Livraria Lello, Time Out Market…" maxLength={200} autoFocus={!existing} />
-      <ChoiceChips label="Kind" options={PLACE_CATEGORIES} value={category} onChange={setCategory} />
+      <TextField label={m.common.name} value={name} onChange={setName} placeholder={m.places.namePlaceholder} maxLength={200} autoFocus={!existing} />
+      <ChoiceChips label={m.places.kind} options={PLACE_CATEGORIES} value={category} onChange={setCategory} />
       <CityField value={city} onChange={setCity} />
       <AddressField
         value={address}
@@ -284,20 +285,20 @@ function PlaceForm({ existing }: { existing?: Place }) {
         }}
       />
       <TextField
-        label="Link"
+        label={m.common.link}
         type="url"
         value={link}
         onChange={setLink}
         placeholder="https://maps.app.goo.gl/…"
         maxLength={2000}
-        hint="In Google or Apple Maps, tap Share → Copy link, then paste it here. Or the place's website."
+        hint={m.places.linkHint}
       />
-      <NotesField value={notes} onChange={setNotes} placeholder="Why go, what to order, opening hours…" />
+      <NotesField value={notes} onChange={setNotes} placeholder={m.places.notesPlaceholder} />
       <label className="check">
         <input type="checkbox" checked={mustSee} onChange={(e) => setMustSee(e.target.checked)} />
         <span>
-          ⭐ Must see
-          <small>Shown first in the list.</small>
+          {m.places.mustSee}
+          <small>{m.places.shownFirst}</small>
         </span>
       </label>
     </ItemForm>
@@ -319,10 +320,10 @@ export function PlacePage() {
       <DetailHead emoji={category.emoji} title={place.name} subtitle={[category.label, place.city].filter(Boolean).join(' · ')} />
       <div className="actions">
         <button type="button" className="toggle-chip" aria-pressed={Boolean(place.mustSee)} onClick={() => void patchRecord('places', place.id, { mustSee: place.mustSee ? undefined : true })}>
-          ⭐ Must see
+          {m.places.mustSee}
         </button>
         <button type="button" className="toggle-chip" aria-pressed={Boolean(place.visited)} onClick={() => void patchRecord('places', place.id, { visited: place.visited ? undefined : true })}>
-          ✅ Been there
+          {m.places.beenThere}
         </button>
         <WantToGo place={place} variant="chip" />
       </div>
@@ -334,19 +335,19 @@ export function PlacePage() {
       <section className="card">
         {place.address && <p className="prewrap">{place.address}</p>}
         <div className="actions">
-          {link && /maps|goo\.gl|maps\.apple/i.test(link) ? <WebLink url={link}>Open saved map link</WebLink> : <WebLink url={link}>Website</WebLink>}
+          {link && /maps|goo\.gl|maps\.apple/i.test(link) ? <WebLink url={link}>{m.places.openSavedMapLink}</WebLink> : <WebLink url={link}>{m.common.website}</WebLink>}
         </div>
         <MapLinks query={mapQuery(place.name, place.address ?? place.city)} />
       </section>
       {place.notes && (
         <section className="card">
-          <h3>Notes</h3>
+          <h3>{m.common.notes}</h3>
           <p className="prewrap">{place.notes}</p>
         </section>
       )}
       <ReviewsCard target={{ table: 'places', record: place }} />
       <section className="card">
-        <h3>Plan a visit</h3>
+        <h3>{m.places.planAVisit}</h3>
         {visits.length > 0 && (
           <ul className="list">
             {visits.map((a) => (
@@ -359,7 +360,7 @@ export function PlacePage() {
           </ul>
         )}
         <Link className="btn btn-small" style={{ alignSelf: 'flex-start' }} to={`${tripPath(t.trip.id, 'activities', 'new')}?place=${place.id}`}>
-          🗓️ Add to the plan
+          {m.places.addToPlan}
         </Link>
       </section>
       <AttachmentsCard table="places" id={place.id} />
