@@ -31,8 +31,8 @@ Specced ideas live in their own files in this folder. Shipped features are in `C
 - Sync server: "who changed what" history; admin view of all trips; renaming a member.
 - Quality: the browser check exists (`npm run smoke`, in the repo and CI) with two phones, share and merge;
   calendar export is still to add.
-- Portuguese, parts 3 to 5 (`translation-layer` lists them; part 2 is `translate-plan-and-items`): the remaining screens,
-  then the Language setting.
+- Portuguese, parts 4 and 5 (`translation-layer` lists them; part 3 is `translate-money-and-files`): the sharing and
+  server screens, then the Language setting.
 
 ### Manual checks, not features
 - `window.print()` in the iPhone Home Screen app (the file is the fallback).
