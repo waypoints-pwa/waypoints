@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router'
 import { db, SETTINGS } from '../../db/db'
 import type { Day, Trip } from '../../db/types'
 import { tripPhase } from '../../domain/itinerary'
+import { m } from '../../i18n'
 import { LINKS } from '../../lib/links'
 import { EmptyState } from '../components/bits'
 import { SupportLine } from '../components/SupportLine'
@@ -51,16 +52,16 @@ export function TripsPage() {
     <>
       <WhatsNewCard />
       <div className="section-head">
-        <h2>Your trips</h2>
+        <h2>{m.home.yourTrips}</h2>
         <Link className="btn btn-small btn-primary" to="/new">
-          + New trip
+          {m.home.newTrip}
         </Link>
       </div>
-      <TripGroup title="Now" trips={groups.ongoing} today={today} onServer={onServer} />
-      <TripGroup title="Coming up" trips={groups.upcoming} today={today} onServer={onServer} />
-      <TripGroup title="Past trips" trips={groups.past} today={today} onServer={onServer} />
+      <TripGroup title={m.home.groupNow} trips={groups.ongoing} today={today} onServer={onServer} />
+      <TripGroup title={m.home.groupComingUp} trips={groups.upcoming} today={today} onServer={onServer} />
+      <TripGroup title={m.home.groupPast} trips={groups.past} today={today} onServer={onServer} />
       <Link className="btn btn-ghost" to="/open">
-        🔗 Open a trip link or file
+        {m.home.openTripLinkOrFile}
       </Link>
       <SupportLine className="support-line" />
     </>
@@ -86,11 +87,11 @@ function TripRow({ trip, today, onServer }: { trip: Trip; today: Day; onServer: 
   const chip =
     phase.phase === 'upcoming'
       ? phase.daysToGo === 1
-        ? 'Tomorrow'
-        : `In ${phase.daysToGo} days`
+        ? m.home.tomorrow
+        : m.home.inDays(phase.daysToGo)
       : phase.phase === 'ongoing'
-        ? `Day ${phase.day} of ${phase.length}`
-        : 'Done'
+        ? m.home.dayOf(phase.day, phase.length)
+        : m.home.done
   return (
     <li>
       <Link to={`/trips/${trip.id}`} className="list-row">
@@ -101,7 +102,7 @@ function TripRow({ trip, today, onServer }: { trip: Trip; today: Day; onServer: 
           <strong>{trip.name}</strong>
           <span className="muted small">
             {fmtDayRange(trip.startDate, trip.endDate)}
-            {onServer && ' · 🌐 on the server'}
+            {onServer && m.home.onTheServer}
           </span>
         </span>
         <span className={`chip chip-${phase.phase}`}>{chip}</span>
@@ -114,22 +115,20 @@ function Welcome() {
   return (
     <EmptyState>
       <p className="big-emoji">🧭</p>
-      <h2>Plan a trip</h2>
-      <p className="muted">
-        Keep your bookings, a day-by-day plan, places to see and shared expenses in one place. It works offline, with no
-        account, and you can share a trip with the people going.
-      </p>
+      <h2>{m.home.planATrip}</h2>
+      <p className="muted">{m.home.welcomeText}</p>
       <Link className="btn btn-primary" to="/new">
-        + New trip
+        {m.home.newTrip}
       </Link>
       <Link className="btn" to="/open">
-        🔗 Open a trip someone sent you
+        {m.home.openTripSentToYou}
       </Link>
       <p className="muted small">
-        New here?{' '}
-        <a className="link" href={LINKS.guide} target="_blank" rel="noreferrer">
-          Read the guide
-        </a>
+        {m.home.newHere(
+          <a className="link" href={LINKS.guide} target="_blank" rel="noreferrer">
+            {m.home.readTheGuide}
+          </a>,
+        )}
       </p>
     </EmptyState>
   )
