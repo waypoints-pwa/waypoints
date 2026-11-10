@@ -23,9 +23,10 @@ import { isDay } from '../../domain/time'
 import { DetailHead, EmptyState, Notice } from '../components/bits'
 import { ChoiceChips, CurrencySelect, Field, NotesField, TextField } from '../components/fields'
 import { UnsentNotice } from '../components/UnsentNotice'
+import { m } from '../../i18n'
 import { fmtDay, fmtMoney, fmtPlain, plural } from '../format'
 import { useToday } from '../hooks'
-import { EXPENSE_CATEGORIES, labelOf } from '../labels'
+import { EXPENSE_CATEGORIES, expenseTitle, labelOf } from '../labels'
 import { nameOf, tripPath, useTrip, type TripData } from '../tripData'
 import { AttachmentsCard } from '../components/Attachments'
 import { ItemFooter, ItemForm, ItemGone } from './common'
@@ -66,13 +67,13 @@ export function MoneyPage() {
       <UnsentNotice />
       <section className="card">
         <div className="section-head">
-          <h3>Spent so far</h3>
+          <h3>{m.money.spentSoFar}</h3>
           <Link className="btn btn-small btn-primary" to={tripPath(trip.id, 'expenses', 'new')}>
-            + Expense
+            {m.money.addExpense}
           </Link>
         </div>
         <p className="big-number">{fmtMoney(spent.total, cur)}</p>
-        {group && t.me && <p className="muted small">Your part: {fmtMoney(bal.get(t.me.id)?.share ?? 0, cur)}</p>}
+        {group && t.me && <p className="muted small">{m.money.yourPart(fmtMoney(bal.get(t.me.id)?.share ?? 0, cur))}</p>}
         {categories.length > 0 && (
           <div className="bars">
             {categories.map(([key, value]) => {
@@ -95,18 +96,18 @@ export function MoneyPage() {
         )}
         {categories.length > 0 && (
           <p className="muted small">
-            Card <span className="money">{fmtMoney(split.card, cur)}</span> · Cash <span className="money">{fmtMoney(split.cash, cur)}</span>
+            {m.money.cardAndCash(<span className="money">{fmtMoney(split.card, cur)}</span>, <span className="money">{fmtMoney(split.cash, cur)}</span>)}
             {split.unsaid > 0 && (
               <>
                 {' '}
-                · Not noted <span className="money">{fmtMoney(split.unsaid, cur)}</span>
+                {m.money.notNoted(<span className="money">{fmtMoney(split.unsaid, cur)}</span>)}
               </>
             )}
           </p>
         )}
         {!foreign && (
           <Link className="link small" to={tripPath(trip.id, 'exchanges', 'new')}>
-            💱 Changed money or withdrew cash abroad? Add the rate you got
+            {m.money.addRateLink}
           </Link>
         )}
       </section>
@@ -116,18 +117,19 @@ export function MoneyPage() {
       {group && (
         <section className="card">
           <div className="section-head">
-            <h3>Balances</h3>
+            <h3>{m.money.balances}</h3>
             <Link className="btn btn-small" to={paymentPath(t)}>
-              + Payment
+              {m.money.addPayment}
             </Link>
           </div>
           {!t.me && (
             <p className="small muted">
-              Which one are you? Choose on the{' '}
-              <Link className="link" to={tripPath(trip.id, 'trip')}>
-                Trip
-              </Link>{' '}
-              tab.
+              {m.trip.whichOneAreYou}{' '}
+              {m.money.chooseOnTripTab(
+                <Link className="link" to={tripPath(trip.id, 'trip')}>
+                  {m.trip.tabs.trip}
+                </Link>,
+              )}
             </p>
           )}
           <ul className="history">
@@ -138,16 +140,16 @@ export function MoneyPage() {
                 <li key={x.id}>
                   <span>
                     {x.name}
-                    {t.me?.id === x.id && <span className="muted"> (you)</span>}
+                    {t.me?.id === x.id && <span className="muted">{m.trip.youParen}</span>}
                   </span>
                   <span className={`money ${cents > 0 ? 'plus' : cents < 0 ? 'minus' : 'muted'}`}>
-                    {cents > 0 ? `gets back ${fmtMoney(net, cur)}` : cents < 0 ? `owes ${fmtMoney(-net, cur)}` : 'square'}
+                    {cents > 0 ? m.money.getsBack(fmtMoney(net, cur)) : cents < 0 ? m.money.owes(fmtMoney(-net, cur)) : m.money.square}
                   </span>
                 </li>
               )
             })}
           </ul>
-          <h4>Settle up</h4>
+          <h4>{m.money.settleUp}</h4>
           {payments.length ? (
             <ul className="list">
               {payments.map((p) => (
@@ -155,23 +157,20 @@ export function MoneyPage() {
               ))}
             </ul>
           ) : (
-            <p className="muted small">Everyone is square. 🎉</p>
+            <p className="muted small">{m.money.everyoneSquare}</p>
           )}
           {estimated > 0 && (
-            <p className="muted small">
-              {plural(estimated, 'card payment')} {estimated === 1 ? 'is an estimate' : 'are estimates'} until what the bank charged is added, so these
-              amounts can still change a little.
-            </p>
+            <p className="muted small">{m.money.estimates(estimated)}</p>
           )}
         </section>
       )}
 
       <section>
-        <h3 className="group-title">Expenses</h3>
+        <h3 className="group-title">{m.money.expenses}</h3>
         {t.expenses.length === 0 ? (
           <EmptyState>
             <p className="big-emoji">💶</p>
-            <p>Note what you spend, in any currency.{group && ' waypoints works out who owes whom.'}</p>
+            <p>{m.money.noExpenses(group)}</p>
           </EmptyState>
         ) : (
           [...byDay].map(([day, list]) => (
@@ -205,26 +204,22 @@ function RatesCard() {
   return (
     <section className="card">
       <div className="section-head">
-        <h3>💱 Exchange rates</h3>
+        <h3>{m.money.ratesTitle}</h3>
         <Link className="btn btn-small" to={`${tripPath(trip.id, 'exchanges', 'new')}${missing[0] ? `?currency=${missing[0]}` : ''}`}>
-          + Exchange
+          {m.money.addExchange}
         </Link>
       </div>
       {missing.length > 0 && (
         <Notice kind="warn">
           <span className="small">
-            {plural(waiting.length, 'expense')} in {missing.join(', ')} can't be counted yet. Add what you got for your money (a cash
-            withdrawal, say) and they're converted.
+            {m.money.cantBeCounted(waiting.length, missing.join(', '))}
           </span>
         </Notice>
       )}
       {cardsWaiting.length > 0 && (
         <Notice kind="warn">
           <span className="small">
-            {plural(cardsWaiting.length, 'card payment')} {cardsWaiting.length === 1 ? 'is' : 'are'} waiting for what the bank charged
-            {yours > 0 && ` (${yours === cardsWaiting.length ? (yours === 1 ? "it's yours" : 'all yours') : `${yours} of them yours`})`}. Until then,{' '}
-            {cardsWaiting.length === 1 ? 'it counts' : 'they count'} at your cash rate, if there is one. Look for{' '}
-            <span className="chip chip-must">cost pending</span> below.
+            {m.money.cardsWaiting(cardsWaiting.length, yours, <span className="chip chip-must">{m.money.costPending}</span>)}
           </span>
         </Notice>
       )}
@@ -233,18 +228,17 @@ function RatesCard() {
           <strong className="money">
             1 {trip.currency} = {fmtPlain(rate, 4)} {currency}
           </strong>{' '}
-          <span className="muted small">{count > 1 ? `· average of ${count} exchanges` : '· what you got'}</span>
+          <span className="muted small">{count > 1 ? m.money.averageOf(count) : m.money.whatYouGot}</span>
         </p>
       ))}
       {[...left].map(([currency, amount]) =>
         Math.round(amount * 100) < 0 ? (
           <p key={currency} className="notice notice-warn small">
-            Cash left: <span className="money">−{fmtMoney(-amount, currency)}</span> (more cash spent than changed: an exchange may be
-            missing)
+            {m.money.cashLeftMissing(<span className="money">−{fmtMoney(-amount, currency)}</span>)}
           </p>
         ) : (
           <p key={currency} className="small">
-            Cash left: <strong className="money">{fmtMoney(Math.max(amount, 0), currency)}</strong>
+            {m.money.cashLeft(<strong className="money">{fmtMoney(Math.max(amount, 0), currency)}</strong>)}
           </p>
         ),
       )}
@@ -257,13 +251,13 @@ function RatesCard() {
                 {t.travellers.length > 1 && x.by ? ` · ${nameOf(t, x.by)}` : ''}
               </Link>
               <span className="money small">
-                {fmtMoney(x.amount, x.currency)} for {fmtMoney(x.cost, x.costCurrency)}
+                {m.money.exchangeFor(fmtMoney(x.amount, x.currency), fmtMoney(x.cost, x.costCurrency))}
               </span>
             </li>
           ))}
         </ul>
       )}
-      <p className="muted small">Cash converts at the rate you actually got, fees included. Card payments convert at what the bank charged.</p>
+      <p className="muted small">{m.money.ratesNote}</p>
     </section>
   )
 }
@@ -275,23 +269,24 @@ function SettleRow({ payment }: { payment: Payment }) {
     <li className="list-row">
       <span className="list-text">
         <span>
-          <strong>{nameOf(t, payment.from)}</strong> pays <strong>{nameOf(t, payment.to)}</strong>
+          {m.money.pays(<strong>{nameOf(t, payment.from)}</strong>, <strong>{nameOf(t, payment.to)}</strong>)}
         </span>
         <span className="money">{fmtMoney(payment.amount, t.trip.currency)}</span>
       </span>
       <Link className="btn btn-small" to={paymentPath(t, payment)}>
-        Record payment
+        {m.money.recordPayment}
       </Link>
     </li>
   )
 }
 
 function splitSummary(e: Expense, t: TripData): string {
-  if (e.transfer) return `${nameOf(t, e.paidBy)} paid ${[...sharesOf(e).keys()].map((id) => nameOf(t, id)).join(', ')}`
+  if (e.transfer) return m.money.paidTo(nameOf(t, e.paidBy), [...sharesOf(e).keys()].map((id) => nameOf(t, id)).join(', '))
   if (t.travellers.length < 2) return labelOf(EXPENSE_CATEGORIES, e.category).label
   const parts = sharesOf(e)
-  const forWhom = parts.size === 1 ? `for ${nameOf(t, [...parts.keys()][0])}` : parts.size === t.travellers.length ? 'split by everyone' : `split ${parts.size} ways`
-  return `${nameOf(t, e.paidBy)} paid · ${forWhom}`
+  const payer = nameOf(t, e.paidBy)
+  if (parts.size === 1) return m.money.paidForOne(payer, nameOf(t, [...parts.keys()][0]))
+  return parts.size === t.travellers.length ? m.money.paidSplitEveryone(payer) : m.money.paidSplitWays(payer, parts.size)
 }
 
 function ExpenseRow({ expense: e }: { expense: Expense }) {
@@ -308,7 +303,7 @@ function ExpenseRow({ expense: e }: { expense: Expense }) {
           {e.transfer ? '🤝' : label.emoji}
         </span>
         <span className="list-text">
-          <strong>{e.title}</strong>
+          <strong>{expenseTitle(e)}</strong>
           <span className="muted small">{splitSummary(e, t)}</span>
         </span>
         <span className="list-end">
@@ -319,8 +314,8 @@ function ExpenseRow({ expense: e }: { expense: Expense }) {
               {fmtMoney(inTrip, t.trip.currency)}
             </span>
           )}
-          {foreign && (waiting ? <span className="chip chip-must">cost pending</span> : inTrip === undefined && <span className="chip chip-must">no rate yet</span>)}
-          {paidWith && <span className="muted small">{paidWith === 'cash' ? 'Cash' : 'Card'}</span>}
+          {foreign && (waiting ? <span className="chip chip-must">{m.money.costPending}</span> : inTrip === undefined && <span className="chip chip-must">{m.money.noRateYet}</span>)}
+          {paidWith && <span className="muted small">{paidWith === 'cash' ? m.money.cash : m.money.card}</span>}
         </span>
       </Link>
     </li>

@@ -46,6 +46,12 @@ export const EXPENSE_CATEGORIES: Labels<ExpenseCategory> = {
   other: { label: m.labels.expense.other, emoji: '💸' },
 }
 
+/** The title a settle-up payment is saved with (stored text in the shared trip, never translated). */
+export const PAYMENT_TITLE = 'Payment'
+
+/** An expense's title as shown: a payment saved as "Payment" shows the app's word for it. */
+export const expenseTitle = (e: { title: string; transfer?: boolean }) => (e.transfer && e.title === PAYMENT_TITLE ? m.money.payment : e.title)
+
 /** A kind or category, falling back to "other" for one from a newer version of the app. */
 export const labelOf = <K extends string>(labels: Labels<K>, key: string): Label => labels[key as K] ?? labels['other' as K]
 

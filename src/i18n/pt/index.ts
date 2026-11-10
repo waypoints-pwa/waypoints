@@ -6,6 +6,7 @@ import { home } from './home'
 import { items } from './items'
 import { journeys } from './journeys'
 import { labels } from './labels'
+import { money } from './money'
 import { packing } from './packing'
 import { places } from './places'
 import { plan } from './plan'
@@ -13,4 +14,4 @@ import { settings } from './settings'
 import { stays } from './stays'
 import { trip } from './trip'
 
-export const pt: Messages = { activities, common, fields, home, items, journeys, labels, packing, places, plan, settings, stays, trip }
+export const pt: Messages = { activities, common, fields, home, items, journeys, labels, money, packing, places, plan, settings, stays, trip }
