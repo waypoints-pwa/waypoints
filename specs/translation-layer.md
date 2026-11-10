@@ -139,7 +139,7 @@ Glossary (PT-PT; use these words, also in later parts):
 | Latest / Top rated | Mais recentes / Melhor avaliados | star / stars | estrela / estrelas |
 | Cash / Card / Card or bank | Dinheiro / Cartão / Cartão ou banco | Paid with / Paid by | Pago com / Pago por |
 | Cash left | Dinheiro que sobra | cost pending / no rate yet | custo pendente / ainda sem taxa |
-| Settle up | Acertar contas | square / Everyone is square. | contas certas / Está tudo certo. |
+| Settle up / Settling up (report) | Acertar contas | square / Everyone is square. | contas certas / Está tudo certo. |
 | gets back / owes / pays | recebe / deve / paga a | Balances | Saldos |
 | payment / Payment (title) | pagamento / Pagamento | Record payment | Registar pagamento |
 | New expense / Edit expense | Nova despesa / Editar despesa | New payment / Edit payment | Novo pagamento / Editar pagamento |
@@ -153,6 +153,20 @@ Glossary (PT-PT; use these words, also in later parts):
 | The trip in numbers | A viagem em números | Best of the trip / Not worth it | O melhor da viagem / Não valeu a pena |
 | Ideas for next time | Ideias para a próxima | Make it again | Refazer |
 | Print or save as PDF | Imprimir ou guardar como PDF | Made with waypoints | Feito com o waypoints |
+| withdrawal / withdraw | levantamento / levantar | cash machine | Multibanco |
+| exchange office | casa de câmbio | fees included | comissões incluídas |
+| card payment | pagamento com cartão | estimate | estimativa |
+| what the bank charged | o que o banco cobrou | Who | Quem |
+| Add | Adicionar | Only on this phone / Keep it only on this phone | Só neste telemóvel / Manter só neste telemóvel |
+| go up to the server | seguir para o servidor | the server didn't take it | o servidor não o aceitou |
+| Taken / Added / Size | Tirada / Adicionado / Tamanho | Open | Abrir |
+| Previous / Next | Anterior / Seguinte | View | Ver |
+| boarding pass | cartão de embarque | signal (no signal) | rede (sem rede) |
+| note | nota | votes | votos |
+| Stars | Estrelas | All caught up | Está tudo avaliado / Tudo avaliado |
+| Night(s) away | Noite(s) fora | Travelling | Em viagem |
+| Spent | Gasto | Busiest day | Dia mais cheio |
+| Priciest day | Dia mais caro | | |
 
 Style: address the person as "tu" ("Ainda não tens viagens"), buttons in the infinitive ("Exportar
 todas as viagens"), European forms only (ecrã, ficheiro, telemóvel, partilhar, guardar, "a carregar";
