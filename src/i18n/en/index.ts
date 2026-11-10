@@ -5,11 +5,12 @@ import { home } from './home'
 import { items } from './items'
 import { journeys } from './journeys'
 import { labels } from './labels'
+import { packing } from './packing'
 import { places } from './places'
 import { plan } from './plan'
 import { settings } from './settings'
 import { stays } from './stays'
 import { trip } from './trip'
 
-export const en = { activities, common, fields, home, items, journeys, labels, places, plan, settings, stays, trip }
+export const en = { activities, common, fields, home, items, journeys, labels, packing, places, plan, settings, stays, trip }
 export type Messages = typeof en
