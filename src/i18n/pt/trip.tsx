@@ -82,7 +82,7 @@ export const trip: Messages['trip'] = {
   removeConfirm: (name, group, files) =>
     `Remover “${name}” deste telemóvel?${group ? ' Os outros ficam com a cópia deles, e um link deles traz a viagem de volta.' : ''} Fica uma cópia de salvaguarda nas Definições.${files}`,
   filesGo: (n) =>
-    `\n\nTem ${n === 1 ? 'uma foto ou um documento que só está neste telemóvel: não vai' : `${n} fotos e documentos que só estão neste telemóvel: não vão`} ser guardados, porque as cópias de salvaguarda não os incluem. Guarda primeiro os que quiseres (abre um → Partilhar ou guardar).`,
+    `\n\nTem ${n === 1 ? 'uma foto ou um documento que só está neste telemóvel: não vai ser guardado' : `${n} fotos e documentos que só estão neste telemóvel: não vão ser guardados`}, porque as cópias de salvaguarda não os incluem. Guarda primeiro os que quiseres (abre um → Partilhar ou guardar).`,
   onSyncServer: '🌐 No servidor de sincronização',
   onSyncServerText: 'As alterações chegam sozinhas a todos os que estão no servidor, normalmente em menos de um minuto enquanto têm a app aberta.',
   notOnServerByLink: (names, n, unsent) =>
