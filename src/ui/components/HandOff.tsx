@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { m } from '../../i18n'
 
 /**
  * iPhone links always open in Safari, whose storage is separate from the Home Screen app, so a trip
@@ -20,33 +21,30 @@ export function HandOff({ onStayHere }: { onStayHere: () => void }) {
   return (
     <section className="card">
       <button className="btn btn-primary" onClick={() => void copy()}>
-        {copied ? '✓ Link copied' : 'Open in the waypoints app'}
+        {copied ? m.common.linkCopied : m.share.openInApp}
       </button>
       {copied === undefined && (
         <p className="muted small">
-          Safari keeps its own copy of waypoints, separate from the app on your Home Screen. This copies the link so you can open
-          it there.
+          {m.share.safariKeeps}
         </p>
       )}
       {copied === false && (
         <label className="field">
-          <span>Copy this link</span>
+          <span>{m.share.copyThisLink}</span>
           <input className="input" readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
         </label>
       )}
       {copied !== undefined && (
         <>
           <ol className="steps">
-            <li>Open waypoints from your Home Screen.</li>
-            <li>
-              Tap <strong>Open a trip link</strong> and then Paste.
-            </li>
+            <li>{m.share.openFromHomeScreen}</li>
+            <li>{m.share.tapThenPaste(<strong>{m.share.handOffOpenTripLink}</strong>)}</li>
           </ol>
-          <p className="muted small">No waypoints on your Home Screen yet? In Safari, tap Share → Add to Home Screen first.</p>
+          <p className="muted small">{m.share.noWaypointsYet}</p>
         </>
       )}
       <button className="link small" onClick={onStayHere}>
-        Use it here in Safari instead
+        {m.share.useItHere}
       </button>
     </section>
   )

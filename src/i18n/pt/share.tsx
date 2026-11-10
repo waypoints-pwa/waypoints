@@ -38,4 +38,46 @@ export const share: Messages['share'] = {
   ),
   unsentNotice: (n) => `✏️ ${plural(n, 'alteração', 'alterações')} que o grupo ainda não viu.`,
   sendUpdate: 'Enviar atualização',
+  notATripLink: 'Isso não é um link de viagem do waypoints. Copia o link todo e tenta outra vez.',
+  couldntPaste: 'Não foi possível colar. Mantém premida a caixa abaixo e escolhe Colar.',
+  fileCouldntBeOpened: 'Não foi possível abrir esse ficheiro.',
+  linkCouldntBeOpened: 'Não foi possível abrir este link.',
+  openedTrips: (n, summary) => `${plural(n, 'viagem aberta', 'viagens abertas')}: ${summary}.`,
+  openATrip: 'Abrir uma viagem',
+  openIntro: 'Cola um link de viagem que alguém te enviou (ou um convite para um servidor de sincronização), ou abre um ficheiro do waypoints.',
+  pasteTripLink: '📋 Colar link da viagem',
+  tripLinkLabel: 'Link da viagem',
+  openLink: 'Abrir link',
+  openAFile: '📄 Abrir um ficheiro',
+  sharedBy: (name) => (name ? `${name} partilhou uma viagem` : 'Uma viagem partilhada'),
+  withPeople: (names) => `Com ${names}`,
+  openTheTrip: 'Abrir a viagem',
+  copyUpToDate: (summary) => `A tua cópia está atualizada: ${summary}.`,
+  addToMyTrips: '+ Adicionar às minhas viagens',
+  savedOnPhone: 'Fica guardada neste telemóvel. Os links que o grupo enviar mais tarde atualizam-na.',
+  changesForCopy: (summary) => (
+    <>
+      Alterações para a tua cópia: <strong>{summary}</strong>.
+    </>
+  ),
+  updateMyCopy: 'Atualizar a minha cópia',
+  newestVersion: 'Cada item fica com a sua versão mais recente, por isso nada do que adicionaste se perde.',
+  copyAlreadyHasAll: 'A tua cópia já tem tudo o que está neste link.',
+  isOnYourPhone: (tripName) => `✓ “${tripName}” está no teu telemóvel`,
+  notOnList: 'Não estás na lista? Adiciona-te',
+  addMe: 'Adicionar-me',
+  skipForNow: 'Agora não',
+  openInApp: 'Abrir na app waypoints',
+  safariKeeps:
+    'O Safari guarda a sua própria cópia do waypoints, separada da app no teu Ecrã principal. Isto copia o link para o poderes abrir lá.',
+  copyThisLink: 'Copia este link',
+  openFromHomeScreen: 'Abre o waypoints a partir do teu Ecrã principal.',
+  handOffOpenTripLink: 'Abrir um link ou ficheiro de viagem',
+  tapThenPaste: (button) => (
+    <>
+      Toca em {button} e depois em Colar.
+    </>
+  ),
+  noWaypointsYet: 'Ainda não tens o waypoints no Ecrã principal? No Safari, toca em Partilhar → Adicionar ao ecrã principal primeiro.',
+  useItHere: 'Usar aqui no Safari',
 }

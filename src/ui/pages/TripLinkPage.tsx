@@ -11,7 +11,8 @@ import { inIosBrowser } from '../../lib/platform'
 import { readTripLink } from '../../lib/tripLink'
 import { EmptyState, Notice } from '../components/bits'
 import { HandOff } from '../components/HandOff'
-import { fmtDayRange, fmtTimestamp, mergeSummary, plural } from '../format'
+import { m } from '../../i18n'
+import { fmtDayRange, fmtTimestamp, mergeSummary } from '../format'
 import { useSetting } from '../hooks'
 import { tripPath } from '../tripData'
 
@@ -27,7 +28,7 @@ export function TripLinkPage() {
     let cancelled = false
     readTripLink(data).then(
       (link) => !cancelled && setLoaded({ data, link }),
-      (err) => !cancelled && setLoaded({ data, error: err instanceof DataError ? err.message : "This link couldn't be opened." }),
+      (err) => !cancelled && setLoaded({ data, error: err instanceof DataError ? err.message : m.share.linkCouldntBeOpened }),
     )
     return () => {
       cancelled = true
@@ -41,7 +42,7 @@ export function TripLinkPage() {
         <p className="big-emoji">🧭</p>
         <p>{loaded.error}</p>
         <Link className="btn" to="/">
-          Your trips
+          {m.common.yourTrips}
         </Link>
       </EmptyState>
     )
@@ -74,16 +75,16 @@ function LinkPreview({ link }: { link: TripLink }) {
 
   if (merged?.joined) return <WhoAreYou tripId={trip.id} tripName={trip.name} travellers={travellers} />
 
-  const counts = [
-    plural(live(link.tables.stays).length, 'stay'),
-    plural(live(link.tables.transports).length, 'journey', 'journeys'),
-    plural(live(link.tables.activities).length, 'activity', 'activities'),
-    plural(live(link.tables.places).length, 'place'),
-    plural(live(link.tables.expenses).length, 'expense'),
-  ]
+  const counts = m.share.counts({
+    stays: live(link.tables.stays).length,
+    journeys: live(link.tables.transports).length,
+    activities: live(link.tables.activities).length,
+    places: live(link.tables.places).length,
+    expenses: live(link.tables.expenses).length,
+  })
   const openTrip = (
     <Link className="btn btn-small btn-primary" to={tripPath(trip.id)}>
-      Open the trip
+      {m.share.openTheTrip}
     </Link>
   )
 
@@ -91,13 +92,13 @@ function LinkPreview({ link }: { link: TripLink }) {
     <>
       <section className="card">
         <p className="muted small">
-          {link.sentBy ? `${link.sentBy} shared a trip` : 'A shared trip'} · {fmtTimestamp(link.sentAt)}
+          {m.share.sharedBy(link.sentBy)} · {fmtTimestamp(link.sentAt)}
         </p>
         <h2>
           {trip.emoji ?? '🧳'} {trip.name}
         </h2>
         <p className="muted">{fmtDayRange(trip.startDate, trip.endDate)}</p>
-        {travellers.length > 0 && <p className="small">With {travellers.map((x) => x.name).join(', ')}</p>}
+        {travellers.length > 0 && <p className="small">{m.share.withPeople(travellers.map((x) => x.name).join(', '))}</p>}
         <ul className="counts">
           {counts.map((c) => (
             <li key={c}>{c}</li>
@@ -107,7 +108,7 @@ function LinkPreview({ link }: { link: TripLink }) {
 
       {merged ? (
         <Notice kind="ok">
-          <p>Your copy is up to date: {mergeSummary(merged.counts)}.</p>
+          <p>{m.share.copyUpToDate(mergeSummary(merged.counts))}</p>
           {openTrip}
         </Notice>
       ) : handOff ? (
@@ -115,23 +116,21 @@ function LinkPreview({ link }: { link: TripLink }) {
       ) : isNew ? (
         <div className="stack">
           <button className="btn btn-primary" disabled={busy} onClick={() => void apply()}>
-            + Add to my trips
+            {m.share.addToMyTrips}
           </button>
-          <p className="muted small">It's saved on this phone. Links the group sends later bring it up to date.</p>
+          <p className="muted small">{m.share.savedOnPhone}</p>
         </div>
       ) : hasChanges(plan) ? (
         <section className="card">
-          <p>
-            Changes for your copy: <strong>{mergeSummary(plan.counts)}</strong>.
-          </p>
+          <p>{m.share.changesForCopy(mergeSummary(plan.counts))}</p>
           <button className="btn btn-primary" disabled={busy} onClick={() => void apply()}>
-            Update my copy
+            {m.share.updateMyCopy}
           </button>
-          <p className="muted small">Each item keeps its newest version, so nothing you've added is lost.</p>
+          <p className="muted small">{m.share.newestVersion}</p>
         </section>
       ) : (
         <Notice kind="ok">
-          <p>Your copy already has everything in this link.</p>
+          <p>{m.share.copyAlreadyHasAll}</p>
           {openTrip}
         </Notice>
       )}
@@ -155,10 +154,10 @@ function WhoAreYou({ tripId, tripName, travellers }: { tripId: string; tripName:
 
   return (
     <section className="card">
-      <h3>✓ “{tripName}” is on your phone</h3>
+      <h3>{m.share.isOnYourPhone(tripName)}</h3>
       {travellers.length > 0 && (
         <>
-          <p>Which one are you?</p>
+          <p>{m.trip.whichOneAreYou}</p>
           <div className="chips">
             {travellers.map((x) => (
               <button key={x.id} className="toggle-chip" onClick={() => void choose(x.id)}>
@@ -176,15 +175,15 @@ function WhoAreYou({ tripId, tripName, travellers }: { tripId: string; tripName:
         }}
       >
         <label className="field">
-          <span>{travellers.length ? "Not on the list? Add yourself" : 'Your name'}</span>
+          <span>{travellers.length ? m.share.notOnList : m.trip.yourName}</span>
           <input className="input" value={typed} maxLength={60} onChange={(e) => setName(e.target.value)} />
         </label>
         <button className="btn" type="submit" disabled={!typed.trim()}>
-          Add me
+          {m.share.addMe}
         </button>
       </form>
       <button className="link small" onClick={() => navigate(tripPath(tripId), { replace: true })}>
-        Skip for now
+        {m.share.skipForNow}
       </button>
     </section>
   )

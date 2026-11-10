@@ -4,7 +4,8 @@ import { importFile } from '../../db/backupIO'
 import { DataError } from '../../domain/records'
 import { tripRouteFrom } from '../../lib/tripLink'
 import { BackLink, Notice } from '../components/bits'
-import { mergeSummary, plural } from '../format'
+import { m } from '../../i18n'
+import { mergeSummary } from '../format'
 import { tripPath } from '../tripData'
 
 const canReadClipboard = () => typeof navigator.clipboard?.readText === 'function'
@@ -24,7 +25,7 @@ export function OpenPage() {
     const invite = /#\/server\?(\S*invite=\S+)/.exec(value)
     if (route) navigate(route)
     else if (invite) navigate(`/server?${invite[1]}`)
-    else setError("That isn't a waypoints trip link. Copy the whole link and try again.")
+    else setError(m.share.notATripLink)
   }
 
   const onPaste = async () => {
@@ -34,7 +35,7 @@ export function OpenPage() {
       setText(pasted)
       open(pasted)
     } catch {
-      setError("Couldn't paste. Press and hold the box below and choose Paste.")
+      setError(m.share.couldntPaste)
     }
   }
 
@@ -45,20 +46,20 @@ export function OpenPage() {
     try {
       const { counts, trips } = await importFile(await file.text())
       if (trips.length === 1) navigate(tripPath(trips[0].id), { replace: true })
-      else setMessage(`Opened ${plural(trips.length, 'trip')}: ${mergeSummary(counts)}.`)
+      else setMessage(m.share.openedTrips(trips.length, mergeSummary(counts)))
     } catch (err) {
-      setError(err instanceof DataError ? err.message : "That file couldn't be opened.")
+      setError(err instanceof DataError ? err.message : m.share.fileCouldntBeOpened)
     }
   }
 
   return (
     <>
-      <BackLink to="/">Your trips</BackLink>
-      <h2>Open a trip</h2>
-      <p className="muted">Paste a trip link someone sent you (or an invite to a sync server), or open a waypoints file.</p>
+      <BackLink to="/">{m.common.yourTrips}</BackLink>
+      <h2>{m.share.openATrip}</h2>
+      <p className="muted">{m.share.openIntro}</p>
       {canReadClipboard() && (
         <button className="btn btn-primary" onClick={() => void onPaste()}>
-          📋 Paste trip link
+          {m.share.pasteTripLink}
         </button>
       )}
       <form
@@ -79,14 +80,14 @@ export function OpenPage() {
           autoComplete="off"
           autoCapitalize="off"
           spellCheck={false}
-          aria-label="Trip link"
+          aria-label={m.share.tripLinkLabel}
         />
         <button className="btn" type="submit" disabled={!text.trim()}>
-          Open link
+          {m.share.openLink}
         </button>
       </form>
       <label className="btn">
-        📄 Open a file
+        {m.share.openAFile}
         <input
           type="file"
           accept="application/json,.json"
