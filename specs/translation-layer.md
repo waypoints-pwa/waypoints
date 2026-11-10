@@ -115,6 +115,21 @@ Glossary (PT-PT; use these words, also in later parts):
 | Dismiss | Dispensar | About | Acerca de |
 | Coming up / Past trips | Em breve / Viagens passadas | Done (a trip) | Concluída |
 | browser | navegador | time zone | fuso horário |
+| Plan / Places / Money / Files / Trip (tabs) | Plano / Locais / Dinheiro / Ficheiros / Viagem | All trips | Todas as viagens |
+| Day by day / Bookings | Dia a dia / Reservas | Transport (heading) | Transportes |
+| New stay / Edit stay | Nova estadia / Editar estadia | New transport / Edit transport | Novo trajeto / Editar trajeto |
+| New activity / New place | Nova atividade / Novo local | New trip / Edit trip | Nova viagem / Editar viagem |
+| Check-in / Check-out | Check-in / Check-out | booking reference | referência da reserva |
+| Leaves / Arrives / Takes | Parte / Chega / Duração | From / To | De / Para |
+| connection / layover / stop | ligação / escala / escala | seat | lugar |
+| airline / company / flight no. | companhia aérea / empresa / n.º do voo | Directions | Direções |
+| Must see | Imperdível | visited | visitado |
+| kind, type / category | tipo / categoria | city / airport | cidade / aeroporto |
+| Packing & to-do | Bagagem e tarefas | template | modelo |
+| packed (N of M packed) | na mala (N de M na mala) | Who's going | Quem vai |
+| currency | moeda | Trip report | Relatório da viagem |
+| Leave the trip | Sair da viagem | Remove from this phone | Remover deste telemóvel |
+| Someone | Alguém | Nothing here yet | Ainda não há nada aqui |
 
 Style: address the person as "tu" ("Ainda não tens viagens"), buttons in the infinitive ("Exportar
 todas as viagens"), European forms only (ecrã, ficheiro, telemóvel, partilhar, guardar, "a carregar";
