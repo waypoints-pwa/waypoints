@@ -10,7 +10,7 @@ export const items: Messages['items'] = {
     expense: 'Eliminar esta despesa?',
     payment: 'Eliminar este pagamento?',
   },
-  deleteForOthers: 'Também será eliminado para os outros quando partilhares a viagem.',
+  deleteForOthers: 'Se partilhares a viagem, a eliminação também vale para os outros.',
   gone: 'Isto já não está na viagem. Alguém pode tê-lo eliminado.',
   couldntSave: 'Não foi possível guardar. Tenta outra vez.',
   directions: '🧭 Direções',
