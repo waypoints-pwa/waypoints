@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
+import { m } from '../../i18n'
 import type { Transport, TransportMode } from '../../db/types'
 import { connections } from '../../domain/bookings'
 import { transportEvent } from '../../domain/calendar'
@@ -57,15 +58,15 @@ function TransportForm({ existing, date }: { existing?: Transport; date: string 
   const PlaceField = flight ? AirportField : CityField
 
   const onSubmit = () => {
-    if (!from.trim() || !to.trim()) return setError('Fill in where it leaves from and where it goes.')
-    if (!isDay(departDate)) return setError('Choose the day it leaves.')
-    if (arriveDate && !isDay(arriveDate)) return setError('Check the arrival day.')
+    if (!from.trim() || !to.trim()) return setError(m.journeys.fillInPlaces)
+    if (!isDay(departDate)) return setError(m.journeys.chooseDay)
+    if (arriveDate && !isDay(arriveDate)) return setError(m.journeys.checkArrivalDay)
     const arrivalZone = arriveTimeZone && arriveTimeZone !== departTimeZone ? arriveTimeZone : undefined
-    if (arriveDate && arriveDate < departDate) return setError('It arrives before it leaves.')
+    if (arriveDate && arriveDate < departDate) return setError(m.journeys.arrivalBeforeDeparture)
     if (departTime && arriveTime) {
       const leaves = zonedInstant(departDate, departTime, departTimeZone)
       const arrives = zonedInstant(arriveDate || departDate, arriveTime, arrivalZone ?? departTimeZone)
-      if (arrives <= leaves) return setError('It arrives before it leaves. Check the arrival day and time zone.')
+      if (arrives <= leaves) return setError(m.journeys.arrivalBeforeDepartureZone)
     }
     void save({
       mode: mode as TransportMode,
@@ -87,33 +88,33 @@ function TransportForm({ existing, date }: { existing?: Transport; date: string 
   }
 
   return (
-    <ItemForm title={existing ? 'Edit transport' : 'New transport'} error={error} busy={busy} onSubmit={onSubmit}>
-      <ChoiceChips label="How" options={TRANSPORT_MODES} value={mode} onChange={setMode} />
+    <ItemForm title={existing ? m.journeys.editTitle : m.journeys.newTitle} error={error} busy={busy} onSubmit={onSubmit}>
+      <ChoiceChips label={m.journeys.how} options={TRANSPORT_MODES} value={mode} onChange={setMode} />
       <div className="field-pair">
-        <PlaceField label="From" value={from} onChange={setFrom} onZone={setDepartTimeZone} placeholder={flight ? 'City or code' : 'Lisbon'} />
-        <PlaceField label="To" value={to} onChange={setTo} onZone={setArriveTimeZone} placeholder={flight ? 'City or code' : 'Porto'} />
+        <PlaceField label={m.journeys.from} value={from} onChange={setFrom} onZone={setDepartTimeZone} placeholder={flight ? m.journeys.cityOrCode : m.journeys.lisbon} />
+        <PlaceField label={m.journeys.to} value={to} onChange={setTo} onZone={setArriveTimeZone} placeholder={flight ? m.journeys.cityOrCode : m.journeys.porto} />
       </div>
-      <DateTimeField label="Leaves" date={departDate} time={departTime} required onDate={setDepartDate} onTime={setDepartTime} />
-      <ZoneField label="Departure time is local to" value={departTimeZone} onChange={setDepartTimeZone} suggestions={t.zones} />
+      <DateTimeField label={m.journeys.leaves} date={departDate} time={departTime} required onDate={setDepartDate} onTime={setDepartTime} />
+      <ZoneField label={m.journeys.departureLocalTo} value={departTimeZone} onChange={setDepartTimeZone} suggestions={t.zones} />
       <DateTimeField
-        label="Arrives"
+        label={m.journeys.arrives}
         date={arriveDate || departDate}
         time={arriveTime}
         onDate={setArriveDate}
         onTime={setArriveTime}
-        hint="Change the day for overnight journeys."
+        hint={m.journeys.nextDayHint}
       />
-      <ZoneField label="Arrival time is local to" value={arriveTimeZone || departTimeZone} onChange={setArriveTimeZone} suggestions={t.zones} />
+      <ZoneField label={m.journeys.arrivalLocalTo} value={arriveTimeZone || departTimeZone} onChange={setArriveTimeZone} suggestions={t.zones} />
       <div className="field-pair">
-        <TextField label={flight ? 'Airline' : 'Company'} value={carrier} onChange={setCarrier} maxLength={200} />
-        <TextField label={flight ? 'Flight no.' : 'Number'} value={number} onChange={setNumber} maxLength={40} autoCapitalize="characters" />
+        <TextField label={flight ? m.journeys.airline : m.journeys.company} value={carrier} onChange={setCarrier} maxLength={200} />
+        <TextField label={flight ? m.journeys.flightNo : m.journeys.number} value={number} onChange={setNumber} maxLength={40} autoCapitalize="characters" />
       </div>
       <div className="field-pair">
-        <TextField label="Seat" value={seat} onChange={setSeat} maxLength={40} />
-        <TextField label="Booking ref." value={confirmation} onChange={setConfirmation} maxLength={200} autoCapitalize="characters" autoComplete="off" />
+        <TextField label={m.journeys.seat} value={seat} onChange={setSeat} maxLength={40} />
+        <TextField label={m.journeys.bookingRef} value={confirmation} onChange={setConfirmation} maxLength={200} autoCapitalize="characters" autoComplete="off" />
       </div>
-      <TextField label="Link" type="url" value={link} onChange={setLink} placeholder="Booking, check-in or ticket page" maxLength={2000} />
-      <NotesField value={notes} onChange={setNotes} placeholder="Terminal, baggage, pick-up point…" />
+      <TextField label={m.common.link} type="url" value={link} onChange={setLink} placeholder={m.journeys.linkPlaceholder} maxLength={2000} />
+      <NotesField value={notes} onChange={setNotes} placeholder={m.journeys.notesPlaceholder} />
     </ItemForm>
   )
 }
@@ -134,29 +135,29 @@ export function TransportPage() {
       <DetailHead emoji={mode.emoji} title={`${r.from} → ${r.to}`} subtitle={[mode.label, r.carrier, r.number].filter(Boolean).join(' · ')} />
       <section className="card">
         <dl className="facts">
-          <dt>Leaves</dt>
+          <dt>{m.journeys.leaves}</dt>
           <dd>{fmtDayTime(r.departDate, r.departTime)}</dd>
           {(r.arriveDate || r.arriveTime) && (
             <>
-              <dt>Arrives</dt>
+              <dt>{m.journeys.arrives}</dt>
               <dd>{fmtDayTime(r.arriveDate ?? r.departDate, r.arriveTime)}</dd>
             </>
           )}
           {duration !== undefined && (
             <>
-              <dt>Takes</dt>
+              <dt>{m.journeys.takes}</dt>
               <dd>{fmtDuration(duration)}</dd>
             </>
           )}
           {r.seat && (
             <>
-              <dt>Seat</dt>
+              <dt>{m.journeys.seat}</dt>
               <dd>{r.seat}</dd>
             </>
           )}
           {r.confirmation && (
             <>
-              <dt>Booking</dt>
+              <dt>{m.common.booking}</dt>
               <dd>
                 <CopyCode code={r.confirmation} />
               </dd>
@@ -164,28 +165,28 @@ export function TransportPage() {
           )}
         </dl>
         {(zones.length > 1 || zones[0] !== t.trip.timeZone) && (
-          <p className="muted small">Local times: {zones.map(zoneCity).join(' → ')}.</p>
+          <p className="muted small">{m.journeys.localTimes(zones.map(zoneCity).join(' → '))}</p>
         )}
         <div className="actions">
-          <WebLink url={r.link}>Booking page</WebLink>
+          <WebLink url={r.link}>{m.journeys.bookingPage}</WebLink>
         </div>
       </section>
-      {connection && <ConnectionCard connection={connection} title={`Part of a connection: ${connection.route}`} />}
+      {connection && <ConnectionCard connection={connection} title={m.journeys.partOfConnection(connection.route)} />}
       <section className="card">
-        <h3>Getting there</h3>
-        <p className="muted small">Directions to {r.from}.</p>
+        <h3>{m.journeys.gettingThere}</h3>
+        <p className="muted small">{m.journeys.directionsTo(r.from)}</p>
         <MapLinks query={mapQuery(r.mode === 'flight' && airportCode(r.from) ? `${airportCode(r.from)} airport` : r.from)} />
       </section>
       {r.notes && (
         <section className="card">
-          <h3>Notes</h3>
+          <h3>{m.common.notes}</h3>
           <p className="prewrap">{r.notes}</p>
         </section>
       )}
       <ReviewsCard target={{ table: 'transports', record: r }} />
       <AttachmentsCard table="transports" id={r.id} />
       <section className="card">
-        <h3>Calendar</h3>
+        <h3>{m.common.calendar}</h3>
         <CalendarLinks event={transportEvent(r)} calendarName={t.trip.name} />
       </section>
       <ItemFooter table="transports" id={r.id} what="journey" backTo={back} />
