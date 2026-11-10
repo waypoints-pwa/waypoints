@@ -9,7 +9,8 @@ import { shareFile } from '../../lib/shareSheet'
 import { photoTime, tripPhotos, useTripFiles } from '../attachments'
 import { Notice } from '../components/bits'
 import { ReportView } from '../components/ReportView'
-import { fmtTimestamp, plural } from '../format'
+import { fmtTimestamp } from '../format'
+import { language, m } from '../../i18n'
 import { useNow, useToday } from '../hooks'
 import { nameOf, useTrip, type TripData } from '../tripData'
 
@@ -53,7 +54,7 @@ export function ReportPage() {
     if (!keepable || t.report || keeping.has(tripId)) return
     keeping.add(tripId)
     saveReport(tripId, fresh, t.me?.id)
-      .catch(() => setError("Couldn't keep the report. It's shown as it is on this phone."))
+      .catch(() => setError(m.report.keepFailed))
       .finally(() => keeping.delete(tripId))
   }, [keepable, t.report, tripId, fresh, t.me?.id])
 
@@ -72,7 +73,7 @@ export function ReportPage() {
     try {
       await saveReport(tripId, buildReport(reportInput(t), Date.now()), t.me?.id)
     } catch {
-      setError("Couldn't make it again. Try again.")
+      setError(m.report.makeAgainFailed)
     }
   }
 
@@ -82,11 +83,10 @@ export function ReportPage() {
     setError(undefined)
     try {
       const photos = new Map([...(files ?? [])].flatMap(([id, f]) => (f.thumb ?? f.blob ? [[id, (f.thumb ?? f.blob)!] as const] : [])))
-      const title = `${report.trip.name} · trip report`
-      const blob = await reportFile(page.current, title, photos)
+      const blob = await reportFile(page.current, m.report.fileTitle(report.trip.name), photos, language)
       await shareFile(blob, `${fileSlug(report.trip.name)}-report${shareable ? '-shareable' : ''}.html`)
     } catch {
-      setError("Couldn't make the file. Try again.")
+      setError(m.report.makeFileFailed)
     } finally {
       setBusy(false)
     }
@@ -95,36 +95,36 @@ export function ReportPage() {
   return (
     <>
       <div className="stack no-print">
-        <h2>Trip report</h2>
+        <h2>{m.report.title}</h2>
         <Status over={over} kept={Boolean(kept)} unreadable={Boolean(t.report && !kept)} synced={synced} changes={changes} onMakeAgain={() => void makeAgain()} />
-        <div className="segmented" role="tablist" aria-label="Version">
+        <div className="segmented" role="tablist" aria-label={m.report.version}>
           <button role="tab" aria-selected={!shareable} className={shareable ? '' : 'active'} onClick={() => setParams({}, { replace: true })}>
-            Full report
+            {m.report.fullReport}
           </button>
           <button role="tab" aria-selected={shareable} className={shareable ? 'active' : ''} onClick={() => setParams({ view: 'shareable' }, { replace: true })}>
-            Shareable
+            {m.report.shareable}
           </button>
         </div>
         {shareable ? (
           <>
-            <p className="muted small">For anyone: the trip and its reviews, without names, notes or photos.</p>
+            <p className="muted small">{m.report.shareableHint}</p>
             <label className="check">
               <input type="checkbox" checked={costs} onChange={(e) => setCosts(e.target.checked)} />
               <span>
-                Include what it cost
-                <small>The total, by category and by day. Not who paid what.</small>
+                {m.report.includeCost}
+                <small>{m.report.includeCostHint}</small>
               </span>
             </label>
           </>
         ) : (
-          <p className="muted small">For the group: everyone's spending, reviews and notes, and the photos.</p>
+          <p className="muted small">{m.report.fullHint}</p>
         )}
         <div className="actions">
           <button className="btn btn-small" onClick={() => window.print()}>
-            🖨️ Print or save as PDF
+            {m.report.print}
           </button>
           <button className="btn btn-small" disabled={busy} onClick={() => void saveFile()}>
-            {busy ? 'Making the file…' : '📄 Save or send as a file'}
+            {busy ? m.report.makingFile : m.report.saveFile}
           </button>
         </div>
         {error && <Notice kind="error">{error}</Notice>}
@@ -140,19 +140,17 @@ function Status(props: { over: boolean; kept: boolean; unreadable: boolean; sync
   const t = useTrip()
   const { over, kept, unreadable, synced, changes, onMakeAgain } = props
   if (unreadable) {
-    return <Notice kind="warn">The report kept for everyone was made by a newer version of waypoints: update the app to see it. This one is made from the trip as it is on this phone.</Notice>
+    return <Notice kind="warn">{m.report.newerVersion}</Notice>
   }
   if (kept && t.report) {
-    const by = t.report.madeBy && (t.report.madeBy === t.me?.id ? 'you' : nameOf(t, t.report.madeBy))
+    const by = t.report.madeBy && (t.report.madeBy === t.me?.id ? m.report.byYou : m.report.byName(nameOf(t, t.report.madeBy)))
     return (
       <div className="stack" style={{ gap: 6 }}>
         <p className="muted small">
-          🌐 Kept for everyone on the sync server: made {fmtTimestamp(t.report.updatedAt)}
-          {by && ` by ${by}`}.
-          {changes > 0 && ` The trip has changed since (${plural(changes, 'change')}).`}
+          {m.report.kept(fmtTimestamp(t.report.updatedAt), by || undefined, changes)}
         </p>
         <button className={`btn btn-small${changes > 0 ? ' btn-primary' : ''}`} style={{ alignSelf: 'flex-start' }} onClick={onMakeAgain}>
-          ↻ Make it again
+          {m.report.makeAgain}
         </button>
       </div>
     )
@@ -160,12 +158,12 @@ function Status(props: { over: boolean; kept: boolean; unreadable: boolean; sync
   if (!over) {
     return (
       <p className="muted small">
-        The trip so far.{t.server && ' Once it’s over, the report is kept on the sync server, the same for everyone.'}
+        {m.report.soFar(Boolean(t.server))}
       </p>
     )
   }
   if (t.server && !t.serverGone) {
-    return <p className="muted small">{synced ? '🌐 Keeping it on the sync server for everyone…' : '🌐 Once this phone has synced the trip, the report is kept on the sync server for everyone.'}</p>
+    return <p className="muted small">{synced ? m.report.keeping : m.report.waitingToSync}</p>
   }
-  return <p className="muted small">Made from the trip as it is on this phone.</p>
+  return <p className="muted small">{m.report.madeHere}</p>
 }
