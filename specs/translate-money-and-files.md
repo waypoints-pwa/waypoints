@@ -1,7 +1,7 @@
 # Money, files, reviews and the report in both languages (Portuguese, part 3)
 
 Status: ready
-Issue: 
+Issue: https://github.com/waypoints-pwa/waypoints/issues/75
 Builds after: none
 
 ## Problem
