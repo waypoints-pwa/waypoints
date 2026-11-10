@@ -1,6 +1,6 @@
 # Plan and items in both languages (Portuguese, part 2)
 
-Status: building
+Status: shipped
 Issue: https://github.com/waypoints-pwa/waypoints/issues/72
 Builds after: none
 
@@ -261,3 +261,14 @@ Glossary for this part (adds to part 1's; fixed):
 - Overlap: the draft specs `plan-editing`, `list-row-stars`, `trip-budget` and `qr-join` touch
   screens moved here. None is built; whichever is built later follows the CLAUDE.md rule (text in
   both languages), and if one lands first, its text is moved here like the rest.
+- As shipped: the Portuguese "It will also be deleted for the others…" sentence is worded without
+  gender ("Se partilhares a viagem, a eliminação também vale para os outros."), because it follows
+  masculine and feminine questions; the same message is reused on the packing page.
+- As shipped: task 1's check on `ItemLinks.tsx` prints 3, not 0: it matches the
+  `googleMapsDirections` name and a comment, not text people read. The checks also match code
+  comments, so two were reworded (`PackingPage.tsx`, `TripFormPage.tsx`).
+- Left for a later part: the Plan's " · Today" after today's date comes from CSS
+  (`src/index.css`, `.day-today .day-head h3::after`), a file this part doesn't touch, so it stays
+  English in the preview.
+- Terms chosen while building were added to the Glossary in `specs/translation-layer.md`; "Taxas de
+  câmbio" is the name part 3's Money screen has to match.
