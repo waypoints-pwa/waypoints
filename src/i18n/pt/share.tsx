@@ -69,15 +69,15 @@ export const share: Messages['share'] = {
   skipForNow: 'Agora não',
   openInApp: 'Abrir na app waypoints',
   safariKeeps:
-    'O Safari guarda a sua própria cópia do waypoints, separada da app no teu Ecrã principal. Isto copia o link para o poderes abrir lá.',
+    'O Safari guarda a sua própria cópia do waypoints, separada da app no teu ecrã principal. Isto copia o link para o poderes abrir lá.',
   copyThisLink: 'Copia este link',
-  openFromHomeScreen: 'Abre o waypoints a partir do teu Ecrã principal.',
+  openFromHomeScreen: 'Abre o waypoints a partir do teu ecrã principal.',
   handOffOpenTripLink: 'Abrir um link ou ficheiro de viagem',
   tapThenPaste: (button) => (
     <>
       Toca em {button} e depois em Colar.
     </>
   ),
-  noWaypointsYet: 'Ainda não tens o waypoints no Ecrã principal? No Safari, toca em Partilhar → Adicionar ao ecrã principal primeiro.',
+  noWaypointsYet: 'Ainda não tens o waypoints no ecrã principal? No Safari, toca em Partilhar → Adicionar ao ecrã principal primeiro.',
   useItHere: 'Usar aqui no Safari',
 }
