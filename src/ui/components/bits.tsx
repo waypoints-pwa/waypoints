@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { m } from '../../i18n'
 
 export function EmptyState({ children }: { children: ReactNode }) {
   return <div className="empty">{children}</div>
@@ -36,11 +37,11 @@ export function CopyCode({ code }: { code: string }) {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch {
-      prompt('Copy this:', code)
+      prompt(m.common.copyThis, code)
     }
   }
   return (
-    <button type="button" className="code-chip" onClick={() => void copy()} aria-label={`Copy ${code}`}>
+    <button type="button" className="code-chip" onClick={() => void copy()} aria-label={m.common.copyCode(code)}>
       {code} <span aria-hidden>{copied ? '✓' : '📋'}</span>
     </button>
   )

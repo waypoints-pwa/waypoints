@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { m } from '../../i18n'
 import { parseNotes, type Release } from '../../domain/changelog'
 import { markReleasesSeen } from '../../lib/releases'
 import { useUnseenReleases } from '../hooks'
@@ -41,18 +42,18 @@ export function WhatsNewCard() {
   return (
     <section className="card whats-new">
       <div className="section-head">
-        <h3>✨ New in waypoints {latest.version}</h3>
-        <button className="btn btn-small btn-ghost" aria-label="Dismiss" onClick={() => void markReleasesSeen()}>
+        <h3>{m.common.newInWaypoints(latest.version)}</h3>
+        <button className="btn btn-small btn-ghost" aria-label={m.common.dismiss} onClick={() => void markReleasesSeen()}>
           ✕
         </button>
       </div>
       <ReleaseNotes release={latest} />
       <div className="row">
         <button className="btn btn-small btn-primary" onClick={() => void markReleasesSeen()}>
-          Got it
+          {m.common.gotIt}
         </button>
         <Link className="link small" to="/whats-new">
-          {earlier.length ? `See ${earlier.length} earlier update${earlier.length > 1 ? 's' : ''}` : 'All updates'}
+          {earlier.length ? m.common.seeEarlier(earlier.length) : m.common.allUpdates}
         </Link>
       </div>
     </section>

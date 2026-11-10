@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { m } from '../../i18n'
 import { markReleasesSeen, RELEASES } from '../../lib/releases'
 import { BackLink } from '../components/bits'
 import { ReleaseNotes } from '../components/WhatsNew'
@@ -12,8 +13,8 @@ export function WhatsNewPage() {
 
   return (
     <>
-      <BackLink to="/settings">Settings</BackLink>
-      <h2>What's new</h2>
+      <BackLink to="/settings">{m.common.settings}</BackLink>
+      <h2>{m.common.whatsNew}</h2>
       {RELEASES.map((release) => (
         <section key={release.version} className="card">
           <h3>
