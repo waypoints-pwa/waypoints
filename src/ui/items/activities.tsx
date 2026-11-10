@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
+import { m } from '../../i18n'
 import type { Activity } from '../../db/types'
 import { activityEvent } from '../../domain/calendar'
 import { tripPhase } from '../../domain/itinerary'
@@ -48,9 +49,9 @@ function ActivityForm({ existing, date, placeId }: { existing?: Activity; date: 
   const { save, busy, error, setError } = useSave('activities', existing?.id)
 
   const onSubmit = () => {
-    if (!title.trim()) return setError('What are you doing?')
-    if (!isDay(day)) return setError('Choose a day.')
-    if (startTime && endTime && endTime <= startTime) return setError('It ends before it starts.')
+    if (!title.trim()) return setError(m.activities.whatAreYouDoing)
+    if (!isDay(day)) return setError(m.activities.chooseDay)
+    if (startTime && endTime && endTime <= startTime) return setError(m.activities.endsBeforeStarts)
     void save({
       title: title.trim(),
       date: day,
@@ -67,18 +68,18 @@ function ActivityForm({ existing, date, placeId }: { existing?: Activity; date: 
   }
 
   return (
-    <ItemForm title={existing ? 'Edit activity' : 'New activity'} error={error} busy={busy} onSubmit={onSubmit}>
-      <TextField label="What" value={title} onChange={setTitle} placeholder="Fado show, cooking class, day trip to Sintra…" maxLength={200} autoFocus={!existing && !place} />
-      <DateTimeField label="When" date={day} time={startTime} required onDate={setDay} onTime={setStartTime} hint="Leave the time empty for all-day plans." />
+    <ItemForm title={existing ? m.activities.editTitle : m.activities.newTitle} error={error} busy={busy} onSubmit={onSubmit}>
+      <TextField label={m.activities.what} value={title} onChange={setTitle} placeholder={m.activities.whatPlaceholder} maxLength={200} autoFocus={!existing && !place} />
+      <DateTimeField label={m.activities.when} date={day} time={startTime} required onDate={setDay} onTime={setStartTime} hint={m.activities.whenHint} />
       {startTime && (
-        <Field label="Ends at">
+        <Field label={m.activities.endsAt}>
           <input className="input input-time" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
         </Field>
       )}
       <ZoneField value={timeZone} onChange={setTimeZone} suggestions={t.zones} />
       <CityField value={city} onChange={setCity} onZone={setTimeZone} />
       <AddressField
-        label="Address or meeting point"
+        label={m.activities.addressOrMeetingPoint}
         value={address}
         onChange={setAddress}
         city={city}
@@ -88,8 +89,8 @@ function ActivityForm({ existing, date, placeId }: { existing?: Activity; date: 
           if (p.zone) setTimeZone(p.zone)
         }}
       />
-      <TextField label="Booking reference" value={confirmation} onChange={setConfirmation} maxLength={200} autoComplete="off" />
-      <TextField label="Link" type="url" value={link} onChange={setLink} placeholder="Tickets, the venue's website…" maxLength={2000} />
+      <TextField label={m.activities.bookingReference} value={confirmation} onChange={setConfirmation} maxLength={200} autoComplete="off" />
+      <TextField label={m.common.link} type="url" value={link} onChange={setLink} placeholder={m.activities.linkPlaceholder} maxLength={2000} />
       <NotesField value={notes} onChange={setNotes} />
     </ItemForm>
   )
@@ -107,15 +108,15 @@ export function ActivityPage() {
       <DetailHead emoji="🎟️" title={a.title} subtitle={a.city} />
       <section className="card">
         <dl className="facts">
-          <dt>When</dt>
+          <dt>{m.activities.when}</dt>
           <dd>
             {fmtDayTime(a.date, a.startTime)}
             {a.endTime && ` – ${fmtTime(a.endTime)}`}
-            {!a.startTime && ' (all day)'}
+            {!a.startTime && ` ${m.activities.allDay}`}
           </dd>
           {a.confirmation && (
             <>
-              <dt>Booking</dt>
+              <dt>{m.common.booking}</dt>
               <dd>
                 <CopyCode code={a.confirmation} />
               </dd>
@@ -123,7 +124,7 @@ export function ActivityPage() {
           )}
           {place && (
             <>
-              <dt>Place</dt>
+              <dt>{m.activities.place}</dt>
               <dd>
                 <Link className="link" to={tripPath(t.trip.id, 'places', place.id)}>
                   {labelOf(PLACE_CATEGORIES, place.category).emoji} {place.name}
@@ -132,28 +133,28 @@ export function ActivityPage() {
             </>
           )}
         </dl>
-        {a.startTime && a.timeZone !== t.trip.timeZone && <p className="muted small">Times are {zoneCity(a.timeZone)} time.</p>}
+        {a.startTime && a.timeZone !== t.trip.timeZone && <p className="muted small">{m.activities.timesAre(zoneCity(a.timeZone))}</p>}
         <div className="actions">
-          <WebLink url={a.link}>Website</WebLink>
+          <WebLink url={a.link}>{m.common.website}</WebLink>
         </div>
       </section>
       {(a.address || a.city) && (
         <section className="card">
-          <h3>Where</h3>
+          <h3>{m.activities.where}</h3>
           {a.address && <p className="prewrap">{a.address}</p>}
           <MapLinks query={mapQuery(a.address ?? a.title, a.city)} />
         </section>
       )}
       {a.notes && (
         <section className="card">
-          <h3>Notes</h3>
+          <h3>{m.common.notes}</h3>
           <p className="prewrap">{a.notes}</p>
         </section>
       )}
       <ReviewsCard target={{ table: 'activities', record: a }} />
       <AttachmentsCard table="activities" id={a.id} />
       <section className="card">
-        <h3>Calendar</h3>
+        <h3>{m.common.calendar}</h3>
         <CalendarLinks event={activityEvent(a)} calendarName={t.trip.name} />
       </section>
       <ItemFooter table="activities" id={a.id} what="activity" backTo={back} />

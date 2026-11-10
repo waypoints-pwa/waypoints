@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
+import { m } from '../../i18n'
 import type { Day, Stay, StayKind } from '../../db/types'
 import { stayEvent } from '../../domain/calendar'
 import { tripPhase } from '../../domain/itinerary'
@@ -9,7 +10,7 @@ import { CopyCode, DetailHead } from '../components/bits'
 import { ChoiceChips, DateTimeField, NotesField, TextField, ZoneField } from '../components/fields'
 import { AddressField, CityField } from '../components/PlaceFields'
 import { CalendarLinks, MapLinks, PhoneLink, WebLink } from '../components/ItemLinks'
-import { fmtDayTime, plural } from '../format'
+import { fmtDayTime } from '../format'
 import { labelOf, STAY_KINDS } from '../labels'
 import { tripPath, useTrip, type TripData } from '../tripData'
 import { AttachmentsCard } from '../components/Attachments'
@@ -62,9 +63,9 @@ function StayForm({ existing, date }: { existing?: Stay; date: string | null }) 
   const { save, busy, error, setError } = useSave('stays', existing?.id)
 
   const onSubmit = () => {
-    if (!name.trim()) return setError('Give the stay a name.')
-    if (!isDay(checkInDate) || !isDay(checkOutDate)) return setError('Choose the check-in and check-out days.')
-    if (checkOutDate < checkInDate) return setError('Check-out is before check-in.')
+    if (!name.trim()) return setError(m.stays.giveName)
+    if (!isDay(checkInDate) || !isDay(checkOutDate)) return setError(m.stays.chooseDays)
+    if (checkOutDate < checkInDate) return setError(m.stays.checkOutBeforeCheckIn)
     void save({
       name: name.trim(),
       kind: kind as StayKind,
@@ -83,9 +84,9 @@ function StayForm({ existing, date }: { existing?: Stay; date: string | null }) 
   }
 
   return (
-    <ItemForm title={existing ? 'Edit stay' : 'New stay'} error={error} busy={busy} onSubmit={onSubmit}>
-      <TextField label="Name" value={name} onChange={setName} placeholder="Hotel Sol, Casa da Ana…" maxLength={200} autoFocus={!existing} />
-      <ChoiceChips label="Type" options={STAY_KINDS} value={kind} onChange={setKind} />
+    <ItemForm title={existing ? m.stays.editTitle : m.stays.newTitle} error={error} busy={busy} onSubmit={onSubmit}>
+      <TextField label={m.common.name} value={name} onChange={setName} placeholder={m.stays.namePlaceholder} maxLength={200} autoFocus={!existing} />
+      <ChoiceChips label={m.stays.type} options={STAY_KINDS} value={kind} onChange={setKind} />
       <CityField value={city} onChange={setCity} onZone={setTimeZone} />
       <AddressField
         value={address}
@@ -98,7 +99,7 @@ function StayForm({ existing, date }: { existing?: Stay; date: string | null }) 
         }}
       />
       <DateTimeField
-        label="Check-in"
+        label={m.stays.checkIn}
         date={checkInDate}
         time={checkInTime}
         required
@@ -108,12 +109,12 @@ function StayForm({ existing, date }: { existing?: Stay; date: string | null }) 
         }}
         onTime={setCheckInTime}
       />
-      <DateTimeField label="Check-out" date={checkOutDate} time={checkOutTime} required onDate={setCheckOutDate} onTime={setCheckOutTime} />
+      <DateTimeField label={m.stays.checkOut} date={checkOutDate} time={checkOutTime} required onDate={setCheckOutDate} onTime={setCheckOutTime} />
       <ZoneField value={timeZone} onChange={setTimeZone} suggestions={t.zones} />
-      <TextField label="Booking reference" value={confirmation} onChange={setConfirmation} maxLength={200} autoCapitalize="characters" autoComplete="off" />
-      <TextField label="Phone" type="tel" value={phone} onChange={setPhone} maxLength={40} />
-      <TextField label="Link" type="url" value={link} onChange={setLink} placeholder="The booking or listing page" maxLength={2000} />
-      <NotesField value={notes} onChange={setNotes} placeholder="Door code, Wi-Fi, how to get the keys…" />
+      <TextField label={m.stays.bookingReference} value={confirmation} onChange={setConfirmation} maxLength={200} autoCapitalize="characters" autoComplete="off" />
+      <TextField label={m.common.phone} type="tel" value={phone} onChange={setPhone} maxLength={40} />
+      <TextField label={m.common.link} type="url" value={link} onChange={setLink} placeholder={m.stays.linkPlaceholder} maxLength={2000} />
+      <NotesField value={notes} onChange={setNotes} placeholder={m.stays.notesPlaceholder} />
     </ItemForm>
   )
 }
@@ -130,15 +131,15 @@ export function StayPage() {
       <DetailHead emoji={kind.emoji} title={stay.name} subtitle={[kind.label, stay.city].filter(Boolean).join(' · ')} />
       <section className="card">
         <dl className="facts">
-          <dt>Check-in</dt>
+          <dt>{m.stays.checkIn}</dt>
           <dd>{fmtDayTime(stay.checkInDate, stay.checkInTime)}</dd>
-          <dt>Check-out</dt>
+          <dt>{m.stays.checkOut}</dt>
           <dd>{fmtDayTime(stay.checkOutDate, stay.checkOutTime)}</dd>
-          <dt>Stay</dt>
-          <dd>{plural(daysBetween(stay.checkInDate, stay.checkOutDate), 'night')}</dd>
+          <dt>{m.stays.stay}</dt>
+          <dd>{m.stays.nights(daysBetween(stay.checkInDate, stay.checkOutDate))}</dd>
           {stay.confirmation && (
             <>
-              <dt>Booking</dt>
+              <dt>{m.common.booking}</dt>
               <dd>
                 <CopyCode code={stay.confirmation} />
               </dd>
@@ -146,34 +147,34 @@ export function StayPage() {
           )}
           {stay.phone && (
             <>
-              <dt>Phone</dt>
+              <dt>{m.common.phone}</dt>
               <dd>{stay.phone}</dd>
             </>
           )}
         </dl>
-        {stay.timeZone !== t.trip.timeZone && <p className="muted small">Times are {zoneCity(stay.timeZone)} time.</p>}
+        {stay.timeZone !== t.trip.timeZone && <p className="muted small">{m.stays.timesAre(zoneCity(stay.timeZone))}</p>}
         <div className="actions">
           <PhoneLink phone={stay.phone} />
-          <WebLink url={stay.link}>Booking page</WebLink>
+          <WebLink url={stay.link}>{m.stays.bookingPage}</WebLink>
         </div>
       </section>
       {(stay.address || stay.city) && (
         <section className="card">
-          <h3>Address</h3>
+          <h3>{m.common.address}</h3>
           {stay.address && <p className="prewrap">{stay.address}</p>}
           <MapLinks query={mapQuery(stay.address ?? stay.name, stay.city)} />
         </section>
       )}
       {stay.notes && (
         <section className="card">
-          <h3>Notes</h3>
+          <h3>{m.common.notes}</h3>
           <p className="prewrap">{stay.notes}</p>
         </section>
       )}
       <ReviewsCard target={{ table: 'stays', record: stay }} />
       <AttachmentsCard table="stays" id={stay.id} />
       <section className="card">
-        <h3>Calendar</h3>
+        <h3>{m.common.calendar}</h3>
         <CalendarLinks event={stayEvent(stay)} calendarName={t.trip.name} />
       </section>
       <ItemFooter table="stays" id={stay.id} what="stay" backTo={back} />

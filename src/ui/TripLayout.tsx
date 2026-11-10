@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { setSetting, SETTINGS } from '../db/db'
 import { tripPhase } from '../domain/itinerary'
+import { m } from '../i18n'
 import { EmptyState } from './components/bits'
 import { ServerGoneNotice } from './components/ServerGoneNotice'
 import { fmtDayRange } from './format'
@@ -28,9 +29,9 @@ export function TripLayout() {
       <main className="page page-plain">
         <EmptyState>
           <p className="big-emoji">🧭</p>
-          <p>This trip isn't on this phone.</p>
+          <p>{m.trip.notOnThisPhone}</p>
           <Link className="btn btn-primary" to="/">
-            See your trips
+            {m.trip.seeYourTrips}
           </Link>
         </EmptyState>
       </main>
@@ -47,14 +48,14 @@ export function TripLayout() {
       <header className="topbar">
         <div className="topbar-inner">
           {'to' in back ? (
-            <Link className="icon-btn back" to="/" aria-label="All trips">
+            <Link className="icon-btn back" to="/" aria-label={m.trip.allTrips}>
               ‹
             </Link>
           ) : (
             <button
               type="button"
               className="icon-btn back"
-              aria-label="Back"
+              aria-label={m.common.back}
               onClick={() => {
                 if ((window.history.state as { idx?: number } | null)?.idx) void navigate(-1)
                 else void navigate(back.fallback, { replace: true })
@@ -72,7 +73,7 @@ export function TripLayout() {
           <Link
             className="icon-btn"
             to={tripPath(trip.id, 'share')}
-            aria-label={showUnsent ? 'Share with the group (you have changes they haven’t seen)' : 'Share with the group'}
+            aria-label={showUnsent ? m.trip.shareWithGroupUnsent : m.trip.shareWithGroup}
           >
             🔗
             {showUnsent && <span className="dot" />}

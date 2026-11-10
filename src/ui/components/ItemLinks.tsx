@@ -1,6 +1,7 @@
 import { buildICS, googleCalendarLink, type CalendarEvent } from '../../domain/calendar'
 import { appleMapsSearch, googleMapsDirections, googleMapsSearch, safeHttpUrl, telLink } from '../../domain/links'
 import { downloadBlob, fileSlug } from '../../lib/download'
+import { m } from '../../i18n'
 import { isAppleMobile } from '../../lib/platform'
 import { ExternalLink } from './bits'
 
@@ -9,7 +10,7 @@ export function MapLinks({ query, directions = true }: { query?: string; directi
   if (!query) return null
   return (
     <div className="actions">
-      {directions && <ExternalLink href={googleMapsDirections(query)}>🧭 Directions</ExternalLink>}
+      {directions && <ExternalLink href={googleMapsDirections(query)}>{m.items.directions}</ExternalLink>}
       <ExternalLink href={googleMapsSearch(query)}>🗺️ Google Maps</ExternalLink>
       {isAppleMobile() && <ExternalLink href={appleMapsSearch(query)}>🍎 Apple Maps</ExternalLink>}
     </div>
@@ -20,9 +21,9 @@ export function CalendarLinks({ event, calendarName }: { event: CalendarEvent; c
   const download = () => downloadBlob(new Blob([buildICS([event], calendarName)], { type: 'text/calendar' }), `${fileSlug(event.title)}.ics`)
   return (
     <div className="actions">
-      <ExternalLink href={googleCalendarLink(event)}>📅 Add to Google Calendar</ExternalLink>
+      <ExternalLink href={googleCalendarLink(event)}>{m.items.addToGoogleCalendar}</ExternalLink>
       <button type="button" className="btn btn-small" onClick={download}>
-        📅 Calendar file (.ics)
+        {m.items.calendarFile}
       </button>
     </div>
   )
@@ -38,7 +39,7 @@ export function PhoneLink({ phone }: { phone?: string }) {
   const href = telLink(phone)
   return href ? (
     <a className="btn btn-small" href={href}>
-      📞 Call
+      {m.items.call}
     </a>
   ) : null
 }

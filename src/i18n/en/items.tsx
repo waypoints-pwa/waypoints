@@ -1,0 +1,20 @@
+export const items = {
+  editButton: '✏️ Edit',
+  deleteConfirm: {
+    stay: 'Delete this stay?',
+    journey: 'Delete this journey?',
+    activity: 'Delete this activity?',
+    place: 'Delete this place?',
+    expense: 'Delete this expense?',
+    payment: 'Delete this payment?',
+  },
+  deleteForOthers: 'It will also be deleted for the others when you share the trip.',
+  gone: "This isn't in the trip any more. Someone may have deleted it.",
+  couldntSave: "Couldn't save. Try again.",
+  directions: '🧭 Directions',
+  addToGoogleCalendar: '📅 Add to Google Calendar',
+  calendarFile: '📅 Calendar file (.ics)',
+  call: '📞 Call',
+  layoverUnknown: 'Layover time unknown',
+  layover: (duration: string, place: string): string => `Layover ${duration} in ${place}`,
+}

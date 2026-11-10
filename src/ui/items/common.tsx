@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { deleteRecord } from '../../db/actions'
+import { m } from '../../i18n'
 import { EmptyState } from '../components/bits'
 import { FormError } from '../components/fields'
 import { tripPath, useTrip } from '../tripData'
@@ -22,32 +23,32 @@ export function ItemForm({ title, error, busy, onSubmit, children }: { title: st
       <FormError error={error} />
       <div className="form-actions">
         <button type="button" className="btn btn-ghost" onClick={() => navigate(-1)}>
-          Cancel
+          {m.common.cancel}
         </button>
         <button type="submit" className="btn btn-primary" disabled={busy}>
-          Save
+          {m.common.save}
         </button>
       </div>
     </form>
   )
 }
 
-export function ItemFooter({ table, id, what, backTo }: { table: keyof typeof SEGMENT; id: string; what: string; backTo: string }) {
+export function ItemFooter({ table, id, what, backTo }: { table: keyof typeof SEGMENT; id: string; what: keyof typeof m.items.deleteConfirm; backTo: string }) {
   const t = useTrip()
   const navigate = useNavigate()
   const onDelete = async () => {
-    const others = t.travellers.length > 1 ? ' It will also be deleted for the others when you share the trip.' : ''
-    if (!confirm(`Delete this ${what}?${others}`)) return
+    const others = t.travellers.length > 1 ? ` ${m.items.deleteForOthers}` : ''
+    if (!confirm(`${m.items.deleteConfirm[what]}${others}`)) return
     await deleteRecord(table, id)
     navigate(backTo, { replace: true })
   }
   return (
     <div className="actions">
       <Link className="btn btn-primary" to={tripPath(t.trip.id, SEGMENT[table], id, 'edit')}>
-        ✏️ Edit
+        {m.items.editButton}
       </Link>
       <button type="button" className="btn btn-danger" onClick={() => void onDelete()}>
-        Delete
+        {m.common.delete}
       </button>
     </div>
   )
@@ -57,9 +58,9 @@ export function ItemGone({ backTo }: { backTo: string }) {
   return (
     <EmptyState>
       <p className="big-emoji">🧭</p>
-      <p>This isn't in the trip any more. Someone may have deleted it.</p>
+      <p>{m.items.gone}</p>
       <Link className="btn" to={backTo}>
-        Back
+        {m.common.back}
       </Link>
     </EmptyState>
   )

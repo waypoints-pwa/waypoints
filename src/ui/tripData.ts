@@ -7,6 +7,7 @@ import { rateFinder, type RateOf } from '../domain/expenses'
 import { fold } from '../domain/places'
 import type { MemberSummary } from '../domain/serverProtocol'
 import { currentVotes } from '../domain/votes'
+import { m } from '../i18n'
 import { labelOf, PLACE_CATEGORIES, STAY_KINDS } from './labels'
 
 /** An address already in the trip, to suggest for another item there (an activity at the hotel). */
@@ -186,7 +187,7 @@ export const useOptionalTrip = () => useContext(TripContext)
 /** Absolute path inside a trip: tripPath(id, 'stays', stayId). */
 export const tripPath = (tripId: string, ...parts: string[]) => ['/trips', tripId, ...parts].filter(Boolean).join('/')
 
-export const nameOf = (t: TripData, travellerId: string) => t.names.get(travellerId) ?? 'Someone'
+export const nameOf = (t: TripData, travellerId: string) => t.names.get(travellerId) ?? m.common.someone
 
 /** "Send the group an update" makes sense when someone on the trip only gets changes by link. */
 export const needsLinks = (t: TripData) => t.unsent > 0 && t.travellers.length > 1 && t.viaLinks.some((x) => x.id !== t.me?.id)

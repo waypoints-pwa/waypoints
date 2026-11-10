@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { saveRecord, type Input } from '../../db/actions'
 import type { LinkTable, TableRecords } from '../../db/types'
+import { m } from '../../i18n'
 import { tripPath, useTrip } from '../tripData'
 
 /** Route segment of each kind of item with a page of its own: /trips/<id>/<segment>/<itemId>. */
@@ -30,7 +31,7 @@ export function useSave<T extends keyof typeof SEGMENT>(table: T, existingId: st
       if (existingId || backWhenNew) navigate(-1)
       else navigate(tripPath(t.trip.id, SEGMENT[table], id), { replace: true })
     } catch {
-      setError("Couldn't save. Try again.")
+      setError(m.items.couldntSave)
     } finally {
       setBusy(false)
     }

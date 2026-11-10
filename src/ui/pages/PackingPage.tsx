@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { m } from '../../i18n'
 import { addRecords, deleteRecord, patchRecord, saveRecord } from '../../db/actions'
 import type { PackingItem } from '../../db/types'
 import { newFromTemplate, progress, sortedItems, TEMPLATES } from '../../domain/packing'
@@ -8,14 +9,14 @@ import { nameOf, useTrip, type TripData } from '../tripData'
 
 const MAX_TEXT = 200
 
-/** Who's bringing it: one of the trip's travellers (or whoever is already set, even if they've left). */
+/** The bringer: one of the trip's travellers (or whoever is already set, even if they've left). */
 function BringerSelect({ t, value, onChange }: { t: TripData; value: string; onChange: (id: string) => void }) {
   const known = t.travellers.some((x) => x.id === value)
   return (
     <label className="field">
-      <span>Who's bringing it</span>
+      <span>{m.packing.whoIsBringing}</span>
       <select className="input" value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">Nobody yet</option>
+        <option value="">{m.packing.nobodyYet}</option>
         {value && !known && <option value={value}>{nameOf(t, value)}</option>}
         {t.travellers.map((x) => (
           <option key={x.id} value={x.id}>
@@ -58,17 +59,17 @@ export function PackingPage() {
 
   return (
     <article className="stack">
-      <h2>Packing & to-do</h2>
+      <h2>{m.packing.title}</h2>
 
       {total === 0 ? (
         <EmptyState>
           <p className="big-emoji">🎒</p>
-          <p>Nothing here yet</p>
+          <p>{m.packing.empty}</p>
         </EmptyState>
       ) : (
         <>
           <p className="muted">
-            {packed} of {total} packed
+            {m.packing.progress(packed, total)}
           </p>
           <ul className="list">
             {items.map((item) =>
@@ -80,7 +81,7 @@ export function PackingPage() {
                     <input
                       type="checkbox"
                       checked={Boolean(item.packed)}
-                      aria-label={`Packed: ${item.text}`}
+                      aria-label={m.packing.packedLabel(item.text)}
                       onChange={(e) => void patchRecord('packingItems', item.id, { packed: e.target.checked })}
                     />
                   </label>
@@ -96,7 +97,7 @@ export function PackingPage() {
       )}
 
       <section className="stack">
-        <h3 className="group-title">Add from a template</h3>
+        <h3 className="group-title">{m.packing.addFromTemplate}</h3>
         <div className="chips">
           {TEMPLATES.map((x) => (
             <button key={x.id} className="btn btn-small" onClick={() => void fromTemplate(x.id)}>
@@ -113,10 +114,10 @@ export function PackingPage() {
           void add()
         }}
       >
-        <TextField label="Add an item" value={text} onChange={setText} maxLength={MAX_TEXT} />
+        <TextField label={m.packing.addAnItem} value={text} onChange={setText} maxLength={MAX_TEXT} />
         {group && <BringerSelect t={t} value={bringer} onChange={setBringer} />}
         <button className="btn btn-primary" type="submit" disabled={!text.trim()}>
-          Add
+          {m.common.add}
         </button>
       </form>
     </article>
@@ -134,25 +135,25 @@ function EditRow({ item, t, group, onDone }: { item: PackingItem; t: TripData; g
     onDone()
   }
   const remove = async () => {
-    const others = group ? ' It will also be deleted for the others when you share the trip.' : ''
-    if (!confirm(`Delete this item?${others}`)) return
+    const others = group ? ` ${m.items.deleteForOthers}` : ''
+    if (!confirm(`${m.packing.deleteConfirm}${others}`)) return
     await deleteRecord('packingItems', item.id)
     onDone()
   }
 
   return (
     <li className="card stack">
-      <TextField label="Item" value={text} onChange={setText} maxLength={MAX_TEXT} />
+      <TextField label={m.packing.item} value={text} onChange={setText} maxLength={MAX_TEXT} />
       {(group || item.bringer) && <BringerSelect t={t} value={bringer} onChange={setBringer} />}
       <div className="actions">
         <button className="btn btn-primary" disabled={!text.trim()} onClick={() => void save()}>
-          Save
+          {m.common.save}
         </button>
         <button className="btn" onClick={onDone}>
-          Cancel
+          {m.common.cancel}
         </button>
         <button className="btn btn-danger" onClick={() => void remove()}>
-          Delete
+          {m.common.delete}
         </button>
       </div>
     </li>

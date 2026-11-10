@@ -1,6 +1,7 @@
 import { transportDuration, type PlanEntry } from '../domain/itinerary'
 import type { ReviewTarget } from '../domain/reviews'
 import { timeZoneName } from '../domain/time'
+import { m } from '../i18n'
 import { fmtDay, fmtDayTime, fmtDuration, fmtTime } from './format'
 import { SEGMENT } from './items/save'
 import { labelOf, PLACE_CATEGORIES, STAY_KINDS, TRANSPORT_MODES } from './labels'
@@ -29,7 +30,7 @@ export function describeEntry(e: PlanEntry, t: TripData): EntryView {
     case 'transport': {
       const r = e.record
       const duration = transportDuration(r)
-      const arrival = r.arriveTime && `arrives ${r.arriveDate && r.arriveDate !== r.departDate ? `${fmtDay(r.arriveDate)} ` : ''}${fmtTime(r.arriveTime)}`
+      const arrival = r.arriveTime && m.plan.arrives(`${r.arriveDate && r.arriveDate !== r.departDate ? `${fmtDay(r.arriveDate)} ` : ''}${fmtTime(r.arriveTime)}`)
       return {
         emoji: labelOf(TRANSPORT_MODES, r.mode).emoji,
         title: `${r.from} → ${r.to}`,
@@ -43,8 +44,8 @@ export function describeEntry(e: PlanEntry, t: TripData): EntryView {
       const mode = labelOf(TRANSPORT_MODES, r.mode)
       return {
         emoji: r.mode === 'flight' ? '🛬' : mode.emoji,
-        title: `Arrive in ${r.to}`,
-        detail: join(`${mode.label} from ${r.from}`, r.number),
+        title: m.plan.arriveIn(r.to),
+        detail: join(m.plan.modeFrom(mode.label, r.from), r.number),
         to: tripPath(t.trip.id, 'transport', r.id),
         zone,
       }
@@ -54,7 +55,7 @@ export function describeEntry(e: PlanEntry, t: TripData): EntryView {
       const r = e.record
       return {
         emoji: e.kind === 'checkin' ? '🔑' : '🧳',
-        title: `${e.kind === 'checkin' ? 'Check in' : 'Check out'}: ${r.name}`,
+        title: e.kind === 'checkin' ? m.plan.checkIn(r.name) : m.plan.checkOut(r.name),
         detail: join(labelOf(STAY_KINDS, r.kind).label, r.city),
         to: tripPath(t.trip.id, 'stays', r.id),
         zone,
@@ -65,7 +66,7 @@ export function describeEntry(e: PlanEntry, t: TripData): EntryView {
       return {
         emoji: '🎟️',
         title: r.title,
-        detail: join(r.endTime && `until ${fmtTime(r.endTime)}`, r.city),
+        detail: join(r.endTime && m.plan.until(fmtTime(r.endTime)), r.city),
         to: tripPath(t.trip.id, 'activities', r.id),
         zone,
       }

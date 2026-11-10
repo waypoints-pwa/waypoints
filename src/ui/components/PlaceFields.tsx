@@ -3,6 +3,7 @@ import { SETTINGS } from '../../db/db'
 import type { FoundAddress } from '../../domain/addresses'
 import { airportCode, airportLabel, cityDetail, cityNamed, countryName, fold, searchAirports, searchCities } from '../../domain/places'
 import { loadAirports, loadCities, searchAddressesOnline } from '../../lib/places'
+import { m } from '../../i18n'
 import { useLoaded, useSetting } from '../hooks'
 import { useTrip } from '../tripData'
 import { Combobox, type Suggestion } from './Combobox'
@@ -26,7 +27,7 @@ function matches(text: string, typed: string): boolean {
 type PlaceProps = { label?: string; value: string; onChange: (value: string) => void; onZone?: (zone: string) => void; placeholder?: string }
 
 /** A city: the trip's own first, then the world's (towns of 15,000 people or more). */
-export function CityField({ label = 'City', value, onChange, onZone, placeholder }: PlaceProps) {
+export function CityField({ label = m.fields.city, value, onChange, onZone, placeholder }: PlaceProps) {
   const t = useTrip()
   const index = useLoaded(loadCities)
   const typed = value.trim()
@@ -47,9 +48,9 @@ export function CityField({ label = 'City', value, onChange, onZone, placeholder
       maxLength={200}
       placeholder={placeholder}
       groups={[
-        { label: 'In this trip', items: own.map((c) => ({ key: c, label: c, onPick: pick(c, zoneOf(c)) })) },
+        { label: m.fields.inThisTrip, items: own.map((c) => ({ key: c, label: c, onPick: pick(c, zoneOf(c)) })) },
         {
-          label: 'Cities',
+          label: m.fields.cities,
           items: world.map((c, i) => ({ key: `${i}`, label: c.name, detail: cityDetail(c), onPick: pick(c.name, c.timeZone) })),
         },
       ]}
@@ -58,7 +59,7 @@ export function CityField({ label = 'City', value, onChange, onZone, placeholder
 }
 
 /** An airport: the trip's own first, then those with scheduled flights. Picked ones read "Lisbon (LIS)". */
-export function AirportField({ label = 'Airport', value, onChange, onZone, placeholder }: PlaceProps) {
+export function AirportField({ label = m.fields.airport, value, onChange, onZone, placeholder }: PlaceProps) {
   const t = useTrip()
   const index = useLoaded(loadAirports)
   const typed = value.trim()
@@ -85,11 +86,11 @@ export function AirportField({ label = 'Airport', value, onChange, onZone, place
       autoCapitalize="words"
       groups={[
         {
-          label: 'In this trip',
+          label: m.fields.inThisTrip,
           items: own.map((text) => ({ key: text, label: text, detail: known(text)?.name, onPick: pick(text, known(text)?.timeZone) })),
         },
         {
-          label: 'Airports',
+          label: m.fields.airports,
           items: listed.map((a) => ({
             key: a.code,
             label: airportLabel(a),
@@ -135,7 +136,7 @@ function useOnlineSearch(query: string, city: string | undefined): Search | unde
  * address that was already there or picked: only for what someone types.
  */
 export function AddressField({
-  label = 'Address',
+  label = m.common.address,
   value,
   onChange,
   city,
@@ -168,12 +169,12 @@ export function AddressField({
 
   const searching = online && query.trim().length >= 3 && search?.query !== query.trim()
   const note = !online
-    ? typed.length >= 3 && own.length === 0 && 'To search for addresses online, turn it on in Settings.'
+    ? typed.length >= 3 && own.length === 0 && m.fields.turnOnInSettings
     : searching
-      ? 'Searching…'
+      ? m.fields.searching
       : search?.failed
-        ? "Couldn't search online. No internet?"
-        : found.length > 0 && 'Found by Photon · © OpenStreetMap contributors'
+        ? m.fields.searchFailed
+        : found.length > 0 && m.fields.foundByPhoton
 
   return (
     <Combobox
@@ -188,7 +189,7 @@ export function AddressField({
       note={note || undefined}
       groups={[
         {
-          label: 'In this trip',
+          label: m.fields.inThisTrip,
           items: own.map((a) => ({
             key: a.address,
             label: a.address,
@@ -197,7 +198,7 @@ export function AddressField({
           })),
         },
         {
-          label: 'Found online',
+          label: m.fields.foundOnline,
           items: found.map((r) => ({
             key: r.address,
             label: r.address,
