@@ -44,4 +44,5 @@ export const common: Messages['common'] = {
   phone: 'Telefone',
   someone: 'Alguém',
   day: 'Dia',
+  select: 'Selecionar',
 }

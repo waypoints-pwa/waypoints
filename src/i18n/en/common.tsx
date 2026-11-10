@@ -39,4 +39,5 @@ export const common = {
   phone: 'Phone',
   someone: 'Someone',
   day: 'Day',
+  select: 'Select',
 }

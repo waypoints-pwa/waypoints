@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { m } from '../../i18n'
 import { deleteAttachment, keepOnlyHere, shareAttachment, updateAttachment } from '../../db/attachments'
 import { db } from '../../db/db'
 import type { Attachment } from '../../db/types'
@@ -62,9 +63,9 @@ function AttachmentView({ a }: { a: Attachment }) {
   const taken = photoTime(a)
 
   const onDelete = async () => {
-    const forEveryone = t.server && !a.private ? ' It will be deleted for everyone on the trip.' : ''
-    const everyLeg = item?.booking ? ` It goes from every ${item.booking.noun} on booking ${item.booking.ref}.` : ''
-    if (!confirm(`Delete this ${what(a)}?${everyLeg}${forEveryone}`)) return
+    const forEveryone = t.server && !a.private ? m.files.deletedForEveryoneOne[what(a)] : ''
+    const everyLeg = item?.booking ? m.files.goesFromEvery[item.booking.noun](item.booking.ref) : ''
+    if (!confirm([m.files.deleteThis[what(a)], everyLeg, forEveryone].filter(Boolean).join(' '))) return
     await deleteAttachment(a.id)
     navigate(back, { replace: true })
   }
@@ -85,23 +86,23 @@ function AttachmentView({ a }: { a: Attachment }) {
             {isPhoto(a) ? '📷' : '🖼️'}
           </div>
         ))}
-      {(busy || auto.busy) && <p className="muted small">Getting it from the server…</p>}
+      {(busy || auto.busy) && <p className="muted small">{m.files.gettingFromServer}</p>}
       {(error ?? auto.error) && <Notice kind="error">{error ?? auto.error}</Notice>}
       {photos.length > 1 && (
         <div className="row spread">
           {prev ? (
             <Link className="btn btn-small" to={tripPath(t.trip.id, 'files', prev.id)} replace>
-              ‹ Previous
+              {m.files.previous}
             </Link>
           ) : (
             <span />
           )}
           <span className="muted small">
-            {index + 1} of {photos.length}
+            {m.files.nOfM(index + 1, photos.length)}
           </span>
           {next ? (
             <Link className="btn btn-small" to={tripPath(t.trip.id, 'files', next.id)} replace>
-              Next ›
+              {m.files.next}
             </Link>
           ) : (
             <span />
@@ -113,28 +114,28 @@ function AttachmentView({ a }: { a: Attachment }) {
       <div className="actions">
         {file?.blob && !isPhoto(a) && (
           <button type="button" className="btn btn-primary" onClick={() => openFile(file.blob!)}>
-            Open
+            {m.files.open}
           </button>
         )}
         {file?.blob && (
           <button type="button" className="btn" onClick={() => void shareFile(file.blob!, a.name)}>
-            📤 Share or save
+            {m.files.shareOrSave}
           </button>
         )}
         {!file?.blob && state === 'remote' && !busy && !auto.busy && (
           <button type="button" className="btn btn-primary" onClick={() => void download()}>
-            ⬇️ Download
+            {m.files.download}
           </button>
         )}
       </div>
 
       <section className="card">
         <dl className="facts">
-          <dt>For</dt>
+          <dt>{m.files.forLabel}</dt>
           <dd>
             {item?.booking ? (
               <>
-                Every {item.booking.noun} on booking {item.booking.ref}:
+                {m.files.everyOnBooking[item.booking.noun](item.booking.ref)}
                 {item.booking.legs.map((leg) => (
                   <Link key={leg.id} className="link" style={{ display: 'block' }} to={leg.path}>
                     {leg.emoji} {leg.title}
@@ -146,21 +147,21 @@ function AttachmentView({ a }: { a: Attachment }) {
                 {item.emoji} {item.title}
               </Link>
             ) : (
-              'The whole trip'
+              m.files.wholeTrip
             )}
           </dd>
           {isPhoto(a) && (
             <>
-              <dt>Taken</dt>
+              <dt>{m.files.taken}</dt>
               <dd>{fmtDayTime(taken.slice(0, 10), taken.slice(11))}</dd>
             </>
           )}
-          <dt>Added</dt>
+          <dt>{m.files.addedLabel}</dt>
           <dd>
             {a.addedBy && `${nameOf(t, a.addedBy)}, `}
             {fmtTimestamp(a.createdAt)}
           </dd>
-          <dt>Size</dt>
+          <dt>{m.files.size}</dt>
           <dd>
             {fmtBytes(a.size)}
             {a.width && a.height ? ` · ${a.width} × ${a.height}` : ''}
@@ -171,7 +172,7 @@ function AttachmentView({ a }: { a: Attachment }) {
           <>
             <p className="muted small">{file?.uploadError}</p>
             <button type="button" className="btn btn-small" style={{ alignSelf: 'flex-start' }} onClick={() => void retryUpload(a.id)}>
-              Try again
+              {m.files.tryAgain}
             </button>
           </>
         )}
@@ -180,10 +181,10 @@ function AttachmentView({ a }: { a: Attachment }) {
 
       <div className="actions">
         <Link className="btn btn-primary" to={tripPath(t.trip.id, 'files', a.id, 'edit')}>
-          ✏️ Edit
+          {m.items.editButton}
         </Link>
         <button type="button" className="btn btn-danger" onClick={() => void onDelete()}>
-          Delete
+          {m.common.delete}
         </button>
       </div>
     </article>
@@ -213,21 +214,21 @@ function Privacy({ a, hasFile }: { a: Attachment; hasFile: boolean }) {
   if (a.private) {
     return (
       <button type="button" className="btn btn-small" style={{ alignSelf: 'flex-start' }} onClick={() => void shareAttachment(a.id)}>
-        🌐 Share it with the trip
+        {m.files.shareWithTrip}
       </button>
     )
   }
   // Keeping it here deletes it for everyone else: only for what you added yourself.
   if (!hasFile || (a.addedBy && a.addedBy !== t.me?.id)) return null
   const keep = async () => {
-    const others = t.server ? " It's deleted from the server and from the others' phones." : ''
-    if (!confirm(`Keep this ${what(a)} only on this phone?${others}`)) return
+    const others = t.server ? m.files.deletedFromOthers[what(a)] : ''
+    if (!confirm([m.files.keepThis[what(a)], others].filter(Boolean).join(' '))) return
     const id = await keepOnlyHere(a.id)
     if (id) navigate(tripPath(t.trip.id, 'files', id), { replace: true })
   }
   return (
     <button type="button" className="btn btn-small" style={{ alignSelf: 'flex-start' }} onClick={() => void keep()}>
-      🔒 Keep it only on this phone
+      {m.files.keepOnlyHere}
     </button>
   )
 }
@@ -255,7 +256,7 @@ function AttachmentForm({ a }: { a: Attachment }) {
   const [error, setError] = useState<string>()
 
   const onSubmit = async () => {
-    if (!name.trim()) return setError('It needs a name.')
+    if (!name.trim()) return setError(m.files.needsName)
     setBusy(true)
     try {
       // Kept as it was when there's no choice to make: its journey's booking may get others again.
@@ -263,16 +264,16 @@ function AttachmentForm({ a }: { a: Attachment }) {
       await updateAttachment(a.id, { name: name.trim(), caption: opt(caption), ...parseTarget(target), wholeBooking: whole })
       navigate(-1)
     } catch {
-      setError("Couldn't save. Try again.")
+      setError(m.items.couldntSave)
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <ItemForm title={`Edit ${what(a)}`} error={error} busy={busy} onSubmit={() => void onSubmit()}>
-      {!isPhoto(a) && <TextField label="Name" value={name} onChange={setName} maxLength={200} />}
-      <NotesField label="Caption" value={caption} onChange={setCaption} />
+    <ItemForm title={m.files.editTitle[what(a)]} error={error} busy={busy} onSubmit={() => void onSubmit()}>
+      {!isPhoto(a) && <TextField label={m.common.name} value={name} onChange={setName} maxLength={200} />}
+      <NotesField label={m.files.caption} value={caption} onChange={setCaption} />
       <BelongsToField value={target} onChange={setTarget} />
       <WholeBookingField target={target} booking={booking} kind={a.kind} value={wholeBooking} onChange={setWholeBooking} />
     </ItemForm>
