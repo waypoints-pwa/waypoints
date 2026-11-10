@@ -25,7 +25,8 @@ import { BackLink, Notice } from '../components/bits'
 import { Field } from '../components/fields'
 import { HandOff } from '../components/HandOff'
 import { ServerStatus } from '../components/ServerStatus'
-import { fmtAgo, plural } from '../format'
+import { m } from '../../i18n'
+import { fmtAgo } from '../format'
 import { useServer, useSetting } from '../hooks'
 
 /** Runs an async action with a busy flag, keeping its error message for people. */
@@ -51,8 +52,8 @@ export function ServerPage() {
   if (server === undefined) return null
   return (
     <>
-      <BackLink to="/settings">Settings</BackLink>
-      <h2>Sync server</h2>
+      <BackLink to="/settings">{m.common.settings}</BackLink>
+      <h2>{m.settings.syncServer}</h2>
       {server ? <Connected server={server} /> : <Connect />}
     </>
   )
@@ -99,7 +100,7 @@ function Connect() {
       void run(async () => {
         const list = await membersWithServerCode(address, serverCode)
         setMembers(list)
-        setWho(list.find((m) => m.name.toLocaleLowerCase() === typedName.trim().toLocaleLowerCase())?.id ?? 'new')
+        setWho(list.find((x) => x.name.toLocaleLowerCase() === typedName.trim().toLocaleLowerCase())?.id ?? 'new')
       })
     } else {
       void run(async () => {
@@ -113,28 +114,24 @@ function Connect() {
 
   return (
     <form className="stack" onSubmit={onSubmit}>
-      <p className="muted">
-        Optional. With a waypoints sync server (on a home NAS, for example), the trips you put on it reach the others on it by
-        themselves: no more sending a link after every change. Your trips stay on this phone and work offline either way, and links
-        keep working, also for people who aren't on the server.
-      </p>
+      <p className="muted">{m.server.connectIntro}</p>
       <div className="segmented" role="tablist">
         <button type="button" role="tab" aria-selected={mode === 'invite'} className={mode === 'invite' ? 'active' : ''} onClick={() => setMode('invite')}>
-          I have an invite
+          {m.server.haveInvite}
         </button>
         <button type="button" role="tab" aria-selected={mode === 'admin'} className={mode === 'admin' ? 'active' : ''} onClick={() => setMode('admin')}>
-          I run the server
+          {m.server.runServer}
         </button>
       </div>
 
       {mode === 'invite' && (
-        <Field label="Invite link or code" hint="From the server's admin. Pasting the whole link fills in the rest.">
+        <Field label={m.server.inviteLabel} hint={m.server.inviteHint}>
           <input
             className="input"
             required
             value={invite}
             onChange={(e) => onInviteInput(e.target.value)}
-            placeholder="A link, or a code like K7QM-2XRP-9HTW"
+            placeholder={m.server.invitePlaceholder}
             autoComplete="off"
             autoCapitalize="characters"
             spellCheck={false}
@@ -142,7 +139,7 @@ function Connect() {
         </Field>
       )}
 
-      <Field label="Server address">
+      <Field label={m.server.serverAddress}>
         <input
           className="input"
           type="url"
@@ -159,7 +156,7 @@ function Connect() {
       </Field>
 
       {mode === 'admin' && (
-        <Field label="Server code" hint="Printed in the server's log when it starts. Keep it to yourself: whoever has it is an admin.">
+        <Field label={m.server.serverCode} hint={m.server.serverCodeHint}>
           <input
             className="input"
             required
@@ -176,44 +173,41 @@ function Connect() {
       )}
 
       {mode === 'admin' && members && members.length > 0 && (
-        <div className="field" role="radiogroup" aria-label="Who are you?">
-          <span>Who are you?</span>
+        <div className="field" role="radiogroup" aria-label={m.server.whoAreYou}>
+          <span>{m.server.whoAreYou}</span>
           <div className="chips">
-            {members.map((m) => (
-              <button key={m.id} type="button" role="radio" aria-checked={who === m.id} className="toggle-chip" onClick={() => setWho(m.id)}>
-                {m.name}
+            {members.map((x) => (
+              <button key={x.id} type="button" role="radio" aria-checked={who === x.id} className="toggle-chip" onClick={() => setWho(x.id)}>
+                {x.name}
               </button>
             ))}
             <button type="button" role="radio" aria-checked={who === 'new'} className="toggle-chip" onClick={() => setWho('new')}>
-              Someone new
+              {m.server.someoneNew}
             </button>
           </div>
-          <small className="muted">Already on the server, on a lost or new phone? Pick yourself to sign this phone in as you.</small>
+          <small className="muted">{m.server.alreadyOnServer}</small>
         </div>
       )}
 
-      {mode === 'invite' && signInAs && <Notice kind="info">This link signs this phone in as {signInAs}.</Notice>}
+      {mode === 'invite' && signInAs && <Notice kind="info">{m.server.signsYouIn(signInAs)}</Notice>}
 
       {needsName && (
-        <Field label="Your name" hint="How the others on the server see you, when they add you to a trip.">
+        <Field label={m.trip.yourName} hint={m.server.yourNameHint}>
           <input className="input" required maxLength={60} value={typedName} onChange={(e) => setName(e.target.value)} />
         </Field>
       )}
 
       {(mode === 'invite' || members) && (
-        <Field label="This phone's name" hint="Shown in your list of phones on the server.">
+        <Field label={m.server.phoneName} hint={m.server.phoneNameHint}>
           <input className="input" required maxLength={60} value={deviceLabel} onChange={(e) => setDeviceLabel(e.target.value)} />
         </Field>
       )}
 
       {error && <Notice kind="error">{error}</Notice>}
       <button className="btn btn-primary" disabled={busy}>
-        {busy ? 'Connecting…' : mode === 'admin' && !members ? 'Continue' : signInAs && mode === 'invite' ? `Sign in as ${signInAs}` : 'Connect'}
+        {busy ? m.server.connecting : mode === 'admin' && !members ? m.server.continue : signInAs && mode === 'invite' ? m.server.signInAs(signInAs) : m.server.connect}
       </button>
-      <p className="muted small">
-        A safety copy of your trips is kept first (Settings → Backup). Trips already on this phone stay only on it until you put them on
-        the server.
-      </p>
+      <p className="muted small">{m.server.safetyCopyNote}</p>
     </form>
   )
 }
@@ -232,47 +226,39 @@ function Connected({ server }: { server: ServerConfig }) {
   if (server.lastErrorStatus === 401) {
     return (
       <section className="card">
-        <Notice kind="warn">
-          This phone was disconnected from the server at {host}: it was removed from your phones, or you were removed from the server.
-          Your trips are still here{waiting > 0 ? `, with ${plural(waiting, 'change')} that never reached the server` : ''}. Links keep
-          working.
-        </Notice>
+        <Notice kind="warn">{m.server.disconnectedFrom(host, waiting)}</Notice>
         <button className="btn" disabled={action.busy} onClick={() => void action.run(forgetServer)}>
-          Forget this server
+          {m.server.forgetServer}
         </button>
       </section>
     )
   }
 
   const onDisconnect = () => {
-    const again = server.member.admin ? 'the server code' : 'a sign-in link from the admin, or from another of your phones'
-    const msg = `Disconnect this phone from the server? Its trips stay here, as phone-only trips, and links keep working. To connect again, you'll need ${again}.`
-    if (confirm(msg)) void action.run(disconnect)
+    if (confirm(m.server.disconnectConfirm(server.member.admin))) void action.run(disconnect)
   }
 
   return (
     <>
       {params.get('invite') && (
-        <Notice kind="info">This phone is already connected to a server, as {server.member.name}. To use that invite, disconnect first.</Notice>
+        <Notice kind="info">{m.server.alreadyConnected(server.member.name)}</Notice>
       )}
       <section className="card">
         <h3>
-          👤 {server.member.name} {server.member.admin && <span className="chip">admin</span>}
+          👤 {server.member.name} {server.member.admin && <span className="chip">{m.server.adminChip}</span>}
         </h3>
-        <p className="muted small">
-          On {host} · {plural(trips, 'trip')} on the server
-        </p>
+        <p className="muted small">{m.server.onHost(host, trips)}</p>
         <ServerStatus waiting={waiting} />
       </section>
       <People server={server} />
       <Phones server={server} />
       <Address url={server.url} />
       <section className="card">
-        <h3>Disconnect this phone</h3>
-        <p className="muted small">Stops syncing on this phone. Its trips stay here, and the others keep theirs.</p>
+        <h3>{m.server.disconnectThisPhone}</h3>
+        <p className="muted small">{m.server.stopsSyncing}</p>
         {action.error && <Notice kind="error">{action.error}</Notice>}
         <button className="btn btn-danger" disabled={action.busy} onClick={onDisconnect}>
-          Disconnect
+          {m.server.disconnect}
         </button>
       </section>
     </>
@@ -283,24 +269,19 @@ type Invite = InviteResponse & { link: string }
 
 function InviteBox({ invite, onDone }: { invite: Invite; onDone: () => void }) {
   const [shared, setShared] = useState<'shared' | 'copied'>()
-  const text = invite.memberName
-    ? `Sign in to the waypoints sync server as ${invite.memberName} with this link:`
-    : 'Join my waypoints sync server with this link:'
+  const text = m.server.inviteShareText(invite.memberName)
   return (
     <div className="invite">
       <p className="small">
-        {invite.memberName
-          ? `A sign-in link for a phone of ${invite.memberName}. Open it on that phone.`
-          : 'An invite for someone new: it asks for their name.'}{' '}
-        It works once, until {new Date(invite.expiresAt).toLocaleDateString()}.
+        {m.server.inviteIntro(invite.memberName)} {m.server.worksOnceUntil(new Date(invite.expiresAt).toLocaleDateString())}
       </p>
       <code className="invite-code">{invite.code}</code>
       <div className="row">
-        <button className="btn btn-small btn-primary" onClick={() => void shareUrl(invite.link, 'waypoints sync server', text).then((r) => r && setShared(r))}>
-          {shared === 'copied' ? '✓ Link copied' : shared === 'shared' ? '✓ Shared' : '🔗 Share the link'}
+        <button className="btn btn-small btn-primary" onClick={() => void shareUrl(invite.link, m.server.shareTitle, text).then((r) => r && setShared(r))}>
+          {shared === 'copied' ? m.common.linkCopied : shared === 'shared' ? m.common.shared : m.server.shareTheLink}
         </button>
         <button className="btn btn-small btn-ghost" onClick={onDone}>
-          Done
+          {m.common.done}
         </button>
       </div>
     </div>
@@ -316,30 +297,27 @@ function People({ server }: { server: ServerConfig }) {
     refreshMembers().catch(() => undefined)
   }, [])
 
-  const onRemove = (m: MemberSummary) => {
-    const msg = `Remove ${m.name} from the server? All their phones stop syncing right away. Their trips stay on their phones, and they stay in the trips' expenses.`
-    if (confirm(msg)) void action.run(() => removeMember(m.id))
+  const onRemove = (member: MemberSummary) => {
+    if (confirm(m.server.removeFromServerConfirm(member.name))) void action.run(() => removeMember(member.id))
   }
 
   return (
     <section className="card">
-      <h3>People on the server</h3>
-      <p className="muted small">
-        A trip on the server is seen only by the people on it. {admin ? 'As the admin, you invite new people.' : 'New people are invited by the admin.'}
-      </p>
+      <h3>{m.server.peopleOnServer}</h3>
+      <p className="muted small">{m.server.peopleText(admin)}</p>
       <ul className="history">
-        {server.members.map((m) => (
-          <li key={m.id}>
+        {server.members.map((x) => (
+          <li key={x.id}>
             <span>
-              {m.name} {m.id === server.member.id && <span className="chip">you</span>} {m.admin && <span className="chip chip-past">admin</span>}
+              {x.name} {x.id === server.member.id && <span className="chip">{m.trip.you}</span>} {x.admin && <span className="chip chip-past">{m.server.adminChip}</span>}
             </span>
-            {admin && m.id !== server.member.id && (
+            {admin && x.id !== server.member.id && (
               <span className="row nowrap">
-                <button className="btn btn-small btn-ghost" disabled={action.busy} onClick={() => void action.run(async () => setInvite(await createInvite(m)))}>
-                  Sign-in link
+                <button className="btn btn-small btn-ghost" disabled={action.busy} onClick={() => void action.run(async () => setInvite(await createInvite(x)))}>
+                  {m.server.signInLink}
                 </button>
-                <button className="btn btn-small btn-ghost" disabled={action.busy} onClick={() => onRemove(m)}>
-                  Remove
+                <button className="btn btn-small btn-ghost" disabled={action.busy} onClick={() => onRemove(x)}>
+                  {m.trip.remove}
                 </button>
               </span>
             )}
@@ -348,12 +326,12 @@ function People({ server }: { server: ServerConfig }) {
       </ul>
       {admin && !invite && (
         <button className="btn btn-small" style={{ alignSelf: 'flex-start' }} disabled={action.busy} onClick={() => void action.run(async () => setInvite(await createInvite()))}>
-          + Invite someone
+          {m.server.inviteSomeone}
         </button>
       )}
       {invite && <InviteBox invite={invite} onDone={() => setInvite(undefined)} />}
       {admin && (
-        <p className="muted small">Lost a phone? A sign-in link puts a new phone back in as the same person, with all their trips.</p>
+        <p className="muted small">{m.server.lostPhone}</p>
       )}
       {action.error && <Notice kind="error">{action.error}</Notice>}
     </section>
@@ -367,7 +345,7 @@ function Phones({ server }: { server: ServerConfig }) {
   const load = () => action.run(async () => setDevices(await listDevices()))
 
   const onRemove = (d: DeviceSummary) => {
-    if (!confirm(`Disconnect “${d.label}”? It stops syncing right away. Its trips stay on it.`)) return
+    if (!confirm(m.server.disconnectPhoneConfirm(d.label))) return
     void action.run(async () => {
       await removeDevice(d.id)
       setDevices(await listDevices())
@@ -376,28 +354,28 @@ function Phones({ server }: { server: ServerConfig }) {
 
   return (
     <section className="card">
-      <h3>Your phones</h3>
-      <p className="muted small">Use the server on another phone or tablet too: a sign-in link connects it as you.</p>
+      <h3>{m.server.yourPhones}</h3>
+      <p className="muted small">{m.server.yourPhonesText}</p>
       {!invite && (
         <button className="btn btn-small" style={{ alignSelf: 'flex-start' }} disabled={action.busy} onClick={() => void action.run(async () => setInvite(await createInvite(server.member)))}>
-          + Add another phone
+          {m.server.addAnotherPhone}
         </button>
       )}
       {invite && <InviteBox invite={invite} onDone={() => setInvite(undefined)} />}
       <details onToggle={(e) => (e.currentTarget as HTMLDetailsElement).open && !devices && void load()}>
-        <summary className="muted small">Connected phones</summary>
+        <summary className="muted small">{m.server.connectedPhones}</summary>
         {devices && (
           <ul className="history">
             {devices.map((d) => (
               <li key={d.id}>
                 <span>
-                  {d.label} {d.current && <span className="chip">this phone</span>}
+                  {d.label} {d.current && <span className="chip">{m.server.thisPhoneChip}</span>}
                   <br />
-                  <span className="muted small">{d.lastSeenAt ? `Active ${fmtAgo(d.lastSeenAt)}` : `Added ${fmtAgo(d.createdAt)}`}</span>
+                  <span className="muted small">{d.lastSeenAt ? m.server.active(fmtAgo(d.lastSeenAt)) : m.server.added(fmtAgo(d.createdAt))}</span>
                 </span>
                 {!d.current && (
                   <button className="btn btn-small btn-ghost" disabled={action.busy} onClick={() => onRemove(d)}>
-                    Disconnect
+                    {m.server.disconnect}
                   </button>
                 )}
               </li>
@@ -425,29 +403,27 @@ function Address({ url }: { url: string }) {
 
   return (
     <section className="card">
-      <h3>Server address</h3>
+      <h3>{m.server.serverAddress}</h3>
       <p className="small">
         <code>{url}</code>
       </p>
       {editing ? (
         <form className="stack" onSubmit={onSubmit}>
-          <p className="muted small">
-            If the server is now reached at a new address, enter it here. Nothing else changes. Each phone needs the new address.
-          </p>
-          <input className="input" type="url" inputMode="url" required value={address} onChange={(e) => setAddress(e.target.value)} autoComplete="off" aria-label="New server address" />
+          <p className="muted small">{m.server.changeAddressText}</p>
+          <input className="input" type="url" inputMode="url" required value={address} onChange={(e) => setAddress(e.target.value)} autoComplete="off" aria-label={m.server.newServerAddress} />
           {action.error && <Notice kind="error">{action.error}</Notice>}
           <div className="row">
             <button className="btn btn-small btn-primary" disabled={action.busy}>
-              {action.busy ? 'Checking…' : 'Save address'}
+              {action.busy ? m.server.checking : m.server.saveAddress}
             </button>
             <button type="button" className="btn btn-small btn-ghost" onClick={() => setEditing(false)}>
-              Cancel
+              {m.common.cancel}
             </button>
           </div>
         </form>
       ) : (
         <button className="btn btn-small" style={{ alignSelf: 'flex-start' }} onClick={() => setEditing(true)}>
-          Change address
+          {m.server.changeAddress}
         </button>
       )}
     </section>
