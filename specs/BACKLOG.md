@@ -31,7 +31,7 @@ Specced ideas live in their own files in this folder. Shipped features are in `C
 - Sync server: "who changed what" history; admin view of all trips; renaming a member.
 - Quality: the browser check exists (`npm run smoke`, in the repo and CI) with two phones, share and merge;
   calendar export is still to add.
-- Portuguese, parts 2 to 5 (part 1 is `translation-layer`, which lists them): the remaining screens,
+- Portuguese, parts 3 to 5 (`translation-layer` lists them; part 2 is `translate-plan-and-items`): the remaining screens,
   then the Language setting.
 
 ### Manual checks, not features
