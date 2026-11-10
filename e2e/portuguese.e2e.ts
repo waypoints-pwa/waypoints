@@ -80,8 +80,8 @@ test('?lang=pt shows Money, Files, Reviews and the report in Portuguese', async 
 
   await page.goto(`?lang=pt#/trips/${id}/report`)
   await expect(page.getByRole('heading', { name: 'Relatório da viagem' })).toBeVisible()
-  await expect(page.getByText('Relatório completo')).toBeVisible()
-  await expect(page.getByText('Para partilhar')).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Relatório completo' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Para partilhar' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'A viagem em números' })).toBeVisible()
 })
 

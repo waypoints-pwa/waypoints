@@ -589,7 +589,7 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
                 ))}
               </div>
               {amount !== undefined && among.size > 0 && (
-<small className="muted">{m.money.eachFor(fmtMoney(amount / among.size, currency), among.size)}</small>
+                <small className="muted">{m.money.eachFor(fmtMoney(amount / among.size, currency), among.size)}</small>
               )}
             </>
           ) : (

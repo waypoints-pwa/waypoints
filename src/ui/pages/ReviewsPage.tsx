@@ -147,7 +147,7 @@ export function ReviewsLink({ now }: { now: number }) {
       ? m.reviews.namesAndMore(names[0], names[1], names.length - 2)
       : names.length === 2
         ? m.reviews.twoNames(names[0], names[1])
-        : names.join('')
+        : names[0]
     : m.reviews.caughtUpReviewed(reviewed)
   return (
     <Link className={`list-row${pending.length ? ' list-row-nudge' : ''}`} to={tripPath(t.trip.id, 'reviews')}>

@@ -23,15 +23,15 @@ export const money: Messages['money'] = {
   settleUp: 'Acertar contas',
   everyoneSquare: 'Está tudo certo. 🎉',
   estimates: (n) =>
-    `${n === 1 ? '1 pagamento com cartão é uma estimativa' : `${n} pagamentos com cartão são estimativas`} até se juntar o que o banco cobrou, por isso estes valores ainda podem mudar um pouco.`,
+    `${n === 1 ? '1 pagamento com cartão é uma estimativa' : `${n} pagamentos com cartão são estimativas`} até se adicionar o que o banco cobrou, por isso estes valores ainda podem mudar um pouco.`,
   expenses: 'Despesas',
   noExpenses: (group) => `Regista o que gastas, em qualquer moeda.${group ? ' O waypoints calcula quem deve a quem.' : ''}`,
   ratesTitle: '💱 Taxas de câmbio',
   addExchange: '+ Câmbio',
   cantBeCounted: (n, currencies) =>
     n === 1
-      ? `1 despesa em ${currencies} ainda não pode ser contada. Junta o que obtiveste pelo teu dinheiro (um levantamento, por exemplo) e passa a ser convertida.`
-      : `${n} despesas em ${currencies} ainda não podem ser contadas. Junta o que obtiveste pelo teu dinheiro (um levantamento, por exemplo) e passam a ser convertidas.`,
+      ? `1 despesa em ${currencies} ainda não pode ser contada. Adiciona o que obtiveste pelo teu dinheiro (um levantamento, por exemplo) e passa a ser convertida.`
+      : `${n} despesas em ${currencies} ainda não podem ser contadas. Adiciona o que obtiveste pelo teu dinheiro (um levantamento, por exemplo) e passam a ser convertidas.`,
   cardsWaiting: (n, yours, chip) => (
     <>
       {`${n === 1 ? '1 pagamento com cartão está' : `${n} pagamentos com cartão estão`} à espera do que o banco cobrou${yours > 0 ? ` (${yours === n ? (yours === 1 ? 'é teu' : 'são todos teus') : yours === 1 ? '1 é teu' : `${yours} são teus`})` : ''}. Até lá, ${n === 1 ? 'conta' : 'contam'} à tua taxa de dinheiro, se houver. Procura `}
@@ -55,7 +55,7 @@ export const money: Messages['money'] = {
   enterAmount: 'Indica o valor, por exemplo 12.50.',
   chooseDay: 'Escolhe o dia.',
   checkBankCharge: (currency) => `Verifica o que o banco cobrou em ${currency}, por exemplo 12.50.`,
-  fillInBoth: 'Preenche o que obtiveste e o que custou, ou deixa os dois vazios para juntar a taxa mais tarde.',
+  fillInBoth: 'Preenche o que obtiveste e o que custou, ou deixa os dois vazios para adicionar a taxa mais tarde.',
   checkExchangeAmounts: 'Verifica os valores do câmbio.',
   chooseWhoReceived: 'Escolhe quem recebeu o dinheiro.',
   chooseWhoFor: 'Escolhe para quem foi.',
@@ -82,7 +82,7 @@ export const money: Messages['money'] = {
   ),
   bankChargedLabel: (currency) => `O que o banco cobrou (${currency}, comissões incluídas)`,
   bankChargedHint: (approx) =>
-    `Ainda não está na app do banco? Deixa vazio e junta mais tarde: fica marcado como "custo pendente" até lá${approx ? `, e conta à tua taxa de dinheiro (${approx})` : ''}.`,
+    `Ainda não está na app do banco? Deixa vazio e adiciona mais tarde: fica marcado como "custo pendente" até lá${approx ? `, e conta à tua taxa de dinheiro (${approx})` : ''}.`,
   notKnownYet: 'Ainda não se sabe',
   exchangeRateFor: (currency) => `Taxa de câmbio de ${currency}`,
   whatDidYouGet: 'O que obtiveste pelo teu dinheiro?',
@@ -91,7 +91,7 @@ export const money: Messages['money'] = {
   codeYouGot: (currency) => `${currency} obtidos`,
   whatItCostIn: (currency) => `Quanto custou em ${currency}`,
   withdrawalNote: (approx, currency) =>
-    `${approx ? `${approx}. ` : ''}Um levantamento ou uma troca de dinheiro, comissões incluídas. Fica guardado como a taxa de ${currency} para toda a viagem, por isso só a indicas uma vez. Deixa vazio para juntar mais tarde em Dinheiro.`,
+    `${approx ? `${approx}. ` : ''}Um levantamento ou uma troca de dinheiro, comissões incluídas. Fica guardado como a taxa de ${currency} para toda a viagem, por isso só a indicas uma vez. Deixa vazio para adicionar mais tarde em Dinheiro.`,
   category: 'Categoria',
   paidBy: 'Pago por',
   from: 'De',
@@ -107,13 +107,13 @@ export const money: Messages['money'] = {
   waitingForBank: 'À espera do que o banco cobrou.',
   untilThenCounts: (amount) => `Até lá conta à tua taxa de dinheiro: ≈ ${amount}.`,
   notCountedUntilThen: 'Até lá não é contada.',
-  addIt: 'Juntar',
+  addIt: 'Adicionar',
   chargedByBank: (amount, tripCurrency, rate, currency) => `${amount} cobrados pelo banco (1 ${tripCurrency} = ${rate} ${currency})`,
   atRate: (amount, tripCurrency, rate, currency) => `≈ ${amount} a 1 ${tripCurrency} = ${rate} ${currency}`,
   itsOwnRate: ' (taxa própria)',
   whatExchangesGot: ', o que os teus câmbios obtiveram',
   notCountedYet: (currency) => `Ainda não é contada: não há taxa para ${currency}.`,
-  addWhatYouGot: 'Junta o que obtiveste pelo teu dinheiro',
+  addWhatYouGot: 'Adiciona o que obtiveste pelo teu dinheiro',
   ownCurrency: 'Essa é a moeda da própria viagem. Escolhe a que obtiveste.',
   enterHowMuch: (currency) => `Indica quanto ${currency} obtiveste.`,
   enterWhatItCost: (currency) => `Indica quanto custou em ${currency}, comissões incluídas.`,

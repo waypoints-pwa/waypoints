@@ -56,7 +56,7 @@ export const report: Messages['report'] = {
   byDay: 'Por dia',
   everyDay: 'Gasto de cada dia',
   whoPaid: 'Quem pagou o quê',
-  paidTheirPart: (paid, share) => `pagou ${paid} · a parte ${share}`,
+  paidTheirPart: (paid, share) => `pagou ${paid} · a sua parte ${share}`,
   settling: 'Acertar contas',
   paysTo: (from, to) => (
     <>
@@ -65,7 +65,7 @@ export const report: Messages['report'] = {
   ),
   everyoneSquare: 'Está tudo certo. 🎉',
   uncounted: (n) => `${n === 1 ? '1 despesa numa moeda ainda sem taxa não é contada' : `${n} despesas em moedas ainda sem taxa não são contadas`}.`,
-  estimated: (n) => `${plural(n, 'pagamento com cartão', 'pagamentos com cartão')} ${n === 1 ? 'conta' : 'contam'} por estimativa, até se acrescentar o que o banco cobrou.`,
+  estimated: (n) => `${plural(n, 'pagamento com cartão', 'pagamentos com cartão')} ${n === 1 ? 'conta' : 'contam'} por estimativa, até se adicionar o que o banco cobrou.`,
 
   reviews: 'Avaliações',
   nobodyReviewed: 'Ninguém avaliou nada.',
