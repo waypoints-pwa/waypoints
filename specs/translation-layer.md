@@ -130,6 +130,10 @@ Glossary (PT-PT; use these words, also in later parts):
 | currency | moeda | Trip report | Relatório da viagem |
 | Leave the trip | Sair da viagem | Remove from this phone | Remover deste telemóvel |
 | Someone | Alguém | Nothing here yet | Ainda não há nada aqui |
+| ticket | bilhete | meeting point | ponto de encontro |
+| pick-up point | ponto de recolha | baggage | bagagem |
+| exchange | câmbio | exchange rate | taxa de câmbio |
+| Exchange rates (screen name) | Taxas de câmbio | | |
 
 Style: address the person as "tu" ("Ainda não tens viagens"), buttons in the infinitive ("Exportar
 todas as viagens"), European forms only (ecrã, ficheiro, telemóvel, partilhar, guardar, "a carregar";
