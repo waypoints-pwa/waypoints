@@ -14,7 +14,8 @@ import { plan } from './plan'
 import { report } from './report'
 import { reviews } from './reviews'
 import { settings } from './settings'
+import { share } from './share'
 import { stays } from './stays'
 import { trip } from './trip'
 
-export const pt: Messages = { activities, common, fields, files, home, items, journeys, labels, money, packing, places, plan, report, reviews, settings, stays, trip }
+export const pt: Messages = { activities, common, fields, files, home, items, journeys, labels, money, packing, places, plan, report, reviews, settings, share, stays, trip }
