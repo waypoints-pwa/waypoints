@@ -4,6 +4,7 @@ import { saveReview, setMe, type ReviewInput } from '../../db/actions'
 import { MAX_STARS, type Review, type Traveller } from '../../db/types'
 import { averageStars, canReview, reviewsOf, type ReviewTarget } from '../../domain/reviews'
 import { fmtDayTime } from '../format'
+import { m } from '../../i18n'
 import { FormError } from './fields'
 import { useNow } from '../hooks'
 import { tripPath, useTrip, type TripData } from '../tripData'
@@ -14,7 +15,7 @@ const STEPS = Array.from({ length: MAX_STARS }, (_, i) => i + 1)
 export function Stars({ value }: { value: number }) {
   const full = Math.round(value)
   return (
-    <span className="stars" role="img" aria-label={`${Math.round(value * 10) / 10} of ${MAX_STARS} stars`}>
+    <span className="stars" role="img" aria-label={m.reviews.starsOf(Math.round(value * 10) / 10, MAX_STARS)}>
       {'★'.repeat(full)}
       <span className="stars-empty">{'☆'.repeat(MAX_STARS - full)}</span>
     </span>
@@ -26,7 +27,7 @@ export function AverageStars({ reviews }: { reviews: Review[] }) {
   const average = averageStars(reviews)
   if (average === undefined) return null
   return (
-    <span className="stars" aria-label={`Average ${Math.round(average * 10) / 10} of ${MAX_STARS} stars`}>
+    <span className="stars" aria-label={m.reviews.averageStarsOf(Math.round(average * 10) / 10, MAX_STARS)}>
       ★ <span className="stars-number">{Math.round(average * 10) / 10}</span>
     </span>
   )
@@ -34,9 +35,9 @@ export function AverageStars({ reviews }: { reviews: Review[] }) {
 
 function StarPicker({ value, onPick }: { value?: number; onPick: (stars: number) => void }) {
   return (
-    <div className="star-picker" role="group" aria-label="Stars">
+    <div className="star-picker" role="group" aria-label={m.reviews.stars}>
       {STEPS.map((n) => (
-        <button key={n} type="button" className={value !== undefined && n <= value ? 'on' : undefined} aria-pressed={value === n} aria-label={n === 1 ? '1 star' : `${n} stars`} onClick={() => onPick(n)}>
+        <button key={n} type="button" className={value !== undefined && n <= value ? 'on' : undefined} aria-pressed={value === n} aria-label={m.reviews.nStars(n)} onClick={() => onPick(n)}>
           {value !== undefined && n <= value ? '★' : '☆'}
         </button>
       ))}
@@ -49,7 +50,7 @@ export function WhoAreYou({ hint, onPick }: { hint?: string; onPick?: (traveller
   const t = useTrip()
   return (
     <label className="field">
-      <span>Which one are you?</span>
+      <span>{m.trip.whichOneAreYou}</span>
       <select className="input" value="" onChange={(e) => {
           const id = e.target.value || undefined
           void setMe(t.trip.id, id).then(() => {
@@ -57,14 +58,14 @@ export function WhoAreYou({ hint, onPick }: { hint?: string; onPick?: (traveller
           })
         }}
       >
-        <option value="">Choose…</option>
+        <option value="">{m.trip.choose}</option>
         {t.travellers.map((x) => (
           <option key={x.id} value={x.id}>
             {x.name}
           </option>
         ))}
       </select>
-      <small className="muted">{hint ?? 'So your reviews are yours. Only on this phone: you can change it in the Trip tab.'}</small>
+      <small className="muted">{hint ?? m.reviews.reviewsHint}</small>
     </label>
   )
 }
@@ -91,11 +92,11 @@ function ReviewForm({ target, me, mine, onSave }: { target: ReviewTarget; me: Tr
     try {
       await saveReview(t.trip.id, { table: target.table, id: target.record.id }, me.id, { stars: mine?.stars, note, missed: mine?.missed, ...changes })
     } catch {
-      setError("Couldn't save. Try again.")
+      setError(m.items.couldntSave)
     }
   }
   const remove = () => {
-    if (mine?.note && !confirm('Remove your review and its note?')) return
+    if (mine?.note && !confirm(m.reviews.removeConfirm)) return
     void save({ stars: undefined, note: undefined, missed: undefined })
   }
 
@@ -104,7 +105,7 @@ function ReviewForm({ target, me, mine, onSave }: { target: ReviewTarget; me: Tr
       <div className="row">
         <StarPicker value={mine?.missed ? undefined : mine?.stars} onPick={(stars) => void save({ stars, missed: false })} />
         <button type="button" className="toggle-chip" aria-pressed={Boolean(mine?.missed)} onClick={() => void save({ missed: !mine?.missed })}>
-          Didn't go
+          {m.reviews.didntGo}
         </button>
       </div>
       {writing && (
@@ -113,25 +114,25 @@ function ReviewForm({ target, me, mine, onSave }: { target: ReviewTarget; me: Tr
           rows={3}
           value={note}
           maxLength={10_000}
-          placeholder={mine?.missed ? 'Why not?' : 'Worth it? What to know for next time?'}
-          aria-label="Your note"
+          placeholder={mine?.missed ? m.reviews.whyNot : m.reviews.notePlaceholder}
+          aria-label={m.reviews.yourNote}
           onChange={(e) => setNote(e.target.value)}
         />
       )}
       <div className="row review-actions">
         {writing && note.trim() !== (mine?.note ?? '') && (
           <button type="button" className="btn btn-small btn-primary" onClick={() => void save({ note })}>
-            Save note
+            {m.reviews.saveNote}
           </button>
         )}
         {!writing && (
           <button type="button" className="link small" onClick={() => setWriting(true)}>
-            + Add a note
+            {m.reviews.addNote}
           </button>
         )}
         {mine && (
           <button type="button" className="link small" onClick={remove}>
-            Remove my review
+            {m.reviews.removeMine}
           </button>
         )}
       </div>
@@ -156,8 +157,8 @@ export function ReviewList({ reviews, showMine = false }: { reviews: Review[]; s
       {shown.map((r) => (
         <li key={r.id}>
           <span className="row">
-            <strong>{r.by === t.me?.id ? 'You' : (t.names.get(r.by) ?? 'Someone')}</strong>
-            {r.missed ? <span className="muted small">didn't go</span> : r.stars !== undefined && <Stars value={r.stars} />}
+            <strong>{r.by === t.me?.id ? m.reviews.you : (t.names.get(r.by) ?? m.common.someone)}</strong>
+            {r.missed ? <span className="muted small">{m.reviews.didntGoList}</span> : r.stars !== undefined && <Stars value={r.stars} />}
           </span>
           {r.note && <span className="prewrap small">{r.note}</span>}
         </li>
@@ -188,7 +189,7 @@ export function ReviewsCard({ target }: { target: ReviewTarget }) {
   return (
     <section className="card">
       <div className="section-head">
-        <h3>Reviews</h3>
+        <h3>{m.reviews.title}</h3>
         <AverageStars reviews={reviews} />
       </div>
       {open && <MyReview target={target} />}

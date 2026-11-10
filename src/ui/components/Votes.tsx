@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { saveVote } from '../../db/actions'
 import type { Place } from '../../db/types'
+import { m } from '../../i18n'
 import { useTrip } from '../tripData'
 import { WhoAreYou } from './Reviews'
-
-const VOTES_HINT = 'So your votes are yours. Only on this phone: you can change it in the Trip tab.'
 
 /**
  * The "I want to go" toggle of a place, as a button on its list row or a chip on its page. A phone that
@@ -26,18 +25,18 @@ export function WantToGo({ place, variant }: { place: Place; variant: 'row' | 'c
   return (
     <>
       {variant === 'row' ? (
-        <button type="button" className="icon-btn vote-btn" aria-pressed={mine} aria-label={`I want to go to ${place.name}`} onClick={toggle}>
+        <button type="button" className="icon-btn vote-btn" aria-pressed={mine} aria-label={m.reviews.wantToGoTo(place.name)} onClick={toggle}>
           <span aria-hidden>🙋</span>
         </button>
       ) : (
         <button type="button" className="toggle-chip" aria-pressed={mine} onClick={toggle}>
-          🙋 I want to go
+          {m.reviews.wantToGo}
         </button>
       )}
       {asking && !t.me && (
         <div className="vote-ask">
           <WhoAreYou
-            hint={VOTES_HINT}
+            hint={m.reviews.votesHint}
             onPick={(id) => {
               setAsking(false)
               vote(id, true)

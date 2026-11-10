@@ -10,9 +10,10 @@ import { money } from './money'
 import { packing } from './packing'
 import { places } from './places'
 import { plan } from './plan'
+import { reviews } from './reviews'
 import { settings } from './settings'
 import { stays } from './stays'
 import { trip } from './trip'
 
-export const en = { activities, common, fields, files, home, items, journeys, labels, money, packing, places, plan, settings, stays, trip }
+export const en = { activities, common, fields, files, home, items, journeys, labels, money, packing, places, plan, reviews, settings, stays, trip }
 export type Messages = typeof en
