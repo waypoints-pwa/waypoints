@@ -147,8 +147,8 @@ export function SelectBar({
   const n = picked.length
   const onDelete = async () => {
     if (!n) return
-    const everyLeg = picked.some((a) => ownerOf(a)?.booking) ? m.files.wholeBookingGoes : ''
-    const forEveryone = t.server && picked.some((a) => !a.private) ? m.files.deletedForEveryone : ''
+    const everyLeg = picked.some((a) => ownerOf(a)?.booking) ? m.files.wholeBookingGoes[noun] : ''
+    const forEveryone = t.server && picked.some((a) => !a.private) ? m.files.deletedForEveryone[noun] : ''
     if (!confirm([m.files.deleteSome[noun](n), everyLeg, forEveryone].filter(Boolean).join(' '))) return
     await deleteAttachments(picked.map((a) => a.id))
     selection.stop()
@@ -362,7 +362,7 @@ export function AddAttachments({ to, choose = false }: { to?: AttachedTo; choose
           ))}
         </div>
       )}
-      {result && result.added && !result.problems.length && <Notice kind="ok">{m.files.added[result.kind](result.added)}</Notice>}
+      {result && result.added > 0 && !result.problems.length && <Notice kind="ok">{m.files.added[result.kind](result.added)}</Notice>}
       {result && result.problems.length > 0 && (
         <Notice kind="error">
           {[...(result.added ? [m.files.added[result.kind](result.added)] : []), ...result.problems].join(' ')}

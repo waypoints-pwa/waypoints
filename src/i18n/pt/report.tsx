@@ -49,7 +49,6 @@ export const report: Messages['report'] = {
   ideas: 'Ideias para a próxima',
   ideasHint: 'Guardados, mas nunca visitados.',
   mustSee: 'imperdível',
-  photos: 'Fotos',
   madeWith: (date) => `📍 Feito com o waypoints · ${date}`,
 
   money: 'Dinheiro',

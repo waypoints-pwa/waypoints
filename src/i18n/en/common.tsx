@@ -40,4 +40,5 @@ export const common = {
   someone: 'Someone',
   day: 'Day',
   select: 'Select',
+  photos: 'Photos',
 }

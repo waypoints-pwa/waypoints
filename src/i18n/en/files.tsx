@@ -23,8 +23,14 @@ export const files = {
     photo: (n: number): string => `Delete ${plural(n, 'photo')}?`,
     document: (n: number): string => `Delete ${plural(n, 'document')}?`,
   },
-  wholeBookingGoes: 'Those of a whole booking go from every journey on it.',
-  deletedForEveryone: 'They will be deleted for everyone on the trip.',
+  wholeBookingGoes: {
+    photo: 'Those of a whole booking go from every journey on it.',
+    document: 'Those of a whole booking go from every journey on it.',
+  },
+  deletedForEveryone: {
+    photo: 'They will be deleted for everyone on the trip.',
+    document: 'They will be deleted for everyone on the trip.',
+  },
   belongsTo: 'Belongs to',
   wholeTrip: 'The whole trip',
   shareBooking: {
@@ -64,7 +70,6 @@ export const files = {
   refusedFiles: (n: number): string => `⚠️ The server didn't take ${plural(n, 'file')}: open ${n === 1 ? 'it' : 'them'} to see why.`,
   viewLabel: 'View',
   documentsTab: 'Documents',
-  photosTab: 'Photos',
   emptyDocuments: 'Tickets, boarding passes, bookings, insurance… They open here without signal.',
   emptyPhotos: 'Photos of the trip, by day. Add them here, or to a stay, an activity or a place.',
   seeAll: (n: number): string => `See all ${n} ›`,
@@ -89,7 +94,10 @@ export const files = {
     journey: (ref: string): string => `Every journey on booking ${ref}:`,
   },
   taken: 'Taken',
-  addedLabel: 'Added',
+  addedLabel: {
+    photo: 'Added',
+    document: 'Added',
+  },
   size: 'Size',
   tryAgain: 'Try again',
   shareWithTrip: '🌐 Share it with the trip',

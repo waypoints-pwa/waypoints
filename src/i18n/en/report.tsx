@@ -48,7 +48,6 @@ export const report = {
   ideas: 'Ideas for next time',
   ideasHint: 'Saved, but never visited.',
   mustSee: 'must-see',
-  photos: 'Photos',
   madeWith: (date: string): string => `📍 Made with waypoints · ${date}`,
 
   money: 'Money',

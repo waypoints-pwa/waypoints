@@ -156,7 +156,7 @@ function AttachmentView({ a }: { a: Attachment }) {
               <dd>{fmtDayTime(taken.slice(0, 10), taken.slice(11))}</dd>
             </>
           )}
-          <dt>{m.files.addedLabel}</dt>
+          <dt>{m.files.addedLabel[what(a)]}</dt>
           <dd>
             {a.addedBy && `${nameOf(t, a.addedBy)}, `}
             {fmtTimestamp(a.createdAt)}

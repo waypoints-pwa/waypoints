@@ -113,7 +113,7 @@ export function ReportView({ report, shareable, costs, files }: Props) {
       )}
       {photos.length > 0 && (
         <section className="card">
-          <h3>{m.report.photos}</h3>
+          <h3>{m.common.photos}</h3>
           <div className="photo-grid">
             {photos.map((id) => (
               <ReportPhoto key={id} id={id} file={files!.get(id)!} />

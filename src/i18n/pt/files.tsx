@@ -25,8 +25,14 @@ export const files: Messages['files'] = {
     photo: (n) => `Eliminar ${plural(n, 'foto', 'fotos')}?`,
     document: (n) => `Eliminar ${plural(n, 'documento', 'documentos')}?`,
   },
-  wholeBookingGoes: 'Os de uma reserva completa saem de todos os trajetos dessa reserva.',
-  deletedForEveryone: 'Serão eliminados para todos na viagem.',
+  wholeBookingGoes: {
+    photo: 'As de uma reserva completa saem de todos os trajetos dessa reserva.',
+    document: 'Os de uma reserva completa saem de todos os trajetos dessa reserva.',
+  },
+  deletedForEveryone: {
+    photo: 'Serão eliminadas para todos na viagem.',
+    document: 'Serão eliminados para todos na viagem.',
+  },
   belongsTo: 'Pertence a',
   wholeTrip: 'Toda a viagem',
   shareBooking: {
@@ -66,7 +72,6 @@ export const files: Messages['files'] = {
   refusedFiles: (n) => `⚠️ O servidor não aceitou ${plural(n, 'ficheiro', 'ficheiros')}: abre${n === 1 ? '-o' : '-os'} para ver porquê.`,
   viewLabel: 'Ver',
   documentsTab: 'Documentos',
-  photosTab: 'Fotos',
   emptyDocuments: 'Bilhetes, cartões de embarque, reservas, seguros… Abrem aqui sem rede.',
   emptyPhotos: 'Fotos da viagem, por dia. Adiciona-as aqui, ou a uma estadia, uma atividade ou um local.',
   seeAll: (n) => `Ver todas as ${n} ›`,
@@ -91,7 +96,10 @@ export const files: Messages['files'] = {
     journey: (ref) => `Todos os trajetos da reserva ${ref}:`,
   },
   taken: 'Tirada',
-  addedLabel: 'Adicionado',
+  addedLabel: {
+    photo: 'Adicionada',
+    document: 'Adicionado',
+  },
   size: 'Tamanho',
   tryAgain: 'Tentar de novo',
   shareWithTrip: '🌐 Partilhar com a viagem',

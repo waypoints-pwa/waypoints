@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { m } from '../../i18n'
 import { Link, useSearchParams } from 'react-router'
+import { m } from '../../i18n'
 import { isPhoto, ownerFinder, sortDocuments, stateFinder, tripPhotos, useTripFiles } from '../attachments'
 import { Notice } from '../components/bits'
 import { AddAttachments, DocumentRow, PhotoTile, SelectBar, selectOf, useSelection } from '../components/Attachments'
@@ -61,7 +61,7 @@ export function PhotosPage() {
           className={view === 'photos' ? 'active' : ''}
           onClick={() => switchView({ view: 'photos' })}
         >
-          {m.files.photosTab}
+          {m.common.photos}
         </button>
       </div>
 
