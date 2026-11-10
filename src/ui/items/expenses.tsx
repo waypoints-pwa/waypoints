@@ -24,9 +24,9 @@ import { DetailHead, EmptyState, Notice } from '../components/bits'
 import { ChoiceChips, CurrencySelect, Field, NotesField, TextField } from '../components/fields'
 import { UnsentNotice } from '../components/UnsentNotice'
 import { m } from '../../i18n'
-import { fmtDay, fmtMoney, fmtPlain, plural } from '../format'
+import { fmtDay, fmtMoney, fmtPlain } from '../format'
 import { useToday } from '../hooks'
-import { EXPENSE_CATEGORIES, expenseTitle, labelOf } from '../labels'
+import { EXPENSE_CATEGORIES, PAYMENT_TITLE, expenseTitle, labelOf } from '../labels'
 import { nameOf, tripPath, useTrip, type TripData } from '../tripData'
 import { AttachmentsCard } from '../components/Attachments'
 import { ItemFooter, ItemForm, ItemGone } from './common'
@@ -395,26 +395,26 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
   const owed = transfer && !existing ? settlePayments(balances(t.expenses, t.rateOf, ids)).find((p) => p.from === paidBy && p.to === to)?.amount : undefined
 
   const onSubmit = async () => {
-    if (!transfer && !title.trim()) return setError('What was it for?')
-    if (amount === undefined || amount <= 0) return setError('Enter the amount, like 12.50.')
-    if (!isDay(date)) return setError('Choose the day.')
-    if (card && chargedText.trim() && !(cardRate && cardRate <= 1e9)) return setError(`Check what the bank charged in ${trip.currency}, like 12.50.`)
+    if (!transfer && !title.trim()) return setError(m.money.whatWasItFor)
+    if (amount === undefined || amount <= 0) return setError(m.money.enterAmount)
+    if (!isDay(date)) return setError(m.money.chooseDay)
+    if (card && chargedText.trim() && !(cardRate && cardRate <= 1e9)) return setError(m.money.checkBankCharge(trip.currency))
     if (newExchange && Boolean(gotText.trim()) !== Boolean(costText.trim())) {
-      return setError('Fill in both what you got and what it cost, or leave both empty to add the rate later.')
+      return setError(m.money.fillInBoth)
     }
-    if (newExchange && gotText.trim() && !(got && cost)) return setError('Check the exchange amounts.')
+    if (newExchange && gotText.trim() && !(got && cost)) return setError(m.money.checkExchangeAmounts)
 
     let split: Split
     if (transfer) {
-      if (!to || to === paidBy) return setError('Choose who received the money.')
+      if (!to || to === paidBy) return setError(m.money.chooseWhoReceived)
       split = { kind: 'equal', among: [to] }
     } else if (!group) {
       split = { kind: 'equal', among: [paidBy] }
     } else if (splitKind === 'equal') {
-      if (!among.size) return setError('Choose who it was for.')
+      if (!among.size) return setError(m.money.chooseWhoFor)
       split = { kind: 'equal', among: ids.filter((id) => among.has(id)) }
     } else {
-      if (Math.abs(exactTotal - amount) > 0.005) return setError(`The amounts add up to ${fmtPlain(exactTotal)}, not ${fmtPlain(amount)}.`)
+      if (Math.abs(exactTotal - amount) > 0.005) return setError(m.money.amountsAddUp(fmtPlain(exactTotal), fmtPlain(amount)))
       split = { kind: 'exact', amounts: Object.fromEntries(ids.map((id) => [id, parseAmount(exact[id] ?? '') ?? 0] as const).filter(([, a]) => a > 0)) }
     }
 
@@ -425,7 +425,7 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
     // An older expense that doesn't say how it was paid stays that way while it converts as before.
     const convertsAsBefore = existing && existing.currency === currency && paidWithBefore === paidWith && existing.rate === cardRate
     void save({
-      title: transfer ? 'Payment' : title.trim(),
+      title: transfer ? PAYMENT_TITLE : title.trim(),
       amount,
       currency,
       rate: cardRate,
@@ -443,21 +443,21 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
 
   return (
     <ItemForm
-      title={transfer ? (existing ? 'Edit payment' : 'New payment') : existing ? 'Edit expense' : 'New expense'}
+      title={transfer ? (existing ? m.money.editPayment : m.money.newPayment) : existing ? m.money.editExpense : m.money.newExpense}
       error={error}
       busy={busy}
       onSubmit={() => void onSubmit()}
     >
-      {!transfer && <TextField label="What for" value={title} onChange={setTitle} placeholder="Dinner, tickets, taxi…" maxLength={200} autoFocus={!existing} />}
-      <div className="field" role="group" aria-label="Amount">
-        <span>Amount</span>
+      {!transfer && <TextField label={m.money.whatFor} value={title} onChange={setTitle} placeholder={m.money.whatForPlaceholder} maxLength={200} autoFocus={!existing} />}
+      <div className="field" role="group" aria-label={m.money.amount}>
+        <span>{m.money.amount}</span>
         <div className="row nowrap">
           <input
             className="input input-amount"
             inputMode="decimal"
             value={amountText}
             placeholder="0.00"
-            aria-label="Amount"
+            aria-label={m.money.amount}
             autoFocus={transfer && !existing}
             onChange={(e) => setAmountText(e.target.value)}
           />
@@ -474,87 +474,77 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
               setCostText('')
             }}
             suggestions={[trip.currency, ...rates.keys(), ...new Set(t.expenses.map((e) => e.currency))]}
-            label="Currency"
+            label={m.money.currency}
           />
         </div>
         {owed !== undefined && (
           <small className="muted">
-            {nameOf(t, paidBy)} owes {nameOf(t, to)} {fmtMoney(owed, trip.currency)}.{' '}
-            {amount && !foreign && owed - amount > 0.005
-              ? `${fmtMoney(owed - amount, trip.currency)} will still be owed after this.`
-              : 'Paying part of it is fine: the rest stays owed.'}
+            {m.money.owesSentence(nameOf(t, paidBy), nameOf(t, to), fmtMoney(owed, trip.currency))}{' '}
+            {amount && !foreign && owed - amount > 0.005 ? m.money.stillOwed(fmtMoney(owed - amount, trip.currency)) : m.money.partIsFine}
           </small>
         )}
       </div>
 
-      <div className="field" role="group" aria-label="Paid with">
-        <span>Paid with</span>
+      <div className="field" role="group" aria-label={m.money.paidWith}>
+        <span>{m.money.paidWith}</span>
         <div className="segmented">
           <button type="button" className={paidWith === 'cash' ? 'active' : ''} onClick={() => setPaidWith('cash')}>
-            💵 Cash
+            💵 {m.money.cash}
           </button>
           <button type="button" className={paidWith === 'card' ? 'active' : ''} onClick={() => setPaidWith('card')}>
-            💳 {transfer ? 'Card or bank' : 'Card'}
+            💳 {transfer ? m.money.cardOrBank : m.money.card}
           </button>
         </div>
-        {!paidWith && <small className="muted">Not noted for this {transfer ? 'payment' : 'expense'}.</small>}
+        {!paidWith && <small className="muted">{m.money.notNotedFor(transfer)}</small>}
       </div>
       {foreign && !card && exchangeRate && (
         <div className="notice notice-info small">
-          Converted at <strong className="money">1 {trip.currency} = {fmtPlain(exchangeRate, 4)} {currency}</strong>, what your exchanges got
-          {approx && <>: {approx}</>}.
+          {m.money.convertedAt(<strong className="money">1 {trip.currency} = {fmtPlain(exchangeRate, 4)} {currency}</strong>, approx)}
         </div>
       )}
       {card && (
         <Field
-          label={`What the bank charged (${trip.currency}, fees included)`}
-          hint={
-            cardRate
-              ? `1 ${trip.currency} = ${fmtPlain(cardRate, 4)} ${currency}`
-              : `Not in your bank app yet? Leave it empty and add it later: it's marked "cost pending" until then${approx ? `, and counts at your cash rate (${approx})` : ''}.`
-          }
+          label={m.money.bankChargedLabel(trip.currency)}
+          hint={cardRate ? `1 ${trip.currency} = ${fmtPlain(cardRate, 4)} ${currency}` : m.money.bankChargedHint(approx)}
         >
-          <input className="input" inputMode="decimal" placeholder="Not known yet" value={chargedText} onChange={(e) => setChargedText(e.target.value)} />
+          <input className="input" inputMode="decimal" placeholder={m.money.notKnownYet} value={chargedText} onChange={(e) => setChargedText(e.target.value)} />
         </Field>
       )}
       {newExchange && (
-        <div className="field" role="group" aria-label={`Exchange rate for ${currency}`}>
-          <span>What did you get for your money?</span>
+        <div className="field" role="group" aria-label={m.money.exchangeRateFor(currency)}>
+          <span>{m.money.whatDidYouGet}</span>
           <div className="row nowrap">
-            <span className="muted">You got</span>
-            <input className="input input-amount" inputMode="decimal" placeholder="10000" aria-label={`${currency} you got`} value={gotText} onChange={(e) => setGotText(e.target.value)} />
+            <span className="muted">{m.money.youGot}</span>
+            <input className="input input-amount" inputMode="decimal" placeholder="10000" aria-label={m.money.codeYouGot(currency)} value={gotText} onChange={(e) => setGotText(e.target.value)} />
             <span className="muted">{currency}</span>
           </div>
           <div className="row nowrap">
-            <span className="muted">for</span>
-            <input className="input input-amount" inputMode="decimal" placeholder="62.50" aria-label={`What it cost in ${trip.currency}`} value={costText} onChange={(e) => setCostText(e.target.value)} />
+            <span className="muted">{m.money.forCost}</span>
+            <input className="input input-amount" inputMode="decimal" placeholder="62.50" aria-label={m.money.whatItCostIn(trip.currency)} value={costText} onChange={(e) => setCostText(e.target.value)} />
             <span className="muted">{trip.currency}</span>
           </div>
-          <small className="muted">
-            {approx ? `${approx}. ` : ''}A cash withdrawal or money changed, fees included. It's saved as the {currency} rate for the whole trip, so
-            you only enter it once. Leave it empty to add it later in Money.
-          </small>
+          <small className="muted">{m.money.withdrawalNote(approx, currency)}</small>
         </div>
       )}
 
-      <Field label="Day">
+      <Field label={m.common.day}>
         <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </Field>
-      {!transfer && <ChoiceChips label="Category" options={EXPENSE_CATEGORIES} value={category} onChange={setCategory} />}
+      {!transfer && <ChoiceChips label={m.money.category} options={EXPENSE_CATEGORIES} value={category} onChange={setCategory} />}
       {group && (
-        <Field label={transfer ? 'From' : 'Paid by'}>
+        <Field label={transfer ? m.money.from : m.money.paidBy}>
           <select className="input" value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
             {t.travellers.map((x) => (
               <option key={x.id} value={x.id}>
                 {x.name}
-                {x.id === t.me?.id ? ' (you)' : ''}
+                {x.id === t.me?.id ? m.trip.youParen : ''}
               </option>
             ))}
           </select>
         </Field>
       )}
       {transfer && (
-        <Field label="To">
+        <Field label={m.money.to}>
           <select className="input" value={to} onChange={(e) => setTo(e.target.value)}>
             {t.travellers
               .filter((x) => x.id !== paidBy)
@@ -567,14 +557,14 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
         </Field>
       )}
       {group && !transfer && (
-        <div className="field" role="group" aria-label="Split">
-          <span>For whom</span>
+        <div className="field" role="group" aria-label={m.money.split}>
+          <span>{m.money.forWhom}</span>
           <div className="segmented">
             <button type="button" className={splitKind === 'equal' ? 'active' : ''} onClick={() => setSplitKind('equal')}>
-              Split equally
+              {m.money.splitEqually}
             </button>
             <button type="button" className={splitKind === 'exact' ? 'active' : ''} onClick={() => setSplitKind('exact')}>
-              Exact amounts
+              {m.money.exactAmounts}
             </button>
           </div>
           {splitKind === 'equal' ? (
@@ -599,9 +589,7 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
                 ))}
               </div>
               {amount !== undefined && among.size > 0 && (
-                <small className="muted">
-                  {fmtMoney(amount / among.size, currency)} each, for {plural(among.size, 'person', 'people')}.
-                </small>
+<small className="muted">{m.money.eachFor(fmtMoney(amount / among.size, currency), among.size)}</small>
               )}
             </>
           ) : (
@@ -613,14 +601,14 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
                     className="input"
                     inputMode="decimal"
                     placeholder="0.00"
-                    aria-label={`${x.name}'s part`}
+                    aria-label={m.money.partOf(x.name)}
                     value={exact[x.id] ?? ''}
                     onChange={(e) => setExact((m) => ({ ...m, [x.id]: e.target.value }))}
                   />
                 </div>
               ))}
               {amount !== undefined && (
-                <small className={Math.abs(exactTotal - amount) > 0.005 ? 'minus' : 'muted'}>{fmtMoney(amount - exactTotal, currency)} left to assign.</small>
+                <small className={Math.abs(exactTotal - amount) > 0.005 ? 'minus' : 'muted'}>{m.money.leftToAssign(fmtMoney(amount - exactTotal, currency))}</small>
               )}
             </>
           )}
@@ -645,51 +633,51 @@ export function ExpensePage() {
   const paidWith = paidWithOf(e, cur)
   return (
     <article className="stack">
-      <DetailHead emoji={e.transfer ? '🤝' : label.emoji} title={e.title} subtitle={e.transfer ? 'Settle-up payment' : label.label} />
+      <DetailHead emoji={e.transfer ? '🤝' : label.emoji} title={expenseTitle(e)} subtitle={e.transfer ? m.money.settleUpPayment : label.label} />
       <section className="card">
         <p className="big-number">{fmtMoney(e.amount, e.currency)}</p>
         {foreign &&
           (awaitingCost(e, cur) ? (
             <Notice kind="warn">
               <span className="small">
-                Waiting for what the bank charged.{' '}
-                {rate ? `Until then it counts at your cash rate: ≈ ${fmtMoney(toTripCurrency(e.amount, rate), cur)}.` : "It isn't counted until then."}{' '}
+                {m.money.waitingForBank}{' '}
+                {rate ? m.money.untilThenCounts(fmtMoney(toTripCurrency(e.amount, rate), cur)) : m.money.notCountedUntilThen}{' '}
                 <Link className="link" to={tripPath(t.trip.id, 'expenses', e.id, 'edit')}>
-                  Add it
+                  {m.money.addIt}
                 </Link>
               </span>
             </Notice>
           ) : rate && e.paidWith === 'card' ? (
             <p className="muted small">
-              {fmtMoney(toTripCurrency(e.amount, rate), cur)} charged by the bank (1 {cur} = {fmtPlain(rate, 4)} {e.currency})
+              {m.money.chargedByBank(fmtMoney(toTripCurrency(e.amount, rate), cur), cur, fmtPlain(rate, 4), e.currency)}
             </p>
           ) : rate ? (
             <p className="muted small">
-              ≈ {fmtMoney(toTripCurrency(e.amount, rate), cur)} at 1 {cur} = {fmtPlain(rate, 4)} {e.currency}
-              {e.rate ? ' (its own rate)' : ', what your exchanges got'}
+              {m.money.atRate(fmtMoney(toTripCurrency(e.amount, rate), cur), cur, fmtPlain(rate, 4), e.currency)}
+              {e.rate ? m.money.itsOwnRate : m.money.whatExchangesGot}
             </p>
           ) : (
             <Notice kind="warn">
               <span className="small">
-                Not counted yet: there's no rate for {e.currency}.{' '}
+                {m.money.notCountedYet(e.currency)}{' '}
                 <Link className="link" to={`${tripPath(t.trip.id, 'exchanges', 'new')}?currency=${e.currency}`}>
-                  Add what you got for your money
+                  {m.money.addWhatYouGot}
                 </Link>
               </span>
             </Notice>
           ))}
         <dl className="facts">
-          <dt>Day</dt>
+          <dt>{m.common.day}</dt>
           <dd>{fmtDay(e.date)}</dd>
           {paidWith && (
             <>
-              <dt>Paid with</dt>
-              <dd>{paidWith === 'cash' ? 'Cash' : e.transfer ? 'Card or bank' : 'Card'}</dd>
+              <dt>{m.money.paidWith}</dt>
+              <dd>{paidWith === 'cash' ? m.money.cash : e.transfer ? m.money.cardOrBank : m.money.card}</dd>
             </>
           )}
           {t.travellers.length > 1 && (
             <>
-              <dt>{e.transfer ? 'From' : 'Paid by'}</dt>
+              <dt>{e.transfer ? m.money.from : m.money.paidBy}</dt>
               <dd>{nameOf(t, e.paidBy)}</dd>
             </>
           )}
@@ -697,7 +685,7 @@ export function ExpensePage() {
       </section>
       {t.travellers.length > 1 && (
         <section className="card">
-          <h3>{e.transfer ? 'To' : 'Split'}</h3>
+          <h3>{e.transfer ? m.money.to : m.money.split}</h3>
           <ul className="history">
             {parts.map(([id, amount]) => (
               <li key={id}>
@@ -710,7 +698,7 @@ export function ExpensePage() {
       )}
       {e.notes && (
         <section className="card">
-          <h3>Notes</h3>
+          <h3>{m.common.notes}</h3>
           <p className="prewrap">{e.notes}</p>
         </section>
       )}
