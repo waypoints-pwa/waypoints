@@ -1,7 +1,7 @@
 # Sharing and server screens in both languages (Portuguese, part 4)
 
 Status: ready
-Issue: (added at hand-over)
+Issue: https://github.com/waypoints-pwa/waypoints/issues/78
 Builds after: none
 
 ## Problem
