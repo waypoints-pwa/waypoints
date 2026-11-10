@@ -1,4 +1,5 @@
 import type { Day, Time } from '../db/types'
+import { m } from '../i18n'
 import { dayToDate } from '../domain/time'
 
 /** "Wed 10 Mar", in the device's language. */
@@ -66,7 +67,7 @@ export function fmtDuration(ms: number): string {
 export const fmtTimestamp = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
 
-export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+export { plural } from '../i18n/plural'
 
 /** "820 KB", "2.4 MB". */
 export function fmtBytes(bytes: number): string {
@@ -76,8 +77,7 @@ export function fmtBytes(bytes: number): string {
 }
 
 /** "2 new, 1 changed" for a merge. */
-export const mergeSummary = ({ added, updated, removed }: { added: number; updated: number; removed: number }) =>
-  [added && `${added} new`, updated && `${updated} changed`, removed && `${removed} deleted`].filter(Boolean).join(', ') || 'small updates'
+export const mergeSummary = (counts: { added: number; updated: number; removed: number }) => m.common.mergeSummary(counts)
 
 export function currencyName(code: string): string {
   try {

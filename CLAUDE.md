@@ -105,6 +105,10 @@ another host (an exchange-rate API, map tiles) needs adding there, and must stay
 - `src/domain/` — pure, unit-tested logic. Relative imports use explicit `.ts` extensions. No runtime deps.
 - `src/db/` — Dexie schema, write actions, backup/merge IO, snapshots, local settings.
 - `src/lib/` — browser helpers: trip link codec, share sheet, update prompt, downloads.
+- `src/i18n/` — the text people read, per language: `en/` is the source and `pt/` must match it
+  (the typecheck fails otherwise), one file per area, read through `m`. Text on a screen that
+  already uses `m` is never written inline: add it to both languages. Conventions and the
+  Portuguese glossary: `specs/translation-layer.md`.
 - `src/sync/` — sync server client (`client.ts`: the sync itself; `files.ts`: moving photos and documents
   after it; `account.ts`: joining, invites, leaving).
 - `server/` — the sync server: Node HTTP, JSON-file store, no dependencies; runs `src/domain` directly

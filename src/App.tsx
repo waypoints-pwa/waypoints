@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { HashRouter, Link, Outlet, Route, Routes, useLocation, useNavigationType } from 'react-router'
+import { m } from './i18n'
 import { AutoSync } from './sync/useAutoSync'
 import { EmptyState } from './ui/components/bits'
 import { UpdateBanner } from './ui/components/UpdateBanner'
@@ -96,7 +97,7 @@ function MainLayout() {
           <Link className="brand" to="/">
             📍 waypoints
           </Link>
-          <Link className="icon-btn" to="/settings" aria-label="Settings">
+          <Link className="icon-btn" to="/settings" aria-label={m.common.settings}>
             ⚙️
           </Link>
         </div>
@@ -122,9 +123,9 @@ function NotFound() {
   return (
     <EmptyState>
       <p className="big-emoji">🧭</p>
-      <p>There's nothing here.</p>
+      <p>{m.common.nothingHere}</p>
       <Link className="btn" to="/">
-        Your trips
+        {m.common.yourTrips}
       </Link>
     </EmptyState>
   )

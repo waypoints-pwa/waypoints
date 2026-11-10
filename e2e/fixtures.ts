@@ -61,6 +61,11 @@ export async function dismissNotices(page: Page) {
   }
 }
 
+/** The preview in Portuguese: the screen's main part holds no common English words. */
+export async function expectNoEnglish(page: Page) {
+  await expect(page.locator('main')).not.toContainText(/\b(the|your|and|with|this|phone|trips?)\b/i)
+}
+
 /** Imports the fictional demo trip through the normal file import, and returns it. */
 export async function importDemoTrip(page: Page): Promise<Backup> {
   const backup = await demoBackup()

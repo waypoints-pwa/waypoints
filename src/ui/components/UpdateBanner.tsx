@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
+import { m } from '../../i18n'
 import { applyUpdate, isUpdateReady, subscribeUpdate } from '../../lib/updates'
 
 /** Asks before switching to a new version, so nothing being typed is lost. */
@@ -15,14 +16,14 @@ export function UpdateBanner() {
   return (
     <div className="update-banner" role="status">
       <span className="small">
-        <strong>A new version of waypoints is ready.</strong> Reload when you've finished what you're doing.
+        {m.common.updateReady(<strong>{m.common.newVersionReady}</strong>)}
       </span>
       <div className="row">
         <button className="btn btn-small btn-primary" onClick={() => void applyUpdate()}>
-          Reload
+          {m.common.reload}
         </button>
         <button className="btn btn-small btn-ghost" onClick={() => setLater(true)}>
-          Later
+          {m.common.later}
         </button>
       </div>
     </div>

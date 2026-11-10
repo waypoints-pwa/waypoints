@@ -1,3 +1,4 @@
+import { m } from '../i18n'
 import type { ExpenseCategory, PlaceCategory, StayKind, TransportMode } from '../db/types'
 
 export interface Label {
@@ -8,41 +9,41 @@ export interface Label {
 type Labels<K extends string> = Record<K, Label>
 
 export const STAY_KINDS: Labels<StayKind> = {
-  hotel: { label: 'Hotel', emoji: '🏨' },
-  apartment: { label: 'Apartment', emoji: '🏢' },
-  hostel: { label: 'Hostel', emoji: '🛏️' },
-  house: { label: 'House', emoji: '🏡' },
-  camping: { label: 'Camping', emoji: '⛺' },
-  other: { label: 'Other', emoji: '🛌' },
+  hotel: { label: m.labels.stay.hotel, emoji: '🏨' },
+  apartment: { label: m.labels.stay.apartment, emoji: '🏢' },
+  hostel: { label: m.labels.stay.hostel, emoji: '🛏️' },
+  house: { label: m.labels.stay.house, emoji: '🏡' },
+  camping: { label: m.labels.stay.camping, emoji: '⛺' },
+  other: { label: m.labels.stay.other, emoji: '🛌' },
 }
 
 export const TRANSPORT_MODES: Labels<TransportMode> = {
-  flight: { label: 'Flight', emoji: '✈️' },
-  train: { label: 'Train', emoji: '🚆' },
-  bus: { label: 'Bus', emoji: '🚌' },
-  car: { label: 'Car', emoji: '🚗' },
-  ferry: { label: 'Ferry', emoji: '⛴️' },
-  other: { label: 'Other', emoji: '🧭' },
+  flight: { label: m.labels.transport.flight, emoji: '✈️' },
+  train: { label: m.labels.transport.train, emoji: '🚆' },
+  bus: { label: m.labels.transport.bus, emoji: '🚌' },
+  car: { label: m.labels.transport.car, emoji: '🚗' },
+  ferry: { label: m.labels.transport.ferry, emoji: '⛴️' },
+  other: { label: m.labels.transport.other, emoji: '🧭' },
 }
 
 export const PLACE_CATEGORIES: Labels<PlaceCategory> = {
-  sight: { label: 'Sights', emoji: '🏛️' },
-  museum: { label: 'Museums', emoji: '🖼️' },
-  nature: { label: 'Nature', emoji: '🌳' },
-  food: { label: 'Food', emoji: '🍽️' },
-  drinks: { label: 'Bars & cafés', emoji: '☕' },
-  shopping: { label: 'Shopping', emoji: '🛍️' },
-  other: { label: 'Other', emoji: '📍' },
+  sight: { label: m.labels.place.sight, emoji: '🏛️' },
+  museum: { label: m.labels.place.museum, emoji: '🖼️' },
+  nature: { label: m.labels.place.nature, emoji: '🌳' },
+  food: { label: m.labels.place.food, emoji: '🍽️' },
+  drinks: { label: m.labels.place.drinks, emoji: '☕' },
+  shopping: { label: m.labels.place.shopping, emoji: '🛍️' },
+  other: { label: m.labels.place.other, emoji: '📍' },
 }
 
 export const EXPENSE_CATEGORIES: Labels<ExpenseCategory> = {
-  food: { label: 'Food & drinks', emoji: '🍽️' },
-  groceries: { label: 'Groceries', emoji: '🛒' },
-  transport: { label: 'Transport', emoji: '🚕' },
-  stay: { label: 'Accommodation', emoji: '🏨' },
-  activities: { label: 'Activities', emoji: '🎟️' },
-  shopping: { label: 'Shopping', emoji: '🛍️' },
-  other: { label: 'Other', emoji: '💸' },
+  food: { label: m.labels.expense.food, emoji: '🍽️' },
+  groceries: { label: m.labels.expense.groceries, emoji: '🛒' },
+  transport: { label: m.labels.expense.transport, emoji: '🚕' },
+  stay: { label: m.labels.expense.stay, emoji: '🏨' },
+  activities: { label: m.labels.expense.activities, emoji: '🎟️' },
+  shopping: { label: m.labels.expense.shopping, emoji: '🛍️' },
+  other: { label: m.labels.expense.other, emoji: '💸' },
 }
 
 /** A kind or category, falling back to "other" for one from a newer version of the app. */

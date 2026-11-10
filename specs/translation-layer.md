@@ -1,6 +1,6 @@
 # Translation layer (Portuguese, part 1)
 
-Status: ready
+Status: shipped
 Issue: https://github.com/waypoints-pwa/waypoints/issues/69
 Builds after: none
 
@@ -64,7 +64,7 @@ The layer (decided, do not redesign):
 - `src/i18n/en/<area>.tsx` and `src/i18n/pt/<area>.tsx`: one object per area, exported under the
   area's name (`export const settings = { … }`). Areas in this part: `labels`, `common`, `home`,
   `settings`. Area files are always `.tsx`, never import from `src/ui`, `src/db` or `src/lib`, and may
-  import only `react` types and `../plural`.
+  import only `react` types, `../plural` and, in `pt/`, the `Messages` type from `../en`.
 - `src/i18n/en/index.ts`: `export const en = { common, home, labels, settings }` and
   `export type Messages = typeof en`. No `as const` (leaves must be typed `string`, not literals).
 - `src/i18n/pt/index.ts`: `export const pt: Messages = { … }`. Each Portuguese area file types its
@@ -111,6 +111,10 @@ Glossary (PT-PT; use these words, also in later parts):
 | sync server | servidor de sincronização | guide | guia |
 | booking | reserva | Got it / Later / Reload | Percebi / Mais tarde / Recarregar |
 | Save / Cancel / Delete / Edit | Guardar / Cancelar / Eliminar / Editar | import / export | importar / exportar |
+| download | descarregar | connect (to a server) | ligar |
+| Dismiss | Dispensar | About | Acerca de |
+| Coming up / Past trips | Em breve / Viagens passadas | Done (a trip) | Concluída |
+| browser | navegador | time zone | fuso horário |
 
 Style: address the person as "tu" ("Ainda não tens viagens"), buttons in the infinitive ("Exportar
 todas as viagens"), European forms only (ecrã, ficheiro, telemóvel, partilhar, guardar, "a carregar";
@@ -284,6 +288,9 @@ Do not touch: `src/domain/`, `src/db/`, `src/sync/`, `src/lib/`, `server/`, `scr
 - `?lang=pt` is a preview for building and reviewing, deliberately not remembered; part 5 decides
   whether it stays.
 - Dictionaries are bundled with the app (small text), not loaded on demand, so offline is unaffected.
+- Shipped as specced. The Glossary rows from "download" down are the words chosen while building;
+  later parts use them too. Two texts live in two areas (`common.settings` and `settings.title`,
+  `common.yourTrips` and `home.yourTrips`); a later part can keep one of each.
 - Dry-run before writing this spec: a `.tsx` dictionary with a fragment imports fine under Vitest,
   oxlint and `tsc -b`.
 - Overlap: no unbuilt spec depends on this one, but draft specs built after it (`trip-budget`,
