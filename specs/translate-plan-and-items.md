@@ -1,6 +1,6 @@
 # Plan and items in both languages (Portuguese, part 2)
 
-Status: ready
+Status: building
 Issue: https://github.com/waypoints-pwa/waypoints/issues/72
 Builds after: none
 
