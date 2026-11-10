@@ -56,7 +56,7 @@ export const settings: Messages['settings'] = {
   howToUse: 'Como usar o waypoints',
   aboutGuide: (guide) => <>📖 {guide}</>,
   privacyText:
-    'Sem conta, sem rastreio, sem anúncios. As tuas viagens ficam neste telemóvel e só saem dele nos links e ficheiros que escolheres enviar, e nas viagens que puseres num servidor de sincronização, se te ligares a um. Os mapas e os calendários abrem nas suas próprias apps; sem servidor, o waypoints nunca se liga a nada, a não ser que ativares a pesquisa de moradas online.',
+    'Sem conta, sem rastreio, sem anúncios. As tuas viagens ficam neste telemóvel e só saem dele nos links e ficheiros que escolheres enviar, e nas viagens que puseres num servidor de sincronização, se te ligares a um. Os mapas e os calendários abrem nas suas próprias apps; sem servidor, o waypoints nunca se liga a nada, a não ser que atives a pesquisa de moradas online.',
   dataCredits: (geonames, ourAirports, mwgg) => (
     <>
       Dados de cidades e fusos horários da {geonames} (CC BY 4.0); aeroportos da {ourAirports} e da {mwgg}.
