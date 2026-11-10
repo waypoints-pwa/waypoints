@@ -1,11 +1,12 @@
+import { m } from '../i18n'
 import { tripPath } from './tripData'
 
 export const TABS = [
-  { key: 'plan', path: '', icon: '🗓️', label: 'Plan' },
-  { key: 'places', path: 'places', icon: '📍', label: 'Places' },
-  { key: 'money', path: 'money', icon: '💶', label: 'Money' },
-  { key: 'photos', path: 'photos', icon: '📎', label: 'Files' },
-  { key: 'trip', path: 'trip', icon: '🧳', label: 'Trip' },
+  { key: 'plan', path: '', icon: '🗓️', label: m.trip.tabs.plan },
+  { key: 'places', path: 'places', icon: '📍', label: m.trip.tabs.places },
+  { key: 'money', path: 'money', icon: '💶', label: m.trip.tabs.money },
+  { key: 'photos', path: 'photos', icon: '📎', label: m.trip.tabs.files },
+  { key: 'trip', path: 'trip', icon: '🧳', label: m.trip.tabs.trip },
 ] as const
 
 /** Which tab a page belongs to, from the part of the path after /trips/<id>/. */

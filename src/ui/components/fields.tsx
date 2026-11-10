@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { allTimeZones, zoneCity } from '../../domain/time'
+import { m } from '../../i18n'
 import { currencyName } from '../format'
 import type { Label } from '../labels'
 
@@ -26,7 +27,7 @@ export function TextField({ label, value, onChange, hint, ...props }: TextProps)
   )
 }
 
-export function NotesField({ label = 'Notes', value, onChange, placeholder }: { label?: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+export function NotesField({ label = m.common.notes, value, onChange, placeholder }: { label?: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <Field label={label}>
       <textarea className="input" rows={3} value={value} maxLength={10_000} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
@@ -49,8 +50,8 @@ export function DateTimeField(props: {
     <div className="field" role="group" aria-label={label}>
       <span>{label}</span>
       <div className="row nowrap">
-        <input className="input" type="date" value={date} required={required} aria-label={`${label}: date`} onChange={(e) => onDate(e.target.value)} />
-        <input className="input input-time" type="time" value={time} aria-label={`${label}: time (optional)`} onChange={(e) => onTime(e.target.value)} />
+        <input className="input" type="date" value={date} required={required} aria-label={m.fields.dateOf(label)} onChange={(e) => onDate(e.target.value)} />
+        <input className="input input-time" type="time" value={time} aria-label={m.fields.timeOptional(label)} onChange={(e) => onTime(e.target.value)} />
       </div>
       {hint && <small className="muted">{hint}</small>}
     </div>
@@ -79,14 +80,14 @@ export function ZoneSelect({ value, onChange, suggestions, label }: { value: str
   const top = [...new Set([...suggestions, value])].filter(Boolean)
   return (
     <select className="input" value={value} aria-label={label} onChange={(e) => onChange(e.target.value)}>
-      <optgroup label="Used in this trip">
+      <optgroup label={m.fields.usedInTrip}>
         {top.map((z) => (
           <option key={z} value={z}>
             {z.replace(/_/g, ' ')}
           </option>
         ))}
       </optgroup>
-      <optgroup label="All time zones">
+      <optgroup label={m.fields.allTimeZones}>
         {zones
           .filter((z) => !top.includes(z))
           .map((z) => (
@@ -100,14 +101,14 @@ export function ZoneSelect({ value, onChange, suggestions, label }: { value: str
 }
 
 /** "Times are in Lisbon time · Change": collapsed, since most trips have one time zone. */
-export function ZoneField({ label = 'Times are local to', value, onChange, suggestions }: { label?: string; value: string; onChange: (v: string) => void; suggestions: string[] }) {
+export function ZoneField({ label = m.fields.timesLocalTo, value, onChange, suggestions }: { label?: string; value: string; onChange: (v: string) => void; suggestions: string[] }) {
   const [open, setOpen] = useState(false)
   if (!open) {
     return (
       <p className="small muted">
         {label} <strong>{zoneCity(value)}</strong>.{' '}
         <button type="button" className="link" onClick={() => setOpen(true)}>
-          Change time zone
+          {m.fields.changeTimeZone}
         </button>
       </p>
     )
@@ -152,14 +153,14 @@ function CurrencyOptions({ value, onChange, suggestions, label, className }: { v
   const top = [...new Set([...suggestions, value])].filter(Boolean)
   return (
     <select className={className} value={value} aria-label={label} onChange={(e) => onChange(e.target.value)}>
-      <optgroup label="This trip">
+      <optgroup label={m.fields.thisTrip}>
         {top.map((code) => (
           <option key={code} value={code}>
             {code} · {currencyName(code)}
           </option>
         ))}
       </optgroup>
-      <optgroup label="All currencies">
+      <optgroup label={m.fields.allCurrencies}>
         {all
           .filter(([code]) => !top.includes(code))
           .map(([code, text]) => (

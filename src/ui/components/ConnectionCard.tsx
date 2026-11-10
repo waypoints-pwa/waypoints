@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import type { Connection } from '../../domain/bookings'
+import { m } from '../../i18n'
 import { fmtDayTime, fmtDuration } from '../format'
 import { tripPath, useTrip } from '../tripData'
 
@@ -17,7 +18,7 @@ export function ConnectionCard({ connection, title }: { connection: Connection; 
               <>
                 {(join.layoverMinutes === undefined || join.layoverMinutes >= 0) && (
                   <p className="muted small">
-                    {join.layoverMinutes === undefined ? 'Layover time unknown' : `Layover ${fmtDuration(join.layoverMinutes * 60_000)} in ${join.place}`}
+                    {join.layoverMinutes === undefined ? m.items.layoverUnknown : m.items.layover(fmtDuration(join.layoverMinutes * 60_000), join.place)}
                   </p>
                 )}
                 {join.warnings.map((w) => (
