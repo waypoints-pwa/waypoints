@@ -185,6 +185,12 @@ Glossary (PT-PT; use these words, also in later parts):
 | Add to my trips / Update my copy | Adicionar às minhas viagens / Atualizar a minha cópia | Open the trip | Abrir a viagem |
 | Add me / Skip for now | Adicionar-me / Agora não | phone-only trip | viagem só neste telemóvel |
 | Open in the waypoints app | Abrir na app waypoints | Today | Hoje |
+| server log | registo do servidor | Active (a phone) | Ativo |
+| characters (link length) | carateres | reachable (server) | acessível |
+| Put on the server | Pôr no servidor | Remove from the server | Remover do servidor |
+| refused (by the server) | recusou | Waiting for first sync… | A aguardar a primeira sincronização… |
+| Add to Home Screen | Adicionar ao ecrã principal | unsent change(s) | alteração / alterações por enviar |
+| chat app | app de conversa | tablet | tablet |
 
 Style: address the person as "tu" ("Ainda não tens viagens"), buttons in the infinitive ("Exportar
 todas as viagens"), European forms only (ecrã, ficheiro, telemóvel, partilhar, guardar, "a carregar";
