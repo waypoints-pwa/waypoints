@@ -31,7 +31,9 @@ with their Portuguese text, and fixes three small things earlier parts left in t
   - the Plan shows " · Hoje" after today's date (English: " · Today", looking the same as today);
   - selecting photos reads "2 selecionadas" (documents: "2 selecionados");
   - the selection bar on the Files tab wraps onto a second line when it doesn't fit, so **Cancelar**
-    is no longer cut off at 360px. In English it fits on one line, as today.
+    is no longer cut off at 360px. In English, on phones 375px wide or narrower, **Cancel** moves
+    to a second line and the labels are no longer squeezed onto two lines; from 390px it is one
+    line, as before.
 - Still English in the preview (part 5): what people typed (names, phone names), dates, numbers and
   "2 minutes ago", and every reason that comes from outside `src/ui`: why a link or file can't be
   opened, why connecting or syncing failed, why the server refused a change, the "Copy this link:"
@@ -342,8 +344,10 @@ The patterns are samples that catch a forgotten text; the rule is "every text pe
   know the reader's; the link itself opens in the reader's language.
 - " · Today" moves from CSS into the heading's text. It looks the same, and screen readers now
   read it. No smoke test or screenshot selector looks for a day heading.
-- `flex-wrap` also applies in English, where the bar fits on one line at 360px, so nothing people
-  see changes and there is no version bump.
+- `flex-wrap` also applies in English. Found while checking the build: at 360px and 375px the
+  English bar only fitted on one line by squeezing "1 selected" and "Select all" onto two lines of
+  text, so with `flex-wrap` **Cancel** wraps there too (bar 102px tall instead of 68px). Decided
+  with Ricardo: accepted as built; a small layout change, no version bump.
 - `expectNoEnglish` runs on the Open, Sync server (not connected) and Share pages: they show no
   trip data beyond counts. The trip link page shows the trip's own English name and people.
 - Smoke test (d) uses a document, not a photo: it needs no image, and the Documents tab is the
