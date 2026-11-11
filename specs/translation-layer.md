@@ -191,6 +191,10 @@ Glossary (PT-PT; use these words, also in later parts):
 | refused (by the server) | recusou | Waiting for first sync… | A aguardar a primeira sincronização… |
 | Add to Home Screen | Adicionar ao ecrã principal | unsent change(s) | alteração / alterações por enviar |
 | chat app | app de conversa | tablet | tablet |
+| leg (of a connection) | trajeto | Beach / City / Hiking / Skiing (templates) | Praia / Cidade / Caminhada / Esqui |
+| the server (short for sync server, in reasons) | o servidor | Android phone / Android tablet | Telemóvel Android / Tablet Android |
+| Windows PC | PC Windows | Before importing… (safety-copy names) | Antes de importar… |
+| Photo.jpg / Document (default file names) | Foto.jpg / Documento | Check-in from / Check-out by (calendar) | Check-in a partir das / Check-out até às |
 
 Style: address the person as "tu" ("Ainda não tens viagens"), buttons in the infinitive ("Exportar
 todas as viagens"), European forms only (ecrã, ficheiro, telemóvel, partilhar, guardar, "a carregar";
@@ -347,10 +351,10 @@ Do not touch: `src/domain/`, `src/db/`, `src/sync/`, `src/lib/`, `server/`, `scr
   3. money, files, reviews, votes and the trip report (page and exported file);
   4. sharing and server screens: open/share/link pages, server pages and notices
      (`translate-sharing-and-server`);
-  5. text outside the screens: text in `src/lib`, `src/sync`, `src/db` and `src/domain` (error
-     reasons become codes), sync server reasons as codes (new server image), packing templates,
-     calendar export;
-  6. the switch: Language in Settings (Automatic / English / Português), Portuguese on phones set
+  5. text made on the phone: reasons from `src/lib`, `src/sync`, `src/db` and `src/domain`,
+     packing templates, calendar export, safety-copy names (`translate-phone-text`);
+  6. what the sync server answers: reasons as codes, translated by the app (new server image);
+  7. the switch: Language in Settings (Automatic / English / Português), Portuguese on phones set
      to Portuguese, dates and numbers following the app's language, `<html lang>`, What's new notes
      in both languages (CI-enforced), the guide and its screenshots in Portuguese, version bump.
 - Decided with Ricardo: phone's language plus a Settings override; What's new, the guide and sync
@@ -361,9 +365,9 @@ Do not touch: `src/domain/`, `src/db/`, `src/sync/`, `src/lib/`, `server/`, `scr
 - No i18n library: typed objects give missing-key errors at compile time, and functions cover
   plurals and word order, with no dependency.
 - The language is fixed when the page loads (a module constant, not React state), so tables built at
-  import time (`labels.ts`) need no change; part 5 will reload the page when the setting changes and
+  import time (`labels.ts`) need no change; part 7 will reload the page when the setting changes and
   keep the choice where it can be read synchronously.
-- `?lang=pt` is a preview for building and reviewing, deliberately not remembered; part 5 decides
+- `?lang=pt` is a preview for building and reviewing, deliberately not remembered; part 7 decides
   whether it stays.
 - Dictionaries are bundled with the app (small text), not loaded on demand, so offline is unaffected.
 - Shipped as specced. The Glossary rows from "download" down are the words chosen while building;
