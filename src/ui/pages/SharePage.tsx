@@ -6,7 +6,7 @@ import { shareUrl } from '../../lib/shareSheet'
 import { LONG_LINK_CHARS, tripLink } from '../../lib/tripLink'
 import { Notice } from '../components/bits'
 import { Field } from '../components/fields'
-import { m } from '../../i18n'
+import { locale, m } from '../../i18n'
 import { needsLinks, useTrip } from '../tripData'
 
 export function SharePage() {
@@ -77,7 +77,7 @@ export function SharePage() {
         {result === 'copied' && <p className="small muted">{m.share.pasteIntoChat}</p>}
         {link && link.length > LONG_LINK_CHARS && (
           <Notice kind="warn">
-            <span className="small">{m.share.longLink(link.length.toLocaleString())}</span>
+            <span className="small">{m.share.longLink(link.length.toLocaleString(locale))}</span>
           </Notice>
         )}
         <button className="btn" onClick={() => void onSaveFile()}>

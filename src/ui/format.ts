@@ -1,16 +1,16 @@
 import type { Day, Time } from '../db/types'
-import { m } from '../i18n'
+import { locale, m } from '../i18n'
 import { dayToDate } from '../domain/time'
 
-/** "Wed 10 Mar", in the device's language. */
-export const fmtDay = (day: Day) => dayToDate(day).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+/** "Wed 10 Mar", in the app's language (the phone's own formats when it is in that language). */
+export const fmtDay = (day: Day) => dayToDate(day).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })
 
 export const fmtLongDay = (day: Day) =>
-  dayToDate(day).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  dayToDate(day).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
 /** "10–13 Mar 2027". */
 export function fmtDayRange(start: Day, end: Day): string {
-  const format = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+  const format = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' })
   try {
     return format.formatRange(dayToDate(start), dayToDate(end))
   } catch {
@@ -18,10 +18,10 @@ export function fmtDayRange(start: Day, end: Day): string {
   }
 }
 
-/** "15:00" or "3:00 PM", following the device's clock setting. */
+/** "15:00" or "3:00 PM", following the app's language (the phone's own formats when it is in that language). */
 export function fmtTime(time: Time): string {
   const [h, m] = time.split(':').map(Number)
-  return new Date(Date.UTC(2000, 0, 1, h, m)).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })
+  return new Date(Date.UTC(2000, 0, 1, h, m)).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })
 }
 
 export const fmtDayTime = (day: Day, time?: Time) => (time ? `${fmtDay(day)}, ${fmtTime(time)}` : fmtDay(day))
@@ -32,9 +32,9 @@ export function fmtMoney(amount: number, currency: string): string {
   let format = moneyFormats.get(currency)
   if (!format) {
     try {
-      format = new Intl.NumberFormat(undefined, { style: 'currency', currency })
+      format = new Intl.NumberFormat(locale, { style: 'currency', currency })
     } catch {
-      format = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      format = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     }
     moneyFormats.set(currency, format)
   }
@@ -46,7 +46,7 @@ export function fmtMoney(amount: number, currency: string): string {
 export function fmtMoneyShort(amount: number, currency: string): string {
   try {
     const notation = amount >= 10_000 ? 'compact' : 'standard'
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency, notation, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
+    return new Intl.NumberFormat(locale, { style: 'currency', currency, notation, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount)
   } catch {
     return fmtMoney(amount, currency)
   }
@@ -65,7 +65,7 @@ export function fmtDuration(ms: number): string {
 
 /** "2026-10-08T…" → "8 Oct, 14:05". */
 export const fmtTimestamp = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+  new Date(iso).toLocaleString(locale, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
 
 export { plural } from '../i18n/plural'
 
@@ -73,7 +73,7 @@ export { plural } from '../i18n/plural'
 export function fmtBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
   const mb = bytes / 1024 / 1024
-  return `${mb < 10 ? Math.round(mb * 10) / 10 : Math.round(mb)} MB`
+  return `${(mb < 10 ? Math.round(mb * 10) / 10 : Math.round(mb)).toLocaleString(locale)} MB`
 }
 
 /** "2 new, 1 changed" for a merge. */
@@ -81,13 +81,13 @@ export const mergeSummary = (counts: { added: number; updated: number; removed: 
 
 export function currencyName(code: string): string {
   try {
-    return new Intl.DisplayNames(undefined, { type: 'currency' }).of(code) ?? code
+    return new Intl.DisplayNames(locale, { type: 'currency' }).of(code) ?? code
   } catch {
     return code
   }
 }
 
-const relative = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
+const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
 
 /** "2 minutes ago", "yesterday". */
 export function fmtAgo(iso: string, now = Date.now()): string {

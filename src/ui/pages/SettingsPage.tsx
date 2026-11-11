@@ -7,7 +7,7 @@ import { DataError } from '../../domain/records'
 import { downloadJSON } from '../../lib/download'
 import { LINKS } from '../../lib/links'
 import { requestPersistentStorage } from '../../lib/storage'
-import { m } from '../../i18n'
+import { locale, m } from '../../i18n'
 import { Notice } from '../components/bits'
 import { SupportLine } from '../components/SupportLine'
 import { fmtBytes, mergeSummary } from '../format'
@@ -130,7 +130,7 @@ export function SettingsPage() {
               {snapshots.map((snap) => (
                 <li key={snap.id}>
                   <span>
-                    {snap.reason} <span className="muted">· {new Date(snap.createdAt).toLocaleString()}</span>
+                    {snap.reason} <span className="muted">· {new Date(snap.createdAt).toLocaleString(locale)}</span>
                   </span>
                   <button
                     className="btn btn-small btn-ghost"
