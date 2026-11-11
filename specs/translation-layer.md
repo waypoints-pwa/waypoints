@@ -359,7 +359,8 @@ Do not touch: `src/domain/`, `src/db/`, `src/sync/`, `src/lib/`, `server/`, `scr
   7. the switch: Language in Settings (Automatic / English / Português), Portuguese on phones set
      to Portuguese, dates, numbers and country names following the app's language, `<html lang>`,
      What's new notes in both languages (CI-enforced), version bump (`language-setting`);
-  8. the guide and its screenshots in Portuguese, linked from the Portuguese app.
+  8. the guide and its screenshots in Portuguese, linked from the Portuguese app; exchange rates and file sizes
+     in the app's number style (`portuguese-guide`).
 - Decided with Ricardo: phone's language plus a Settings override; What's new, the guide and sync
   server messages are translated too; informal "tu"; trajeto, link, locais, telemóvel; a series with
   the switch at the end, so nobody sees a half-translated app.
