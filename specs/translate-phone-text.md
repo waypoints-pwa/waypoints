@@ -1,6 +1,6 @@
 # Text made on the phone in both languages (Portuguese, part 5)
 
-Status: ready
+Status: building
 Issue: https://github.com/waypoints-pwa/waypoints/issues/81
 Builds after: none
 
