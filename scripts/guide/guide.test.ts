@@ -23,15 +23,16 @@ describe('GUIDE.pt.md follows GUIDE.md', () => {
   it('has the same heading levels in the same order', () => {
     const e = headings(en)
     const p = headings(pt)
-    expect(p.map((h) => h.level).join(''), `Heading levels differ: English has ${e.length} headings, Portuguese ${p.length}`).toBe(
-      e.map((h) => h.level).join(''),
-    )
+    expect(p.length, `Heading counts differ: English has ${e.length} headings, Portuguese ${p.length}`).toBe(e.length)
+    e.forEach((heading, i) => {
+      expect(p[i].level, `Heading ${i + 1}: "${heading.title}" vs "${p[i].title}"`).toBe(heading.level)
+    })
   })
 
   it('has the same pictures, in Portuguese', () => {
     const e = images(en)
     const p = images(pt)
-    expect(p.map((i) => i.src)).toEqual(e.map((i) => i.src.replace('docs/guide/', 'docs/guide/pt/')))
+    expect(p.map((i) => i.src), 'The pictures differ from the English guide (by src, in order)').toEqual(e.map((i) => i.src.replace('docs/guide/', 'docs/guide/pt/')))
     p.forEach((img, i) => {
       expect(existsSync(new URL(img.src, root)), `Missing picture ${img.src}`).toBe(true)
       expect(img.alt, `Empty alt for ${img.src}`).not.toBe('')
