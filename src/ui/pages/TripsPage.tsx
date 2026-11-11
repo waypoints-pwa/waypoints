@@ -4,8 +4,8 @@ import { Link, useNavigate } from 'react-router'
 import { db, SETTINGS } from '../../db/db'
 import type { Day, Trip } from '../../db/types'
 import { tripPhase } from '../../domain/itinerary'
-import { m } from '../../i18n'
-import { LINKS } from '../../lib/links'
+import { language, m } from '../../i18n'
+import { guideFor } from '../../lib/links'
 import { EmptyState } from '../components/bits'
 import { SupportLine } from '../components/SupportLine'
 import { WhatsNewCard } from '../components/WhatsNew'
@@ -125,7 +125,7 @@ function Welcome() {
       </Link>
       <p className="muted small">
         {m.home.newHere(
-          <a className="link" href={LINKS.guide} target="_blank" rel="noreferrer">
+          <a className="link" href={guideFor(language)} target="_blank" rel="noreferrer">
             {m.home.readTheGuide}
           </a>,
         )}

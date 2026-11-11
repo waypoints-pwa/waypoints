@@ -400,10 +400,10 @@ Keep the existing imports; add the new names to the `./language` import.
     and task 3 changed one existing test line, `maine.map((c) => cityDetail(c))`, since `map`
     passed its index as the locale.
   - `fmtBytes` now groups thousands, so an English phone on Automatic shows "1,234 MB" where it
-    showed "1234 MB" (1000 MB or more only). As specced; `useGrouping: false` would undo it.
+    showed "1234 MB" (1000 MB or more only). As specced; `useGrouping: false` would undo it. Undone in part 8 (`portuguese-guide`).
   - Exchange rates ("1 EUR = 162.6016 JPY", `src/ui/items/expenses.tsx:229`,
     `src/ui/items/exchanges.tsx:77`) use `fmtPlain`, so they keep a `.` in Portuguese. Not in this
-    spec; left for later.
+    spec; left for later. Done in part 8 (`portuguese-guide`).
   - The browser checks were a throwaway script against the dev server: the manual steps, phone
     language lists (`pt-BR`, `fr-FR, pt-PT`, `fr-FR, de-DE`), `en-US` keeping US dates, `?lang=en`
     over a saved choice, and blocked storage. Not checked on a real phone.

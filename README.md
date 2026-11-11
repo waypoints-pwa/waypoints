@@ -11,6 +11,8 @@ A trip companion you install on your phone: bookings, a day-by-day plan, places 
 
 **New here? Read the [user guide](GUIDE.md).**
 
+**Em português: [guia do utilizador](GUIDE.pt.md).**
+
 ## What it does
 
 - Plan a trip with stays, transport and activities: [before the trip](GUIDE.md#4-before-the-trip).
@@ -45,7 +47,7 @@ npm run lint       # oxlint
 npm run typecheck
 npm run build      # production build into dist/
 npm run smoke         # builds the app and checks it in a real browser (Playwright)
-npm run guide:screenshots  # with `npm run dev` running: remakes docs/guide/*.png, run it when a pictured screen changes
+npm run guide:screenshots  # with `npm run dev` running: remakes docs/guide/*.png and docs/guide/pt/*.png (add `-- pt` or `-- en` for one language), run it when a pictured screen changes
 ```
 
 Stack: React + TypeScript + Vite, Dexie (IndexedDB), vite-plugin-pwa, React Router (hash routing, so deep

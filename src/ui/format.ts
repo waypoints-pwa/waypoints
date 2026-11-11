@@ -54,6 +54,8 @@ export function fmtMoneyShort(amount: number, currency: string): string {
 
 /** A number for an input box: up to `digits` decimals, no grouping ("1234.5"). */
 export const fmtPlain = (value: number, digits = 2) => String(Math.round(value * 10 ** digits) / 10 ** digits)
+/** An exchange rate to show: up to 4 decimals, no grouping, in the app's language ("162.6016", "162,6016"). */
+export const fmtRate = (rate: number) => rate.toLocaleString(locale, { maximumFractionDigits: 4, useGrouping: false })
 
 /** "2h 35m". */
 export function fmtDuration(ms: number): string {
@@ -69,11 +71,11 @@ export const fmtTimestamp = (iso: string) =>
 
 export { plural } from '../i18n/plural'
 
-/** "820 KB", "2.4 MB". */
+/** "820 KB", "2.4 MB", "1234 MB" (never grouped). */
 export function fmtBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
   const mb = bytes / 1024 / 1024
-  return `${(mb < 10 ? Math.round(mb * 10) / 10 : Math.round(mb)).toLocaleString(locale)} MB`
+  return `${(mb < 10 ? Math.round(mb * 10) / 10 : Math.round(mb)).toLocaleString(locale, { useGrouping: false })} MB`
 }
 
 /** "2 new, 1 changed" for a merge. */

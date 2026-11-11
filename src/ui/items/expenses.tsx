@@ -24,7 +24,7 @@ import { DetailHead, EmptyState, Notice } from '../components/bits'
 import { ChoiceChips, CurrencySelect, Field, NotesField, TextField } from '../components/fields'
 import { UnsentNotice } from '../components/UnsentNotice'
 import { m } from '../../i18n'
-import { fmtDay, fmtMoney, fmtPlain } from '../format'
+import { fmtDay, fmtMoney, fmtPlain, fmtRate } from '../format'
 import { useToday } from '../hooks'
 import { EXPENSE_CATEGORIES, PAYMENT_TITLE, expenseTitle, labelOf } from '../labels'
 import { nameOf, tripPath, useTrip, type TripData } from '../tripData'
@@ -226,7 +226,7 @@ function RatesCard() {
       {[...rates].map(([currency, { rate, count }]) => (
         <p key={currency}>
           <strong className="money">
-            1 {trip.currency} = {fmtPlain(rate, 4)} {currency}
+            1 {trip.currency} = {fmtRate(rate)} {currency}
           </strong>{' '}
           <span className="muted small">{count > 1 ? m.money.averageOf(count) : m.money.whatYouGot}</span>
         </p>
@@ -499,13 +499,13 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
       </div>
       {foreign && !card && exchangeRate && (
         <div className="notice notice-info small">
-          {m.money.convertedAt(<strong className="money">1 {trip.currency} = {fmtPlain(exchangeRate, 4)} {currency}</strong>, approx)}
+          {m.money.convertedAt(<strong className="money">1 {trip.currency} = {fmtRate(exchangeRate)} {currency}</strong>, approx)}
         </div>
       )}
       {card && (
         <Field
           label={m.money.bankChargedLabel(trip.currency)}
-          hint={cardRate ? `1 ${trip.currency} = ${fmtPlain(cardRate, 4)} ${currency}` : m.money.bankChargedHint(approx)}
+          hint={cardRate ? `1 ${trip.currency} = ${fmtRate(cardRate)} ${currency}` : m.money.bankChargedHint(approx)}
         >
           <input className="input" inputMode="decimal" placeholder={m.money.notKnownYet} value={chargedText} onChange={(e) => setChargedText(e.target.value)} />
         </Field>
@@ -649,11 +649,11 @@ export function ExpensePage() {
             </Notice>
           ) : rate && e.paidWith === 'card' ? (
             <p className="muted small">
-              {m.money.chargedByBank(fmtMoney(toTripCurrency(e.amount, rate), cur), cur, fmtPlain(rate, 4), e.currency)}
+              {m.money.chargedByBank(fmtMoney(toTripCurrency(e.amount, rate), cur), cur, fmtRate(rate), e.currency)}
             </p>
           ) : rate ? (
             <p className="muted small">
-              {m.money.atRate(fmtMoney(toTripCurrency(e.amount, rate), cur), cur, fmtPlain(rate, 4), e.currency)}
+              {m.money.atRate(fmtMoney(toTripCurrency(e.amount, rate), cur), cur, fmtRate(rate), e.currency)}
               {e.rate ? m.money.itsOwnRate : m.money.whatExchangesGot}
             </p>
           ) : (
