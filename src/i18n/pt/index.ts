@@ -1,5 +1,6 @@
 import type { Messages } from '../en'
 import { activities } from './activities'
+import { calendar } from './calendar'
 import { common } from './common'
 import { fields } from './fields'
 import { files } from './files'
@@ -20,4 +21,4 @@ import { share } from './share'
 import { stays } from './stays'
 import { trip } from './trip'
 
-export const pt: Messages = { activities, common, fields, files, home, items, journeys, labels, money, packing, places, plan, reasons, report, reviews, server, settings, share, stays, trip }
+export const pt: Messages = { activities, calendar, common, fields, files, home, items, journeys, labels, money, packing, places, plan, reasons, report, reviews, server, settings, share, stays, trip }

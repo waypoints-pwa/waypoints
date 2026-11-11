@@ -175,7 +175,7 @@ export function StayPage() {
       <AttachmentsCard table="stays" id={stay.id} />
       <section className="card">
         <h3>{m.common.calendar}</h3>
-        <CalendarLinks event={stayEvent(stay)} calendarName={t.trip.name} />
+        <CalendarLinks event={stayEvent(stay, m.calendar)} calendarName={t.trip.name} />
       </section>
       <ItemFooter table="stays" id={stay.id} what="stay" backTo={back} />
     </article>
