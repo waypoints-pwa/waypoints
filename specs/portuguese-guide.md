@@ -1,6 +1,6 @@
 # The guide in Portuguese (Portuguese, part 8)
 
-Status: ready
+Status: building
 Issue: https://github.com/waypoints-pwa/waypoints/issues/91
 Builds after: none
 
