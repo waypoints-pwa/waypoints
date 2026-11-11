@@ -24,17 +24,26 @@ export interface CalendarEvent {
   url?: string
 }
 
+/** The words written into events, in the caller's language. */
+export interface CalendarWords {
+  seat: (seat: string) => string
+  booking: (ref: string) => string
+  checkInFrom: (time: string) => string
+  checkOutBy: (time: string) => string
+  phone: (phone: string) => string
+}
+
 const HOUR = 3_600_000
 const lines = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join('\n') || undefined
 
 export const MODE_EMOJI: Record<string, string> = { flight: '✈️', train: '🚆', bus: '🚌', car: '🚗', ferry: '⛴️' }
 
-export function transportEvent(t: Transport): CalendarEvent {
+export function transportEvent(t: Transport, words: CalendarWords): CalendarEvent {
   const title = `${MODE_EMOJI[t.mode] ?? '🧭'} ${t.from} → ${t.to}${t.number ? ` (${t.number})` : ''}`
   const description = lines(
     [t.carrier, t.number].filter(Boolean).join(' '),
-    t.seat && `Seat ${t.seat}`,
-    t.confirmation && `Booking: ${t.confirmation}`,
+    t.seat && words.seat(t.seat),
+    t.confirmation && words.booking(t.confirmation),
     t.notes,
   )
   const base = { uid: t.id, updatedAt: t.updatedAt, title, location: t.from, description, url: safeHttpUrl(t.link) }
@@ -45,7 +54,7 @@ export function transportEvent(t: Transport): CalendarEvent {
 }
 
 /** A stay is an all-day event from check-in to check-out day, both included. */
-export function stayEvent(s: Stay): CalendarEvent {
+export function stayEvent(s: Stay, words: CalendarWords): CalendarEvent {
   return {
     uid: s.id,
     updatedAt: s.updatedAt,
@@ -54,23 +63,23 @@ export function stayEvent(s: Stay): CalendarEvent {
     endDay: addDays(s.checkOutDate, 1),
     location: [s.address, s.city].filter(Boolean).join(', ') || undefined,
     description: lines(
-      s.checkInTime && `Check-in from ${s.checkInTime}`,
-      s.checkOutTime && `Check-out by ${s.checkOutTime}`,
-      s.confirmation && `Booking: ${s.confirmation}`,
-      s.phone && `Phone: ${s.phone}`,
+      s.checkInTime && words.checkInFrom(s.checkInTime),
+      s.checkOutTime && words.checkOutBy(s.checkOutTime),
+      s.confirmation && words.booking(s.confirmation),
+      s.phone && words.phone(s.phone),
       s.notes,
     ),
     url: safeHttpUrl(s.link),
   }
 }
 
-export function activityEvent(a: Activity): CalendarEvent {
+export function activityEvent(a: Activity, words: CalendarWords): CalendarEvent {
   const base = {
     uid: a.id,
     updatedAt: a.updatedAt,
     title: a.title,
     location: [a.address, a.city].filter(Boolean).join(', ') || undefined,
-    description: lines(a.confirmation && `Booking: ${a.confirmation}`, a.notes),
+    description: lines(a.confirmation && words.booking(a.confirmation), a.notes),
     url: safeHttpUrl(a.link),
   }
   if (!a.startTime) return { ...base, startDay: a.date, endDay: addDays(a.date, 1) }
@@ -79,9 +88,9 @@ export function activityEvent(a: Activity): CalendarEvent {
   return { ...base, start, end: end && end > start ? end : start + HOUR }
 }
 
-export function tripEvents(stays: Stay[], transports: Transport[], activities: Activity[]): CalendarEvent[] {
+export function tripEvents(stays: Stay[], transports: Transport[], activities: Activity[], words: CalendarWords): CalendarEvent[] {
   const live = <T extends { deletedAt?: string }>(records: T[]) => records.filter((r) => !r.deletedAt)
-  return [...live(transports).map(transportEvent), ...live(stays).map(stayEvent), ...live(activities).map(activityEvent)]
+  return [...live(transports).map((t) => transportEvent(t, words)), ...live(stays).map((s) => stayEvent(s, words)), ...live(activities).map((a) => activityEvent(a, words))]
 }
 
 const utcStamp = (ms: number) => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')

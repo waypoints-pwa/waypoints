@@ -130,4 +130,6 @@ export const files = {
     photo: 'Edit photo',
     document: 'Edit document',
   },
+  photoFileName: 'Photo.jpg',
+  documentFileName: 'Document',
 }

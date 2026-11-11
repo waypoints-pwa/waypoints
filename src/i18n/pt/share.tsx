@@ -80,4 +80,5 @@ export const share: Messages['share'] = {
   ),
   noWaypointsYet: 'Ainda não tens o waypoints no ecrã principal? No Safari, toca em Partilhar → Adicionar ao ecrã principal primeiro.',
   useItHere: 'Usar aqui no Safari',
+  copyLinkPrompt: 'Copia este link:',
 }

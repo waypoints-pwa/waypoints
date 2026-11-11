@@ -78,7 +78,7 @@ export async function readTripLink(data: string): Promise<TripLink> {
     if (data.length > MAX_DATA_CHARS) throw new Error('Trip data too large')
     raw = JSON.parse(new TextDecoder().decode(await decompress(fromBase64Url(data), MAX_JSON_BYTES)))
   } catch {
-    throw new DataError('This link is incomplete. It may have been cut off when it was copied, so ask for it again.')
+    throw new DataError('This link is incomplete. It may have been cut off when it was copied, so ask for it again.', 'incompleteLink')
   }
   return decodeLink(raw)
 }

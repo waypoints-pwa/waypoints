@@ -22,7 +22,7 @@ export function TripInfoPage() {
   const { trip } = t
   const group = t.travellers.length > 1
   const packing = progress(t.packingItems)
-  const events = tripEvents(t.stays, t.transports, t.activities)
+  const events = tripEvents(t.stays, t.transports, t.activities, m.calendar)
 
   const downloadCalendar = () =>
     downloadBlob(new Blob([buildICS(events, trip.name)], { type: 'text/calendar' }), `${fileSlug(trip.name)}.ics`)

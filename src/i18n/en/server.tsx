@@ -88,4 +88,8 @@ export const server = {
   checking: 'Checking…',
   saveAddress: 'Save address',
   changeAddress: 'Change address',
+  deviceAndroidPhone: 'Android phone',
+  deviceAndroidTablet: 'Android tablet',
+  deviceWindowsPc: 'Windows PC',
+  devicePhone: 'Phone',
 }

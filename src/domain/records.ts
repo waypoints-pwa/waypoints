@@ -8,7 +8,16 @@ import { isDay, isTime } from './time.ts'
  */
 
 /** A problem with a link or file, with a message for people. */
-export class DataError extends Error {}
+export type DataErrorCode = 'dataMissing' | 'tooLarge' | 'notWaypointsFile' | 'newerFile' | 'notTripLink' | 'newerLink' | 'invalidRecord' | 'futureDated' | 'incompleteLink'
+export class DataError extends Error {
+  code?: DataErrorCode
+  table?: string
+  constructor(message: string, code?: DataErrorCode, table?: string) {
+    super(message)
+    this.code = code
+    this.table = table
+  }
+}
 
 type Check = (value: unknown) => boolean
 
@@ -215,11 +224,11 @@ const SPECS: { [T in RecordTable]: Record<string, { check: Check; required: bool
 const MAX_FUTURE_MS = 24 * 60 * 60 * 1000
 
 export function checkRecord<T extends RecordTable>(table: T, raw: unknown, now = Date.now()): asserts raw is TableRecords[T] {
-  const invalid = () => new DataError(`It contains an invalid ${table.replace(/s$/, '').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()}.`)
+  const invalid = () => new DataError(`It contains an invalid ${table.replace(/s$/, '').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()}.`, 'invalidRecord', table)
   if (!isObject(raw) || !isId(raw.id) || !isTimestamp(raw.createdAt) || !isTimestamp(raw.updatedAt)) throw invalid()
   if (raw.deletedAt !== undefined && !isTimestamp(raw.deletedAt)) throw invalid()
   if (Date.parse(raw.updatedAt) > now + MAX_FUTURE_MS || (typeof raw.linkedAt === 'string' && Date.parse(raw.linkedAt) > now + MAX_FUTURE_MS)) {
-    throw new DataError("It has changes dated in the future. Check the date and time on the phone that sent it.")
+    throw new DataError("It has changes dated in the future. Check the date and time on the phone that sent it.", 'futureDated')
   }
   for (const [field, { check, required }] of Object.entries(SPECS[table])) {
     const value = raw[field]

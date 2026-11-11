@@ -88,4 +88,8 @@ export const server: Messages['server'] = {
   checking: 'A verificar…',
   saveAddress: 'Guardar endereço',
   changeAddress: 'Alterar endereço',
+  deviceAndroidPhone: 'Telemóvel Android',
+  deviceAndroidTablet: 'Tablet Android',
+  deviceWindowsPc: 'PC Windows',
+  devicePhone: 'Telemóvel',
 }

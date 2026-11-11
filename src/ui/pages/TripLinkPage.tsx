@@ -28,7 +28,7 @@ export function TripLinkPage() {
     let cancelled = false
     readTripLink(data).then(
       (link) => !cancelled && setLoaded({ data, link }),
-      (err) => !cancelled && setLoaded({ data, error: err instanceof DataError ? err.message : m.share.linkCouldntBeOpened }),
+      (err) => !cancelled && setLoaded({ data, error: err instanceof DataError ? m.reasons.data(err) : m.share.linkCouldntBeOpened }),
     )
     return () => {
       cancelled = true
@@ -66,7 +66,7 @@ function LinkPreview({ link }: { link: TripLink }) {
   const apply = async () => {
     setBusy(true)
     try {
-      const counts = await applyMerge(link.tables, `Before updating “${trip.name}” from a link`)
+      const counts = await applyMerge(link.tables, m.settings.safetyName.updatingFromLink(trip.name))
       setMerged({ counts, joined: isNew })
     } finally {
       setBusy(false)

@@ -108,7 +108,10 @@ another host (an exchange-rate API, map tiles) needs adding there, and must stay
 - `src/i18n/` — the text people read, per language: `en/` is the source and `pt/` must match it
   (the typecheck fails otherwise), one file per area, read through `m`. Text on a screen that
   already uses `m` is never written inline: add it to both languages. Conventions and the
-  Portuguese glossary: `specs/translation-layer.md`.
+  Portuguese glossary: `specs/translation-layer.md`. Text
+  made outside the screens: `src/sync`, `src/lib` and `src/db` read `m` too;
+  `src/domain` never imports `src/i18n` (the server runs it), so it returns a code or takes the
+  words as an argument.
 - `src/sync/` — sync server client (`client.ts`: the sync itself; `files.ts`: moving photos and documents
   after it; `account.ts`: joining, invites, leaving).
 - `server/` — the sync server: Node HTTP, JSON-file store, no dependencies; runs `src/domain` directly

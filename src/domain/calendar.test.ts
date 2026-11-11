@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { activity, stay, transport } from '../test/fixtures'
 import { activityEvent, buildICS, googleCalendarLink, stayEvent, transportEvent, tripEvents } from './calendar'
+import { en } from '../i18n/en/index.ts'
+import { pt } from '../i18n/pt/index.ts'
 
 const flight = transport({
   mode: 'flight',
@@ -18,35 +20,42 @@ const flight = transport({
 
 describe('events', () => {
   it('puts transport on the real timeline, across time zones', () => {
-    const e = transportEvent(flight)
+    const e = transportEvent(flight, en.calendar)
     expect(e.title).toBe('✈️ Lisbon → Tokyo (TP 123)')
     expect(new Date(e.start!).toISOString()).toBe('2027-03-09T10:00:00.000Z')
     expect(new Date(e.end!).toISOString()).toBe('2027-03-09T21:00:00.000Z')
   })
 
   it('gives events without an end an hour, and untimed ones the whole day', () => {
-    const noArrival = transportEvent(transport({ departDate: '2027-03-12', departTime: '09:00' }))
+    const noArrival = transportEvent(transport({ departDate: '2027-03-12', departTime: '09:00' }), en.calendar)
     expect(noArrival.end! - noArrival.start!).toBe(3_600_000)
-    expect(activityEvent(activity({ date: '2027-03-11' }))).toMatchObject({ startDay: '2027-03-11', endDay: '2027-03-12' })
+    expect(activityEvent(activity({ date: '2027-03-11' }), en.calendar)).toMatchObject({ startDay: '2027-03-11', endDay: '2027-03-12' })
   })
 
   it('shows a stay from check-in day to check-out day', () => {
-    const e = stayEvent(stay({ checkInDate: '2027-03-10', checkOutDate: '2027-03-12', checkInTime: '15:00', address: 'Rua Azul 1', city: 'Lisbon' }))
+    const e = stayEvent(stay({ checkInDate: '2027-03-10', checkOutDate: '2027-03-12', checkInTime: '15:00', address: 'Rua Azul 1', city: 'Lisbon' }), en.calendar)
     expect(e).toMatchObject({ startDay: '2027-03-10', endDay: '2027-03-13', location: 'Rua Azul 1, Lisbon' })
     expect(e.description).toContain('Check-in from 15:00')
   })
 
+  it('writes the lines in Portuguese when given the Portuguese words', () => {
+    const e = stayEvent(stay({ checkInTime: '15:00', checkOutTime: '11:00', confirmation: 'ABC123' }), pt.calendar)
+    expect(e.description).toContain('Check-in a partir das 15:00')
+    expect(e.description).toContain('Check-out até às 11:00')
+    expect(e.description).toContain('Reserva: ABC123')
+  })
+
   it('leaves out deleted records', () => {
-    expect(tripEvents([stay({ deletedAt: '2026-10-02T10:00:00.000Z' })], [flight], [])).toHaveLength(1)
+    expect(tripEvents([stay({ deletedAt: '2026-10-02T10:00:00.000Z' })], [flight], [], en.calendar)).toHaveLength(1)
   })
 })
 
 describe('buildICS', () => {
   const ics = buildICS(
     [
-      transportEvent(flight),
-      stayEvent(stay({ name: 'Hotel; with, commas', notes: 'Door code 1234\nWi-Fi: casa', link: 'javascript:alert(1)' })),
-      activityEvent(activity({ title: 'A'.repeat(100), startTime: '19:00', link: 'https://example.com/tickets' })),
+      transportEvent(flight, en.calendar),
+      stayEvent(stay({ name: 'Hotel; with, commas', notes: 'Door code 1234\nWi-Fi: casa', link: 'javascript:alert(1)' }), en.calendar),
+      activityEvent(activity({ title: 'A'.repeat(100), startTime: '19:00', link: 'https://example.com/tickets' }), en.calendar),
     ],
     'Lisbon & Porto',
     new Date('2026-10-08T12:00:00Z'),
@@ -78,7 +87,7 @@ describe('buildICS', () => {
 
 describe('googleCalendarLink', () => {
   it('prefills a timed event in UTC', () => {
-    const url = new URL(googleCalendarLink(transportEvent(flight)))
+    const url = new URL(googleCalendarLink(transportEvent(flight, en.calendar)))
     expect(url.origin).toBe('https://calendar.google.com')
     expect(url.searchParams.get('dates')).toBe('20270309T100000Z/20270309T210000Z')
     expect(url.searchParams.get('text')).toBe('✈️ Lisbon → Tokyo (TP 123)')
@@ -86,7 +95,7 @@ describe('googleCalendarLink', () => {
   })
 
   it('prefills an all-day event', () => {
-    const url = new URL(googleCalendarLink(stayEvent(stay())))
+    const url = new URL(googleCalendarLink(stayEvent(stay(), en.calendar)))
     expect(url.searchParams.get('dates')).toBe('20270310/20270313')
   })
 })

@@ -3,6 +3,12 @@ import { plural } from '../plural'
 
 export const settings = {
   title: 'Settings',
+  safetyName: {
+    removing: (name: string): string => `Before removing “${name}”`,
+    importing: 'Before importing a file',
+    connecting: 'Before connecting to the sync server',
+    updatingFromLink: (name: string): string => `Before updating “${name}” from a link`,
+  },
   backupDownloaded: 'Backup downloaded.',
   imported: (trips: number, summary: string): string => `Imported ${plural(trips, 'trip')}: ${summary}.`,
   importFailed: 'Import failed.',

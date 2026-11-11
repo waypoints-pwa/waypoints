@@ -155,7 +155,7 @@ export function ActivityPage() {
       <AttachmentsCard table="activities" id={a.id} />
       <section className="card">
         <h3>{m.common.calendar}</h3>
-        <CalendarLinks event={activityEvent(a)} calendarName={t.trip.name} />
+        <CalendarLinks event={activityEvent(a, m.calendar)} calendarName={t.trip.name} />
       </section>
       <ItemFooter table="activities" id={a.id} what="activity" backTo={back} />
     </article>

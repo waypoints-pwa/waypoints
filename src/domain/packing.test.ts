@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PackingItem } from '../db/types.ts'
-import { newFromTemplate, progress, sortedItems, TEMPLATES, type Template } from './packing.ts'
+import { newFromTemplate, progress, sortedItems, type Template } from './packing.ts'
 
 const item = (id: string, text: string, over: Partial<PackingItem> = {}): PackingItem => ({
   id,
@@ -59,7 +59,7 @@ describe('newFromTemplate', () => {
   })
 
   it('adds nothing when every item is already there, so adding a template twice does not duplicate', () => {
-    const beach = TEMPLATES.find((t) => t.id === 'beach')!
+    const beach = template(['Sunscreen', 'Hat'])
     const once = newFromTemplate([], beach).map((text, i) => item(String(i), text))
     expect(newFromTemplate(once, beach)).toEqual([])
   })
@@ -73,14 +73,10 @@ describe('newFromTemplate', () => {
     expect(newFromTemplate([], template(['  Towel  ']))).toEqual(['Towel'])
   })
 
-  it('every built-in template has its own label and about ten items with no repeats', () => {
-    expect(TEMPLATES.map((t) => t.id)).toEqual(['beach', 'city', 'hiking', 'skiing'])
-    for (const t of TEMPLATES) {
-      expect(t.label).toBeTruthy()
-      expect(t.items.length).toBeGreaterThanOrEqual(8)
-      const keys = t.items.map((text) => text.trim().toLowerCase())
-      expect(new Set(keys).size).toBe(keys.length)
-    }
+  it('leaves out an item whose name in another language is on the list', () => {
+    expect(newFromTemplate([item('1', 'Sunscreen')], template(['Protetor solar', 'Chapéu']), [['Sunscreen', 'Hat']])).toEqual(['Chapéu'])
+    expect(newFromTemplate([item('1', 'protetor solar ')], template(['Sunscreen', 'Hat']), [['Protetor solar', 'Chapéu']])).toEqual(['Hat'])
+    expect(newFromTemplate([], template(['Hat']), [['Hat'], ['Chapéu']])).toEqual(['Hat'])
   })
 })
 

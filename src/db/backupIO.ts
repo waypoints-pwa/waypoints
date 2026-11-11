@@ -1,3 +1,4 @@
+import { m } from '../i18n'
 import { buildBackup, forSending, parseBackup, planMerge, type Backup, type MergeCounts, type MergePlan } from '../domain/sync'
 import { dropDeletedFiles } from './attachments'
 import { db, recordTable } from './db'
@@ -67,6 +68,6 @@ export async function applyMerge(incoming: Tables, reason: string): Promise<Merg
 /** Imports a backup or trip file. Merges, so importing the same file twice changes nothing. */
 export async function importFile(text: string): Promise<{ counts: MergeCounts; trips: Trip[] }> {
   const backup = parseBackup(text)
-  const counts = await applyMerge(backup, 'Before importing a file')
+  const counts = await applyMerge(backup, m.settings.safetyName.importing)
   return { counts, trips: backup.trips.filter((t) => !t.deletedAt) }
 }

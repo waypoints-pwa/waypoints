@@ -13,6 +13,7 @@ import {
   type RegisterRequest,
   type ServerHello,
 } from '../domain/serverProtocol'
+import { m } from '../i18n'
 import { api, normaliseServerUrl, runSync, SyncError } from './client'
 
 /*
@@ -23,12 +24,12 @@ import { api, normaliseServerUrl, runSync, SyncError } from './client'
 
 async function checkServer(url: string) {
   const hello = await api<ServerHello>({ url }, '/api/server')
-  if (hello.app !== SERVER_APP) throw new SyncError("That address isn't a waypoints server.")
+  if (hello.app !== SERVER_APP) throw new SyncError(m.reasons.notAWaypointsServer)
 }
 
 /** First connection: a safety copy, then the first sync brings in this member's trips. */
 async function connect(url: string, creds: Credentials) {
-  await takeSnapshot('Before connecting to the sync server')
+  await takeSnapshot(m.settings.safetyName.connecting)
   const config: ServerConfig = { url, token: creds.token, deviceId: creds.deviceId, member: creds.member, members: [] }
   await setServerConfig(config)
   await runSync().catch(() => undefined) // failures are kept in the config and shown in Settings
@@ -57,7 +58,7 @@ export async function membersWithServerCode(urlInput: string, serverCode: string
 
 async function current(): Promise<ServerConfig> {
   const cfg = await getServerConfig()
-  if (!cfg) throw new SyncError('Not connected to a server.')
+  if (!cfg) throw new SyncError(m.reasons.notConnected)
   return cfg
 }
 
@@ -136,10 +137,10 @@ export async function changeServerAddress(urlInput: string) {
   try {
     me = await api<MeResponse>({ url, token: cfg.token }, '/api/me')
   } catch (err) {
-    if (err instanceof SyncError && err.status === 401) throw new SyncError("You're not on the server at that address. Is it the same server?")
+    if (err instanceof SyncError && err.status === 401) throw new SyncError(m.reasons.notOnThatServer)
     throw err
   }
-  if (me.app !== SERVER_APP || me.member.id !== cfg.member.id) throw new SyncError("You're not on the server at that address. Is it the same server?")
+  if (me.app !== SERVER_APP || me.member.id !== cfg.member.id) throw new SyncError(m.reasons.notOnThatServer)
   const latest = await current()
   await setServerConfig({ ...latest, url, member: me.member, lastError: undefined, lastErrorStatus: undefined })
   await runSync().catch(() => undefined)
@@ -157,7 +158,7 @@ export async function leaveTrip(tripId: string) {
   const mine = (await db.travellers.where('tripId').equals(tripId).toArray()).filter((t) => !t.deletedAt && t.memberId === cfg.member.id)
   for (const traveller of mine) await patchRecord('travellers', traveller.id, { memberId: undefined, linkedAt: nowISO() })
   await runSync()
-  if (await db.serverTrips.get(tripId)) throw new SyncError("Couldn't leave the trip on the server. Try again.")
+  if (await db.serverTrips.get(tripId)) throw new SyncError(m.reasons.couldntLeave)
   await removeTripFromPhone(trip)
 }
 
@@ -165,6 +166,6 @@ export function defaultDeviceLabel() {
   const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent
   if (/iPad/.test(ua)) return 'iPad'
   if (/iPhone/.test(ua)) return 'iPhone'
-  if (/Android/.test(ua)) return /Mobile/.test(ua) ? 'Android phone' : 'Android tablet'
-  return /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows PC' : 'Phone'
+  if (/Android/.test(ua)) return /Mobile/.test(ua) ? m.server.deviceAndroidPhone : m.server.deviceAndroidTablet
+  return /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? m.server.deviceWindowsPc : m.server.devicePhone
 }

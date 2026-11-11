@@ -6,6 +6,7 @@ import { readTables } from '../db/snapshots'
 import { emptyTables, RECORD_TABLES, type OutboxEntry, type RecordTable, type ServerTrip, type Tables, type TableRecords } from '../db/types'
 import { checkRecord } from '../domain/records'
 import type { FileInfo, SyncRequest, SyncResponse, TripChanges } from '../domain/serverProtocol'
+import { m } from '../i18n'
 import { runFileSync } from './files'
 
 /*
@@ -30,16 +31,16 @@ export function normaliseServerUrl(input: string): string {
   try {
     parsed = new URL(url)
   } catch {
-    throw new SyncError("That isn't a server address.")
+    throw new SyncError(m.reasons.notAServerAddress)
   }
   const local = ['localhost', '127.0.0.1'].includes(parsed.hostname)
-  if (parsed.protocol !== 'https:' && !local) throw new SyncError('The server address must start with https://')
+  if (parsed.protocol !== 'https:' && !local) throw new SyncError(m.reasons.mustBeHttps)
   return parsed.origin + parsed.pathname.replace(/\/+$/, '')
 }
 
 const TIMEOUT_MS = 30_000
 
-const UNREACHABLE = "Couldn't reach the server. Check the address, and that Tailscale is on."
+const UNREACHABLE = m.reasons.unreachable
 
 /** Calls the server and checks the answer. `token` is this phone's; leave it out for the public endpoints. */
 async function request(cfg: { url: string; token?: string }, path: string, init: { body?: BodyInit; type?: string; timeout?: number } = {}): Promise<Response> {
@@ -54,10 +55,10 @@ async function request(cfg: { url: string; token?: string }, path: string, init:
   } catch {
     throw new SyncError(UNREACHABLE)
   }
-  if (res.status === 401 && cfg.token) throw new SyncError('This phone is no longer connected to the server.', 401)
+  if (res.status === 401 && cfg.token) throw new SyncError(m.reasons.phoneNoLongerConnected, 401)
   if (!res.ok) {
     const message = ((await res.json().catch(() => undefined)) as { error?: string } | undefined)?.error
-    throw new SyncError(message ?? `Server error (${res.status}).`, res.status)
+    throw new SyncError(message ?? m.reasons.serverError(res.status), res.status)
   }
   return res
 }

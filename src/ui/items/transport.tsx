@@ -187,7 +187,7 @@ export function TransportPage() {
       <AttachmentsCard table="transports" id={r.id} />
       <section className="card">
         <h3>{m.common.calendar}</h3>
-        <CalendarLinks event={transportEvent(r)} calendarName={t.trip.name} />
+        <CalendarLinks event={transportEvent(r, m.calendar)} calendarName={t.trip.name} />
       </section>
       <ItemFooter table="transports" id={r.id} what="journey" backTo={back} />
     </article>

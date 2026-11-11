@@ -44,9 +44,9 @@ function readTables(source: Record<string, unknown>, now: number): Tables {
   let count = 0
   for (const table of RECORD_TABLES) {
     const records = source[table] ?? []
-    if (!Array.isArray(records)) throw new DataError('Some of its data is missing.')
+    if (!Array.isArray(records)) throw new DataError('Some of its data is missing.', 'dataMissing')
     count += records.length
-    if (count > MAX_RECORDS) throw new DataError('It is too large to open.')
+    if (count > MAX_RECORDS) throw new DataError('It is too large to open.', 'tooLarge')
     for (const record of records) checkRecord(table, record, now)
     ;(tables[table] as unknown[]) = records
   }
@@ -58,11 +58,11 @@ export function parseBackup(text: string, now = Date.now()): Backup {
   try {
     data = JSON.parse(text)
   } catch {
-    throw new DataError("This file isn't a waypoints file.")
+    throw new DataError("This file isn't a waypoints file.", 'notWaypointsFile')
   }
-  if (!isObject(data) || data.app !== 'waypoints') throw new DataError("This file isn't a waypoints file.")
+  if (!isObject(data) || data.app !== 'waypoints') throw new DataError("This file isn't a waypoints file.", 'notWaypointsFile')
   if (typeof data.schemaVersion !== 'number' || data.schemaVersion > BACKUP_VERSION) {
-    throw new DataError('This file was made by a newer version of waypoints. Update the app, then try again.')
+    throw new DataError('This file was made by a newer version of waypoints. Update the app, then try again.', 'newerFile')
   }
   const exportedAt = typeof data.exportedAt === 'string' ? data.exportedAt : new Date(now).toISOString()
   return { app: 'waypoints', schemaVersion: data.schemaVersion, exportedAt, ...readTables(data, now) }
@@ -94,16 +94,16 @@ export function encodeLink(tables: Tables, sentBy: string | undefined, now = new
 }
 
 export function decodeLink(raw: unknown, now = Date.now()): TripLink {
-  if (!isObject(raw) || typeof raw.v !== 'number') throw new DataError("This link isn't a waypoints trip.")
-  if (raw.v > LINK_VERSION) throw new DataError('This link was made by a newer version of waypoints. Update the app to open it.')
-  if (raw.v !== 1 || !isObject(raw.trip) || typeof raw.sentAt !== 'string') throw new DataError("This link isn't a waypoints trip.")
+  if (!isObject(raw) || typeof raw.v !== 'number') throw new DataError("This link isn't a waypoints trip.", 'notTripLink')
+  if (raw.v > LINK_VERSION) throw new DataError('This link was made by a newer version of waypoints. Update the app to open it.', 'newerLink')
+  if (raw.v !== 1 || !isObject(raw.trip) || typeof raw.sentAt !== 'string') throw new DataError("This link isn't a waypoints trip.", 'notTripLink')
 
   const trip = raw.trip
   const source: Record<string, unknown> = { trips: [trip] }
   // Only what links carry: anything else in a crafted link is ignored.
   for (const table of LINK_TABLES) {
     const records = raw[table] ?? []
-    if (!Array.isArray(records)) throw new DataError('Some of its data is missing.')
+    if (!Array.isArray(records)) throw new DataError('Some of its data is missing.', 'dataMissing')
     source[table] = records.map((r) => (isObject(r) ? { ...r, tripId: trip.id } : r))
   }
   const sentBy = typeof raw.sentBy === 'string' ? raw.sentBy.slice(0, 60) || undefined : undefined

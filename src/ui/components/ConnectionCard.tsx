@@ -22,8 +22,8 @@ export function ConnectionCard({ connection, title }: { connection: Connection; 
                   </p>
                 )}
                 {join.warnings.map((w) => (
-                  <p key={w} className="notice notice-warn small">
-                    {w}
+                  <p key={w.kind} className="notice notice-warn small">
+                    {w.kind === 'place' ? m.items.legLeavesFrom(w.leg + 1, w.from, w.leg, w.place) : m.items.legLeavesBefore(w.leg + 1, w.leg)}
                   </p>
                 ))}
               </>

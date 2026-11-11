@@ -147,6 +147,37 @@ test('?lang=pt shows sharing a trip and opening its link in Portuguese', async (
   await expect(other.getByRole('button', { name: 'Agora não' })).toBeVisible()
 })
 
+test('?lang=pt shows why things failed and the packing templates in Portuguese', async ({ page }) => {
+  await page.goto('?lang=pt#/t/not-a-real-link')
+  await expect(page.getByText('Este link está incompleto.')).toBeVisible()
+
+  await page.goto('?lang=pt#/open')
+  const file = join(mkdtempSync(join(tmpdir(), 'waypoints-smoke-')), 'not-a-trip.json')
+  writeFileSync(file, 'hello')
+  await page.locator('input[type=file]').setInputFiles(file)
+  await expect(page.getByText('Este ficheiro não é do waypoints.')).toBeVisible()
+
+  await page.goto('?lang=pt#/server')
+  await page.getByText('O servidor é meu').click()
+  await page.getByLabel('Endereço do servidor').fill('http://example.com')
+  await page.getByLabel('Código do servidor').fill('AAAA-BBBB-CCCC')
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await expect(page.getByText('O endereço do servidor tem de começar por https://')).toBeVisible()
+
+  const backup = await importDemoTrip(page)
+  const id = backup.trips[0].id
+  await page.goto(`?lang=pt#/trips/${id}/packing`)
+  await page.getByRole('button', { name: 'Praia', exact: true }).click()
+  await expect(page.getByText('Protetor solar')).toBeVisible()
+  await expect(page.getByText('0 de 10 na mala')).toBeVisible()
+
+  await page.goto(`#/trips/${id}/packing`)
+  await expect(page.getByText('0 of 10 packed')).toBeVisible()
+  await page.getByRole('button', { name: 'Beach', exact: true }).click()
+  await expect(page.getByText('0 of 10 packed')).toBeVisible()
+  await expect(page.getByText('Sunscreen')).toHaveCount(0)
+})
+
 test('an unknown language stays English', async ({ page }) => {
   await page.goto('?lang=fr#/settings')
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()

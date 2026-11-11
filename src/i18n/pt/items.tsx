@@ -19,4 +19,6 @@ export const items: Messages['items'] = {
   call: '📞 Ligar',
   layoverUnknown: 'Duração da escala desconhecida',
   layover: (duration, place) => `Escala de ${duration} em ${place}`,
+  legLeavesFrom: (next, from, prev, place) => `O trajeto ${next} parte de ${from}, mas o trajeto ${prev} chega a ${place}`,
+  legLeavesBefore: (next, prev) => `O trajeto ${next} parte antes de o trajeto ${prev} chegar`,
 }
