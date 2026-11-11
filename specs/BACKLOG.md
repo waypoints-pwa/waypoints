@@ -31,9 +31,8 @@ Specced ideas live in their own files in this folder. Shipped features are in `C
 - Sync server: "who changed what" history; admin view of all trips; renaming a member.
 - Quality: the browser check exists (`npm run smoke`, in the repo and CI) with two phones, share and merge;
   calendar export is still to add.
-- Portuguese, part 7 (part 6, what the sync server answers, is specced: `translate-server-answers`):
-  the Language setting; its What's new says to update the server to 0.8.0 for its messages in
-  Portuguese.
+- Portuguese, part 8 (part 7, the Language setting, is specced: `language-setting`): the guide and
+  its screenshots in Portuguese; **Ler o guia** links to it.
 
 ### Manual checks, not features
 - `window.print()` in the iPhone Home Screen app (the file is the fallback).
