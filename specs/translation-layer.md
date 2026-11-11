@@ -195,6 +195,7 @@ Glossary (PT-PT; use these words, also in later parts):
 | the server (short for sync server, in reasons) | o servidor | Android phone / Android tablet | Telemóvel Android / Tablet Android |
 | Windows PC | PC Windows | Before importing… (safety-copy names) | Antes de importar… |
 | Photo.jpg / Document (default file names) | Foto.jpg / Documento | Check-in from / Check-out by (calendar) | Check-in a partir das / Check-out até às |
+| reach (the server) | contactar | Not connected (to a server) | Não estás ligado a um servidor |
 
 Style: address the person as "tu" ("Ainda não tens viagens"), buttons in the infinitive ("Exportar
 todas as viagens"), European forms only (ecrã, ficheiro, telemóvel, partilhar, guardar, "a carregar";

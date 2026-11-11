@@ -23,7 +23,7 @@ export const reasons: Messages['reasons'] = {
   phoneNoLongerConnected: 'Este telemóvel já não está ligado ao servidor.',
   serverError: (status) => `Erro do servidor (${status}).`,
   notAWaypointsServer: 'Esse endereço não é de um servidor waypoints.',
-  notConnected: 'Sem ligação a um servidor.',
+  notConnected: 'Não estás ligado a um servidor.',
   notOnThatServer: 'Não estás no servidor desse endereço. É o mesmo servidor?',
   couldntLeave: 'Não foi possível sair da viagem no servidor. Tenta outra vez.',
   fileMismatch: 'O ficheiro vindo do servidor não é o que foi adicionado.',
