@@ -1,6 +1,6 @@
 # Text made on the phone in both languages (Portuguese, part 5)
 
-Status: building
+Status: shipped
 Issue: https://github.com/waypoints-pwa/waypoints/issues/81
 Builds after: none
 
@@ -188,7 +188,8 @@ makes. What the sync server answers is the next part.
   `fromTemplate(id: TemplateId)` calls
   `newFromTemplate(t.packingItems, m.packing.templates[id], Object.values(dictionaries).map((d) => d.packing.templates[id].items))`.
 - `src/domain/packing.test.ts`: the import drops `TEMPLATES`; the two tests that use it (`:61-65`
-  and `:76-84`) move to `src/i18n/templates.test.ts` (task 6). Other tests stay.
+  and `:76-84`) move to `src/i18n/templates.test.ts` (task 6). Other tests stay. As built, the
+  "adds nothing twice" test also stays in `packing.test.ts`, on a small template of its own.
 
 - Smoke tests: `e2e/portuguese.e2e.ts`, and `importDemoTrip` in `e2e/fixtures.ts`. The demo trip
   has no packing items.
@@ -406,6 +407,9 @@ t() { grep -vE '^\s*(//|/?\*)' "$1" | grep -cE "$2"; }
 - `GOOGLE_LIST_NOT_SHARED` stays English because it is compared with the server's answer; the
   server part replaces that comparison with a code.
 - No version bump: English is unchanged, and nobody has Portuguese yet.
+- Found in review: "Not connected" first read "Sem ligação a um servidor.", but the Glossary keeps
+  "ligação" for a journey connection, so it shipped as "Não estás ligado a um servidor." (connect →
+  ligar). The Glossary gains that row and "reach (the server) → contactar".
 - Overlap: `google-list-import` and `google-maps-links` (shipped) own `src/sync/googleMaps.ts`;
   `packing-lists` (shipped) owns the templates; `journey-connections` (shipped) the warnings. No
   unbuilt spec touches these files, a Dexie version or a shared table, so `Builds after` is "none".
