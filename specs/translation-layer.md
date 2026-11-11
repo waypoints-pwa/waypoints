@@ -357,8 +357,9 @@ Do not touch: `src/domain/`, `src/db/`, `src/sync/`, `src/lib/`, `server/`, `scr
      packing templates, calendar export, safety-copy names (`translate-phone-text`);
   6. what the sync server answers: reasons as codes, translated by the app, server 0.8.0 (`translate-server-answers`);
   7. the switch: Language in Settings (Automatic / English / Português), Portuguese on phones set
-     to Portuguese, dates and numbers following the app's language, `<html lang>`, What's new notes
-     in both languages (CI-enforced), the guide and its screenshots in Portuguese, version bump.
+     to Portuguese, dates, numbers and country names following the app's language, `<html lang>`,
+     What's new notes in both languages (CI-enforced), version bump (`language-setting`);
+  8. the guide and its screenshots in Portuguese, linked from the Portuguese app.
 - Decided with Ricardo: phone's language plus a Settings override; What's new, the guide and sync
   server messages are translated too; informal "tu"; trajeto, link, locais, telemóvel; a series with
   the switch at the end, so nobody sees a half-translated app.
@@ -370,7 +371,7 @@ Do not touch: `src/domain/`, `src/db/`, `src/sync/`, `src/lib/`, `server/`, `scr
   import time (`labels.ts`) need no change; part 7 will reload the page when the setting changes and
   keep the choice where it can be read synchronously.
 - `?lang=pt` is a preview for building and reviewing, deliberately not remembered; part 7 decides
-  whether it stays.
+  whether it stays. Part 7 kept it, over the setting.
 - Dictionaries are bundled with the app (small text), not loaded on demand, so offline is unaffected.
 - Shipped as specced. The Glossary rows from "download" down are the words chosen while building;
   later parts use them too. Two texts live in two areas (`common.settings` and `settings.title`,
