@@ -182,3 +182,47 @@ test('an unknown language stays English', async ({ page }) => {
   await page.goto('?lang=fr#/settings')
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
 })
+
+test.describe('a phone in Portuguese', () => {
+  test.use({ locale: 'pt-PT' })
+
+  test('gets Portuguese with no ?lang, dates in its style, and can pick another language', async ({ page }) => {
+    await page.goto('')
+    await expect(page.getByRole('heading', { name: 'Planear uma viagem' })).toBeVisible()
+    await expectNoEnglish(page)
+    await expect(page.locator('html')).toHaveAttribute('lang', 'pt-PT')
+
+    await importDemoTrip(page)
+    await page.goto('')
+    await expect(page.locator('main')).toContainText('08/04/2026')
+
+    await page.goto('#/settings')
+    const reloaded = page.waitForEvent('load')
+    await page.getByLabel('Idioma').selectOption({ label: 'English' })
+    await reloaded
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
+    await page.goto('')
+    await expect(page.locator('main')).toContainText('Apr 2026')
+    await page.reload()
+    await expect(page.locator('main')).toContainText('Apr 2026')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en-GB')
+
+    await page.goto('#/settings')
+    const back = page.waitForEvent('load')
+    await page.getByLabel('Language').selectOption({ label: "Automatic (phone's language)" })
+    await back
+    await expect(page.getByRole('heading', { name: 'Definições' })).toBeVisible()
+  })
+})
+
+test('an English phone can pick Português, and What\'s new follows', async ({ page }) => {
+  await page.goto('#/settings')
+  const reloaded = page.waitForEvent('load')
+  await page.getByLabel('Language').selectOption({ label: 'Português' })
+  await reloaded
+  await expect(page.getByRole('heading', { name: 'Definições' })).toBeVisible()
+
+  await page.goto('#/whats-new')
+  await expect(page.getByRole('heading', { name: 'Novidades' })).toBeVisible()
+  await expectNoEnglish(page)
+})
