@@ -31,13 +31,8 @@ Specced ideas live in their own files in this folder. Shipped features are in `C
 - Sync server: "who changed what" history; admin view of all trips; renaming a member.
 - Quality: the browser check exists (`npm run smoke`, in the repo and CI) with two phones, share and merge;
   calendar export is still to add.
-- Portuguese, part 8 (part 7, the Language setting, shipped in 0.17.0: `language-setting`): the
-  guide and its screenshots in Portuguese; **Ler o guia** links to it. Also two leftovers from
-  part 7 (its Notes, "As built"):
-  - Exchange rates ("1 EUR = 162.6016 JPY") use `fmtPlain`, so they keep a `.` in Portuguese
-    (`src/ui/items/expenses.tsx:229`, `src/ui/items/exchanges.tsx:77`).
-  - `fmtBytes` now groups thousands, so an English phone shows "1,234 MB" where it showed
-    "1234 MB" (1000 MB or more); `useGrouping: false` would bring it back.
+- Portuguese, part 8 (the last) is specced: `portuguese-guide` (the guide in Portuguese, plus part 7's
+  two leftovers).
 
 ### Manual checks, not features
 - `window.print()` in the iPhone Home Screen app (the file is the fallback).
