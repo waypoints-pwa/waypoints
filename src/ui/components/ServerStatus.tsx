@@ -49,7 +49,7 @@ export function ServerStatus({ waiting }: { waiting: number }) {
       )}
       {server.rejected && server.rejected.length > 0 && (
         <p className="notice notice-warn small">
-          {m.server.refused(server.rejected.length, server.rejected[0].reason)}
+          {m.server.refused(server.rejected.length, m.reasons.data({ message: server.rejected[0].reason, code: server.rejected[0].code, table: server.rejected[0].table }))}
         </p>
       )}
       <button className="btn btn-small" style={{ alignSelf: 'flex-start' }} disabled={busy} onClick={() => void syncNow()}>

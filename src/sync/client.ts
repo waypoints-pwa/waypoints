@@ -5,7 +5,7 @@ import { getServerConfig, setServerConfig, type ServerConfig } from '../db/serve
 import { readTables } from '../db/snapshots'
 import { emptyTables, RECORD_TABLES, type OutboxEntry, type RecordTable, type ServerTrip, type Tables, type TableRecords } from '../db/types'
 import { checkRecord } from '../domain/records'
-import type { FileInfo, SyncRequest, SyncResponse, TripChanges } from '../domain/serverProtocol'
+import type { ErrorAnswer, FileInfo, SyncRequest, SyncResponse, TripChanges } from '../domain/serverProtocol'
 import { m } from '../i18n'
 import { runFileSync } from './files'
 
@@ -18,9 +18,12 @@ import { runFileSync } from './files'
 
 export class SyncError extends Error {
   status?: number
-  constructor(message: string, status?: number) {
+  /** The server's own answer, when it sent one. */
+  answer?: ErrorAnswer
+  constructor(message: string, status?: number, answer?: ErrorAnswer) {
     super(message)
     this.status = status
+    this.answer = answer
   }
 }
 
@@ -57,8 +60,9 @@ async function request(cfg: { url: string; token?: string }, path: string, init:
   }
   if (res.status === 401 && cfg.token) throw new SyncError(m.reasons.phoneNoLongerConnected, 401)
   if (!res.ok) {
-    const message = ((await res.json().catch(() => undefined)) as { error?: string } | undefined)?.error
-    throw new SyncError(message ?? m.reasons.serverError(res.status), res.status)
+    const body = (await res.json().catch(() => undefined)) as ErrorAnswer | undefined
+    if (typeof body?.error === 'string') throw new SyncError(m.reasons.server(body), res.status, body)
+    throw new SyncError(m.reasons.serverError(res.status), res.status)
   }
   return res
 }
