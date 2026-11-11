@@ -1,6 +1,6 @@
 # What the sync server answers in both languages (Portuguese, part 6)
 
-Status: building
+Status: shipped
 Issue: https://github.com/waypoints-pwa/waypoints/issues/84
 Builds after: none
 
@@ -301,9 +301,9 @@ comm -23 <(q -) <(q +)
 - [ ] `npm test` passes: every existing test (English unchanged; only `server/src/sync.test.ts:176,186`
       edited) plus the new ones in `server/src/app.test.ts`, `server/src/sync.test.ts`,
       `src/i18n/serverReasons.test.ts` and `src/sync/sync.integration.test.ts`.
-- [ ] `grep -cE "new HttpError\([0-9]+, ['\"\`]" server/src/app.ts` prints 0 (no `HttpError`
-      whose second argument is a message; 24 today), and `npm run typecheck` passes (the code
-      parameter is required).
+- [ ] `grep -cE "new HttpError\([0-9a-z.]+, ('[^']*[^A-Za-z'][^']*'|\"|\`)" server/src/app.ts`
+      prints 0 (no `HttpError` whose second argument is a message rather than a code; 24 before),
+      and `npm run typecheck` passes (the code parameter is required).
 - [ ] `grep -rn "i18n" src/domain server/src --include=*.ts | grep -v "\.test\.ts"` prints nothing.
 - [ ] `git diff origin/main --stat` lists no file under `src/db/`, `scripts/` or `e2e/`, and not
       `server/src/store.ts`, `package.json`, `CHANGELOG.md` or `GUIDE.md`.
@@ -360,3 +360,8 @@ comm -23 <(q -) <(q +)
   `server/src/sync.ts` and may bump the server version; whichever builds later takes the next
   version and gives any new server error a code (the CLAUDE.md rule from task 5). No Dexie version,
   shared table or helper is shared, so `Builds after` is "none".
+- As built: the first `HttpError` check, `new HttpError\([0-9]+, ['"\`]`, also matched the new
+  code literal (the second argument), so it could never print 0; replaced by the check above,
+  which prints 0 now and 24 on the code before this part. Of the Glossary terms task 5 named,
+  "admin", "invite" and "sign-in link" were already there, so only "preview →
+  pré-visualização" was added.
