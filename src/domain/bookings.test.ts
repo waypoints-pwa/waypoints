@@ -109,20 +109,20 @@ describe('connections', () => {
   it('warn when the next leg leaves before the previous one arrives', () => {
     const early = { ...fraToNrt, departTime: '10:00' }
     const [connection] = connections([lisToFra, early])
-    expect(connection.joins[0]).toEqual({ layoverMinutes: -40, place: 'FRA', warnings: ['Leg 2 leaves before leg 1 arrives'] })
+    expect(connection.joins[0]).toEqual({ layoverMinutes: -40, place: 'FRA', warnings: [{ kind: 'time', leg: 1 }] })
   })
 
   it('warn when the next leg leaves from another place, with airport codes for flights', () => {
     const elsewhere = { ...fraToNrt, from: 'Munich (MUC)' }
     const [connection] = connections([lisToFra, elsewhere])
     expect(connection.route).toBe('LIS → FRA, MUC → NRT')
-    expect(connection.joins[0]).toEqual({ layoverMinutes: 130, place: 'FRA', warnings: ['Leg 2 leaves from MUC but leg 1 arrives in FRA'] })
+    expect(connection.joins[0]).toEqual({ layoverMinutes: 130, place: 'FRA', warnings: [{ kind: 'place', leg: 1, from: 'MUC', place: 'FRA' }] })
   })
 
   it('give both warnings on one join when the place and the time are both wrong', () => {
     const wrong = { ...fraToNrt, from: 'Munich (MUC)', departTime: '10:00' }
     const [connection] = connections([lisToFra, wrong])
-    expect(connection.joins[0].warnings).toEqual(['Leg 2 leaves from MUC but leg 1 arrives in FRA', 'Leg 2 leaves before leg 1 arrives'])
+    expect(connection.joins[0].warnings).toEqual([{ kind: 'place', leg: 1, from: 'MUC', place: 'FRA' }, { kind: 'time', leg: 1 }])
   })
 
   it('keep a gap of exactly 1440 minutes in one connection', () => {

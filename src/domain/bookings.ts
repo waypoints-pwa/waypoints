@@ -38,7 +38,9 @@ export function route(legs: Transport[]): string {
   return parts.map((p) => p.join(' → ')).join(', ')
 }
 
-export type ConnectionJoin = { layoverMinutes?: number; place: string; warnings: string[] }
+/** `leg` is the earlier leg of the join; the next one is `leg + 1`. */
+export type JoinWarning = { kind: 'place'; leg: number; from: string; place: string } | { kind: 'time'; leg: number }
+export type ConnectionJoin = { layoverMinutes?: number; place: string; warnings: JoinWarning[] }
 export type Connection = { key: string; legs: Transport[]; route: string; stops: number; joins: ConnectionJoin[] }
 
 const DAY_MINUTES = 24 * 60
@@ -59,9 +61,9 @@ function joinOf(prev: Transport, next: Transport, n: number): ConnectionJoin {
   const minutes = layover(prev, next)
   const place = stop(prev, prev.to)
   const from = stop(next, next.from)
-  const warnings: string[] = []
-  if (fold(place) !== fold(from)) warnings.push(`Leg ${n + 1} leaves from ${from} but leg ${n} arrives in ${place}`)
-  if (minutes !== undefined && minutes < 0) warnings.push(`Leg ${n + 1} leaves before leg ${n} arrives`)
+  const warnings: JoinWarning[] = []
+  if (fold(place) !== fold(from)) warnings.push({ kind: 'place', leg: n, from, place })
+  if (minutes !== undefined && minutes < 0) warnings.push({ kind: 'time', leg: n })
   return { layoverMinutes: minutes, place, warnings }
 }
 

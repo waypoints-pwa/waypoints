@@ -17,4 +17,6 @@ export const items = {
   call: '📞 Call',
   layoverUnknown: 'Layover time unknown',
   layover: (duration: string, place: string): string => `Layover ${duration} in ${place}`,
+  legLeavesFrom: (next: number, from: string, prev: number, place: string): string => `Leg ${next} leaves from ${from} but leg ${prev} arrives in ${place}`,
+  legLeavesBefore: (next: number, prev: number): string => `Leg ${next} leaves before leg ${prev} arrives`,
 }
