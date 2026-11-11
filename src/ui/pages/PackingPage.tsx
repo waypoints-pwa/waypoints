@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { m } from '../../i18n'
+import { dictionaries, m } from '../../i18n'
 import { addRecords, deleteRecord, patchRecord, saveRecord } from '../../db/actions'
 import type { PackingItem } from '../../db/types'
-import { newFromTemplate, progress, sortedItems, TEMPLATES } from '../../domain/packing'
+import { newFromTemplate, progress, sortedItems, TEMPLATE_IDS, type TemplateId } from '../../domain/packing'
 import { EmptyState } from '../components/bits'
 import { TextField } from '../components/fields'
 import { nameOf, useTrip, type TripData } from '../tripData'
@@ -46,9 +46,12 @@ export function PackingPage() {
     setBringer('')
   }
 
-  const fromTemplate = async (id: (typeof TEMPLATES)[number]['id']) => {
-    const template = TEMPLATES.find((x) => x.id === id)!
-    const texts = newFromTemplate(t.packingItems, template)
+  const fromTemplate = async (id: TemplateId) => {
+    const texts = newFromTemplate(
+      t.packingItems,
+      m.packing.templates[id],
+      Object.values(dictionaries).map((d) => d.packing.templates[id].items),
+    )
     if (!texts.length) return
     await addRecords(
       'packingItems',
@@ -99,9 +102,9 @@ export function PackingPage() {
       <section className="stack">
         <h3 className="group-title">{m.packing.addFromTemplate}</h3>
         <div className="chips">
-          {TEMPLATES.map((x) => (
-            <button key={x.id} className="btn btn-small" onClick={() => void fromTemplate(x.id)}>
-              {x.label}
+          {TEMPLATE_IDS.map((id) => (
+            <button key={id} className="btn btn-small" onClick={() => void fromTemplate(id)}>
+              {m.packing.templates[id].label}
             </button>
           ))}
         </div>

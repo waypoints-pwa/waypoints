@@ -5,34 +5,14 @@ import type { PackingItem } from '../db/types.ts'
  * each group in the order they were added. Templates add common items without touching the list.
  */
 
+export const TEMPLATE_IDS = ['beach', 'city', 'hiking', 'skiing'] as const
+export type TemplateId = (typeof TEMPLATE_IDS)[number]
+
 export interface Template {
-  id: 'beach' | 'city' | 'hiking' | 'skiing'
+  id: TemplateId
   label: string
   items: string[]
 }
-
-export const TEMPLATES: Template[] = [
-  {
-    id: 'beach',
-    label: 'Beach',
-    items: ['Sunscreen', 'Swimsuit', 'Beach towel', 'Sunglasses', 'Flip-flops', 'Hat', 'Water bottle', 'Beach bag', 'After-sun lotion', 'Snorkel mask'],
-  },
-  {
-    id: 'city',
-    label: 'City',
-    items: ['Phone charger', 'Power bank', 'Comfortable shoes', 'Umbrella', 'Daypack', 'Travel adapter', 'Camera', 'Offline maps', 'Reusable water bottle', 'Medication'],
-  },
-  {
-    id: 'hiking',
-    label: 'Hiking',
-    items: ['Hiking boots', 'Rain jacket', 'Water bottle', 'Trail snacks', 'First-aid kit', 'Headlamp', 'Sun hat', 'Map and compass', 'Warm layer', 'Blister plasters'],
-  },
-  {
-    id: 'skiing',
-    label: 'Skiing',
-    items: ['Ski jacket', 'Ski pants', 'Gloves', 'Goggles', 'Thermal base layer', 'Helmet', 'Ski socks', 'Lip balm', 'Neck warmer', 'Ski pass'],
-  },
-]
 
 /** Items that are still on the list (a deleted item is a tombstone, not on the list). */
 const live = (items: PackingItem[]): PackingItem[] => items.filter((i) => !i.deletedAt)
@@ -51,17 +31,20 @@ export function sortedItems(items: PackingItem[]): PackingItem[] {
 
 /**
  * The template's items that aren't on the list yet: trimmed, compared case-insensitively, ticked items
- * count as on the list. Nothing here changes existing items. The result is in template order.
+ * count as on the list. `sameAs[k][i]` is another language's name for `template.items[i]`: an item is
+ * also left out when that name is on the list. Nothing here changes existing items. The result is in
+ * template order.
  */
-export function newFromTemplate(existing: PackingItem[], template: Template): string[] {
+export function newFromTemplate(existing: PackingItem[], template: { items: string[] }, sameAs: string[][] = []): string[] {
   const on = new Set(live(existing).map((i) => i.text.trim().toLowerCase()))
   const added: string[] = []
-  for (const item of template.items) {
+  template.items.forEach((item, i) => {
     const key = item.trim().toLowerCase()
-    if (on.has(key)) continue
+    const others = sameAs.map((names) => names[i]).filter((n): n is string => n !== undefined)
+    if (on.has(key) || others.some((n) => on.has(n.trim().toLowerCase()))) return
     on.add(key)
     added.push(item.trim())
-  }
+  })
   return added
 }
 
