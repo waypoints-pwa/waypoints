@@ -69,7 +69,7 @@ non-destructive for existing data:
 Every user-facing change bumps `version` in `package.json` and adds a `## x.y.z — YYYY-MM-DD` entry at the
 top of `CHANGELOG.md`, and the same entry in Portuguese at the top of `CHANGELOG.pt.md`, written for people who use the app (`src/domain/changelog.test.ts` fails CI if the
 entry is missing). The entry is the app's "What's new" card. Internal changes skip the bump.
-A user-facing change also updates `GUIDE.md`, and re-runs `npm run guide:screenshots` when a pictured screen changed.
+A user-facing change also updates `GUIDE.md` and its Portuguese copy `GUIDE.pt.md` (same sections and pictures; `scripts/guide/guide.test.ts` checks), and re-runs `npm run guide:screenshots` (both languages) when a pictured screen changed.
 A new screen or link to another site adds to the smoke test (`e2e/`); specs write "`npm run smoke` passes"
 for what it covers instead of manual checks.
 

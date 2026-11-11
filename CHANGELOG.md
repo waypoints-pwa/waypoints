@@ -9,6 +9,10 @@ Write for people who use the app, not for developers.
 Every entry is also in CHANGELOG.pt.md, in Portuguese, with the same heading (a test enforces it).
 -->
 
+## 0.17.1 — 2026-11-11
+
+The user guide is now in Portuguese too, with its own pictures: **Ler o guia** opens it when the app is in Portuguese. Exchange rates follow the app's number style ("1 EUR = 162,6016 JPY" in Portuguese), and file sizes from 1000 MB up read "1234 MB" again.
+
 ## 0.17.0 — 2026-11-11
 
 waypoints now speaks Portuguese (Portugal). Phones set to Portuguese show it in Portuguese; pick another language in Settings → **Language**. Dates and amounts follow the language too.

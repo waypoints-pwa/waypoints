@@ -8,6 +8,10 @@ o mesmo número de parágrafos, marcadores, **negritos** e `códigos`. Um teste 
 ficheiros correspondem. Escreve para quem usa a app, não para programadores.
 -->
 
+## 0.17.1 — 2026-11-11
+
+O guia do utilizador agora também está em português, com imagens próprias: **Ler o guia** abre-o quando a app está em português. As taxas de câmbio seguem o formato de números da app ("1 EUR = 162,6016 JPY" em português), e os tamanhos de ficheiros a partir de 1000 MB voltam a aparecer como "1234 MB".
+
 ## 0.17.0 — 2026-11-11
 
 O waypoints agora fala português (de Portugal). Os telemóveis em português mostram-no em português; escolhe outro idioma em Definições → **Idioma**. As datas e os valores também seguem o idioma.
