@@ -8,7 +8,7 @@ import { isDay, isTime } from './time.ts'
  */
 
 /** A problem with a link or file, with a message for people. */
-export type DataErrorCode = 'dataMissing' | 'tooLarge' | 'notWaypointsFile' | 'newerFile' | 'notTripLink' | 'newerLink' | 'invalidRecord' | 'futureDated' | 'incompleteLink'
+export type DataErrorCode = 'dataMissing' | 'tooLarge' | 'notWaypointsFile' | 'newerFile' | 'notTripLink' | 'newerLink' | 'invalidRecord' | 'futureDated' | 'incompleteLink' | 'privateFile' | 'fileChanged' | 'otherTrip'
 export class DataError extends Error {
   code?: DataErrorCode
   table?: string

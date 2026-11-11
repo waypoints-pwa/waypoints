@@ -156,6 +156,8 @@ export interface RejectedRecord {
   table: string
   id: string
   reason: string
+  /** Server 0.8.0+: why, as a DataError code or 'serverTooOld'. */
+  code?: string
 }
 
 /** Why the server turned a request away (server 0.8.0+). The app shows each in its own language. */
