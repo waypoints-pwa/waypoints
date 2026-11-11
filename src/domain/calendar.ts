@@ -24,7 +24,7 @@ export interface CalendarEvent {
   url?: string
 }
 
-/** The words written into events, from the caller's language (the domain never imports i18n). */
+/** The words written into events, in the caller's language. */
 export interface CalendarWords {
   seat: (seat: string) => string
   booking: (ref: string) => string
