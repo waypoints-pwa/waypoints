@@ -17,6 +17,23 @@ const INVALID_RECORD: Record<string, string> = {
 }
 
 export const reasons: Messages['reasons'] = {
+  notAServerAddress: 'Isto não é um endereço de servidor.',
+  mustBeHttps: 'O endereço do servidor tem de começar por https://',
+  unreachable: 'Não foi possível contactar o servidor. Verifica o endereço e se o Tailscale está ligado.',
+  phoneNoLongerConnected: 'Este telemóvel já não está ligado ao servidor.',
+  serverError: (status) => `Erro do servidor (${status}).`,
+  notAWaypointsServer: 'Esse endereço não é de um servidor waypoints.',
+  notConnected: 'Sem ligação a um servidor.',
+  notOnThatServer: 'Não estás no servidor desse endereço. É o mesmo servidor?',
+  couldntLeave: 'Não foi possível sair da viagem no servidor. Tenta outra vez.',
+  fileMismatch: 'O ficheiro vindo do servidor não é o que foi adicionado.',
+  fileDeleted: 'Foi eliminado.',
+  phoneNotConnected: 'Este telemóvel não está ligado ao servidor de sincronização.',
+  notOnServerYet: 'Ainda não está no servidor: o telemóvel onde foi adicionado ainda não o enviou.',
+  googleUnreachable: 'Não foi possível contactar o teu servidor waypoints. Cola o link em Link, abaixo, e escreve o nome.',
+  googleOldServer: 'O teu servidor waypoints precisa de ser atualizado para ler links do Google Maps.',
+  googleUnreadable: 'O Google Maps não deu os detalhes do local. Tenta mais tarde ou preenche à mão.',
+  googleListNotShared: 'Esta lista não está partilhada ou não existe.',
   data: (err) => {
     switch (err.code) {
       case 'dataMissing':

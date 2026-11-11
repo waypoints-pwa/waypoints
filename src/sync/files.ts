@@ -2,6 +2,7 @@ import { db, isLive } from '../db/db'
 import { getServerConfig, type ServerConfig } from '../db/serverState'
 import type { Attachment, StoredFile } from '../db/types'
 import type { FileInfo } from '../domain/serverProtocol'
+import { m } from '../i18n'
 import { sha256Hex } from '../lib/hash'
 import { downloadFile, SyncError, uploadFile } from './client'
 
@@ -100,7 +101,7 @@ async function fetchMissing(cfg: Connected, a: Attachment, local: StoredFile | u
 
 /** The file as its attachment says it is, or nothing. */
 async function checked(a: Attachment, blob: Blob): Promise<Blob> {
-  if (blob.size !== a.size || (await sha256Hex(blob)) !== a.sha256) throw new Mismatch("The file from the server isn't the one that was added.")
+  if (blob.size !== a.size || (await sha256Hex(blob)) !== a.sha256) throw new Mismatch(m.reasons.fileMismatch)
   return blob.type === a.type ? blob : new Blob([blob], { type: a.type })
 }
 
@@ -128,15 +129,15 @@ async function noteOnServer(tripId: string, info: FileInfo) {
 /** The full file of someone else's photo (or a document not here yet), fetched when it's opened, and kept. */
 export async function fetchFull(id: string): Promise<Blob> {
   const a = await db.attachments.get(id)
-  if (!a || a.deletedAt) throw new SyncError('It has been deleted.')
+  if (!a || a.deletedAt) throw new SyncError(m.reasons.fileDeleted)
   const cfg = await connected()
-  if (!cfg) throw new SyncError("This phone isn't connected to the sync server.")
+  if (!cfg) throw new SyncError(m.reasons.phoneNotConnected)
   try {
     const blob = await checked(a, await downloadFile(cfg, pathOf(a)))
     await keep(a, { blob })
     return blob
   } catch (err) {
-    if (err instanceof SyncError && err.status === 404) throw new SyncError("It isn't on the server yet: the phone it was added on hasn't sent it.", 404)
+    if (err instanceof SyncError && err.status === 404) throw new SyncError(m.reasons.notOnServerYet, 404)
     throw err
   }
 }

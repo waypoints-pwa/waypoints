@@ -3,6 +3,7 @@ import { plural } from '../plural'
 
 export const settings: Messages['settings'] = {
   title: 'Definições',
+  safetyName: { connecting: 'Antes de ligar ao servidor de sincronização' },
   backupDownloaded: 'Cópia de segurança descarregada.',
   imported: (trips, summary) => `Importação concluída, ${plural(trips, 'viagem', 'viagens')}: ${summary}.`,
   importFailed: 'A importação falhou.',
