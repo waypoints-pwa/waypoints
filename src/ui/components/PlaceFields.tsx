@@ -3,7 +3,7 @@ import { SETTINGS } from '../../db/db'
 import type { FoundAddress } from '../../domain/addresses'
 import { airportCode, airportLabel, cityDetail, cityNamed, countryName, fold, searchAirports, searchCities } from '../../domain/places'
 import { loadAirports, loadCities, searchAddressesOnline } from '../../lib/places'
-import { m } from '../../i18n'
+import { languageTag, m } from '../../i18n'
 import { useLoaded, useSetting } from '../hooks'
 import { useTrip } from '../tripData'
 import { Combobox, type Suggestion } from './Combobox'
@@ -51,7 +51,7 @@ export function CityField({ label = m.fields.city, value, onChange, onZone, plac
         { label: m.fields.inThisTrip, items: own.map((c) => ({ key: c, label: c, onPick: pick(c, zoneOf(c)) })) },
         {
           label: m.fields.cities,
-          items: world.map((c, i) => ({ key: `${i}`, label: c.name, detail: cityDetail(c), onPick: pick(c.name, c.timeZone) })),
+          items: world.map((c, i) => ({ key: `${i}`, label: c.name, detail: cityDetail(c, languageTag), onPick: pick(c.name, c.timeZone) })),
         },
       ]}
     />
@@ -94,7 +94,7 @@ export function AirportField({ label = m.fields.airport, value, onChange, onZone
           items: listed.map((a) => ({
             key: a.code,
             label: airportLabel(a),
-            detail: `${a.name}, ${countryName(a.country)}`,
+            detail: `${a.name}, ${countryName(a.country, languageTag)}`,
             onPick: pick(airportLabel(a), a.timeZone),
           })),
         },
@@ -202,7 +202,7 @@ export function AddressField({
           items: found.map((r) => ({
             key: r.address,
             label: r.address,
-            detail: r.country && countryName(r.country),
+            detail: r.country && countryName(r.country, languageTag),
             onPick: pick(r.address, r.city ? { city: r.city, zone: zoneOf(r.city, r.country) } : undefined),
           })),
         },

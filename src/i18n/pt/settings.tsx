@@ -15,6 +15,9 @@ export const settings: Messages['settings'] = {
 
   yourName: 'O teu nome',
   nameHint: 'Sugerido como primeiro viajante nas viagens novas. Fica neste telemóvel.',
+  language: 'Idioma',
+  languageAutomatic: 'Automático (idioma do telemóvel)',
+  languageHint: 'Ao mudar, a app recarrega. Só neste telemóvel.',
 
   addressSearch: 'Pesquisa de moradas',
   addressSearchText:

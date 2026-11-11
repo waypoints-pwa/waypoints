@@ -1,5 +1,6 @@
 import cityPointsUrl from '../data/city-points.tsv?url'
 import { photonAddresses, photonReverseUrl, photonUrl, type FoundAddress } from '../domain/addresses'
+import { languageTag } from '../i18n'
 import { airportIndex, cityIndex, nearestCity, parseAirports, parseCities, type AirportIndex, type CityIndex } from '../domain/places'
 
 /*
@@ -20,7 +21,7 @@ function once<T>(load: () => Promise<T>, forget: () => void): Promise<T> {
 
 export const loadCities = () =>
   (cities ??= once(
-    () => import('../data/cities.tsv?raw').then((m) => cityIndex(parseCities(m.default))),
+    () => import('../data/cities.tsv?raw').then((m) => cityIndex(parseCities(m.default), languageTag)),
     () => (cities = undefined),
   ))
 
@@ -33,7 +34,7 @@ export const loadCityPoints = () =>
       const { default: citiesText } = await import('../data/cities.tsv?raw')
       const res = await fetch(cityPointsUrl)
       if (!res.ok) throw new Error(`City points: ${res.status}`)
-      return cityIndex(parseCities(citiesText, await res.text()))
+      return cityIndex(parseCities(citiesText, await res.text()), languageTag)
     },
     () => (cityPoints = undefined),
   ))
@@ -45,7 +46,7 @@ export async function cityAt(lat: number, lng: number): Promise<string | undefin
 
 export const loadAirports = () =>
   (airports ??= once(
-    () => import('../data/airports.tsv?raw').then((m) => airportIndex(parseAirports(m.default))),
+    () => import('../data/airports.tsv?raw').then((m) => airportIndex(parseAirports(m.default), languageTag)),
     () => (airports = undefined),
   ))
 

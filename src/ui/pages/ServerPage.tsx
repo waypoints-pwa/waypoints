@@ -25,7 +25,7 @@ import { BackLink, Notice } from '../components/bits'
 import { Field } from '../components/fields'
 import { HandOff } from '../components/HandOff'
 import { ServerStatus } from '../components/ServerStatus'
-import { m } from '../../i18n'
+import { locale, m } from '../../i18n'
 import { fmtAgo } from '../format'
 import { useServer, useSetting } from '../hooks'
 
@@ -273,7 +273,7 @@ function InviteBox({ invite, onDone }: { invite: Invite; onDone: () => void }) {
   return (
     <div className="invite">
       <p className="small">
-        {m.server.inviteIntro(invite.memberName)} {m.server.worksOnceUntil(new Date(invite.expiresAt).toLocaleDateString())}
+        {m.server.inviteIntro(invite.memberName)} {m.server.worksOnceUntil(new Date(invite.expiresAt).toLocaleDateString(locale))}
       </p>
       <code className="invite-code">{invite.code}</code>
       <div className="row">

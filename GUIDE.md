@@ -343,6 +343,7 @@ Without a sync server and without online address search, the app makes no reques
 Open Settings from the trip list. It has these cards:
 
 - **Your name:** suggested as the first traveller on new trips. It stays on your phone.
+- **Language:** Automatic follows your phone's language; or pick English or Português. It stays on your phone.
 - **Address search:** turn online address search on or off.
 - **Sync server:** connect to a waypoints server, with an invite or as the person who runs it.
 - **Backup & transfer:** export and import your trips, and your safety copies.

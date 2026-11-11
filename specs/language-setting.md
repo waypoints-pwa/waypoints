@@ -1,6 +1,6 @@
 # The Language setting (Portuguese, part 7)
 
-Status: ready
+Status: shipped (0.17.0)
 Issue: https://github.com/waypoints-pwa/waypoints/issues/87
 Builds after: none
 
@@ -135,8 +135,8 @@ function readSaved(): string | null {
 }
 
 export const language: Language = pickLanguage(inBrowser ? location.search : '', readSaved(), phone)
-/** For Intl and toLocale…: undefined keeps the phone's own formats. */
-export const locale: string | undefined = formatLocale(language, phone)
+/** For Intl and toLocale…: undefined keeps the phone's own formats (and tests' formats as they are). */
+export const locale: string | undefined = inBrowser ? formatLocale(language, phone) : undefined
 export const languageTag: string = LANGUAGE_TAGS[language]
 /** What Settings → Language shows: the saved choice, or undefined for Automatic. */
 export const chosenLanguage: Language | undefined = savedLanguage(readSaved())
@@ -219,7 +219,8 @@ Keep the existing imports; add the new names to the `./language` import.
 3. **Country names follow the language**
    - Change: **Country names** in Context (`src/domain/places.ts`, `src/lib/places.ts`,
      `src/ui/components/PlaceFields.tsx`). Add to `src/domain/places.test.ts` (new `it`s; existing
-     ones not edited): `countryName('ES', 'pt-PT')` is `'Espanha'`, `countryName('ES')` is
+     ones not edited, except line 72's `maine.map(cityDetail)`, which becomes
+     `maine.map((c) => cityDetail(c))` so `map`'s index isn't passed as the locale): `countryName('ES', 'pt-PT')` is `'Espanha'`, `countryName('ES')` is
      `'Spain'`, `countryName('ZZZ', 'pt-PT')` is `'ZZZ'`; with
      `const pt = cityIndex(parseCities(<the same cities.tsv>), 'pt-PT')`,
      `searchCities(pt, 'Madrid, espanha')[0]` and `searchCities(pt, 'Madrid, spain')[0]` have
@@ -392,3 +393,17 @@ Keep the existing imports; add the new names to the `./language` import.
   `server-trip-cleanup`, `qr-join`, `plan-editing`, `list-row-stars`) must add their entry to
   `CHANGELOG.pt.md` too once this ships (the CLAUDE.md rule from task 7), so `Builds after` is
   "none".
+- As built:
+  - App 0.17.0; no server change.
+  - Two gaps were fixed in this spec during the build: `locale` in `src/i18n/index.ts` is
+    `undefined` outside a browser (otherwise `formatLocale('en', [])` gave `'en-GB'` to unit tests),
+    and task 3 changed one existing test line, `maine.map((c) => cityDetail(c))`, since `map`
+    passed its index as the locale.
+  - `fmtBytes` now groups thousands, so an English phone on Automatic shows "1,234 MB" where it
+    showed "1234 MB" (1000 MB or more only). As specced; `useGrouping: false` would undo it.
+  - Exchange rates ("1 EUR = 162.6016 JPY", `src/ui/items/expenses.tsx:229`,
+    `src/ui/items/exchanges.tsx:77`) use `fmtPlain`, so they keep a `.` in Portuguese. Not in this
+    spec; left for later.
+  - The browser checks were a throwaway script against the dev server: the manual steps, phone
+    language lists (`pt-BR`, `fr-FR, pt-PT`, `fr-FR, de-DE`), `en-US` keeping US dates, `?lang=en`
+    over a saved choice, and blocked storage. Not checked on a real phone.

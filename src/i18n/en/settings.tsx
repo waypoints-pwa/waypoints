@@ -15,6 +15,9 @@ export const settings = {
 
   yourName: 'Your name',
   nameHint: 'Suggested as the first traveller on new trips. It stays on this phone.',
+  language: 'Language',
+  languageAutomatic: "Automatic (phone's language)",
+  languageHint: 'Changing it reloads the app. Only for this phone.',
 
   addressSearch: 'Address search',
   addressSearchText:

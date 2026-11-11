@@ -42,26 +42,29 @@ export function fold(text: string): string {
     .trim()
 }
 
-let regionNames: Intl.DisplayNames | null | undefined
+const regionNames = new Map<string, Intl.DisplayNames | null>()
 
-/** "PT" → "Portugal", in English like the rest of the app. */
-export function countryName(code: string): string {
-  if (regionNames === undefined) {
+/** "PT" → "Portugal", in the given language (English by default). */
+export function countryName(code: string, locale = 'en'): string {
+  let names = regionNames.get(locale)
+  if (names === undefined) {
     try {
-      regionNames = new Intl.DisplayNames(['en'], { type: 'region' })
+      names = new Intl.DisplayNames([locale], { type: 'region' })
     } catch {
-      regionNames = null
+      names = null
     }
+    regionNames.set(locale, names)
   }
   try {
-    return regionNames?.of(code) ?? code
+    return names?.of(code) ?? code
   } catch {
     return code
   }
 }
 
 /** "Oregon, United States": what tells a city apart from others with its name. */
-export const cityDetail = (city: City) => [...new Set([city.region, countryName(city.country)])].filter(Boolean).join(', ')
+export const cityDetail = (city: City, locale = 'en') =>
+  [...new Set([city.region, countryName(city.country, locale)])].filter(Boolean).join(', ')
 
 /** "Lisbon (LIS)": how a picked airport reads in the trip. */
 export const airportLabel = (airport: Airport) => `${airport.city} (${airport.code})`
@@ -120,9 +123,11 @@ export interface CityIndex {
   cities: City[]
   /** Each city's folded name. */
   names: string[]
+  /** The app's language tag, for country names. */
+  locale: string
 }
 
-export const cityIndex = (cities: City[]): CityIndex => ({ cities, names: cities.map((c) => fold(c.name)) })
+export const cityIndex = (cities: City[], locale = 'en'): CityIndex => ({ cities, names: cities.map((c) => fold(c.name)), locale })
 
 /** Whether a word in `folded` starts with `query` ("york" in "new york"). */
 const wordStarts = (folded: string, query: string) => folded.startsWith(query) || folded.includes(` ${query}`)
@@ -142,7 +147,7 @@ export function searchCities(index: CityIndex, query: string, limit = 8): City[]
     const tier = folded === exact ? 0 : folded.startsWith(name) ? 1 : wordStarts(folded, name) ? 2 : -1
     if (tier < 0 || tiers[tier].length >= limit) return
     const city = index.cities[i]
-    if (where && !wordStarts(fold(`${city.region ?? ''} ${countryName(city.country)} ${city.country}`), where)) return
+    if (where && !wordStarts(fold(`${city.region ?? ''} ${countryName(city.country)} ${countryName(city.country, index.locale)} ${city.country}`), where)) return
     tiers[tier].push(city)
   })
   return tiers.flat().slice(0, limit)
@@ -188,15 +193,18 @@ export interface AirportIndex {
   cities: string[]
   words: string[]
   countries: string[]
+  /** Each airport's folded country in the app's language. */
+  localCountries: string[]
 }
 
-export function airportIndex(airports: Airport[]): AirportIndex {
+export function airportIndex(airports: Airport[], locale = 'en'): AirportIndex {
   return {
     airports,
     byCode: new Map(airports.map((a) => [a.code, a])),
     cities: airports.map((a) => fold(a.city)),
     words: airports.map((a) => fold(`${a.name} ${a.city} ${a.keywords ?? ''}`)),
     countries: airports.map((a) => fold(countryName(a.country))),
+    localCountries: airports.map((a) => fold(countryName(a.country, locale))),
   }
 }
 
@@ -216,7 +224,7 @@ export function searchAirports(index: AirportIndex, query: string, limit = 8): A
       ? 1
       : wordStarts(index.words[i], folded) || (code.length < 3 && airport.code.startsWith(code))
         ? 2
-        : index.countries[i].startsWith(folded)
+        : index.countries[i].startsWith(folded) || index.localCountries[i].startsWith(folded)
           ? 3
           : -1
     if (tier > 0 && tiers[tier].length < limit) tiers[tier].push(airport)

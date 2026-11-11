@@ -67,7 +67,7 @@ non-destructive for existing data:
 
 ## Releases & changelog
 Every user-facing change bumps `version` in `package.json` and adds a `## x.y.z — YYYY-MM-DD` entry at the
-top of `CHANGELOG.md`, written for people who use the app (`src/domain/changelog.test.ts` fails CI if the
+top of `CHANGELOG.md`, and the same entry in Portuguese at the top of `CHANGELOG.pt.md`, written for people who use the app (`src/domain/changelog.test.ts` fails CI if the
 entry is missing). The entry is the app's "What's new" card. Internal changes skip the bump.
 A user-facing change also updates `GUIDE.md`, and re-runs `npm run guide:screenshots` when a pictured screen changed.
 A new screen or link to another site adds to the smoke test (`e2e/`); specs write "`npm run smoke` passes"
@@ -96,7 +96,7 @@ another host (an exchange-rate API, map tiles) needs adding there, and must stay
   "cost pending" until someone adds it (`paidWith`, `awaitingCost`). Rates are typed in, never fetched.
   Expenses in the trip's own currency say cash or card too, which changes nothing in the sums; older
   ones there don't say, and stay unsaid until someone picks (`paidWithOf`).
-- Target scale: a few trips per phone, up to a few hundred items each, groups of 2–10. English only.
+- Target scale: a few trips per phone, up to a few hundred items each, groups of 2–10. English and Portuguese (PT-PT): Settings → Language, Automatic by default (`src/i18n/index.ts`).
 
 ## Layout
 - `src/data/` — the built-in city and airport lists (`scripts/places-data.mjs` rebuilds them from GeoNames,
