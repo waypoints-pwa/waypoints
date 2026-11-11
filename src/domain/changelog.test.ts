@@ -92,3 +92,40 @@ describe('CHANGELOG.md', () => {
     for (const r of releases) expect(r.body, r.version).not.toBe('')
   })
 })
+
+// CHANGELOG.pt.md is CHANGELOG.md in Portuguese: same releases, same shape, so nothing is left in English.
+describe('CHANGELOG.pt.md', () => {
+  const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
+  const english = parseChangelog(read('../../CHANGELOG.md'))
+  const portuguese = parseChangelog(read('../../CHANGELOG.pt.md'))
+  const count = (text: string, pattern: RegExp) => text.match(pattern)?.length ?? 0
+  const shape = (body: string) => parseNotes(body).map((b) => (b.kind === 'list' ? ['list', b.items.length] : [b.kind]))
+
+  it('has the same versions and dates, in the same order', () => {
+    expect(portuguese.map((r) => [r.version, r.date])).toEqual(english.map((r) => [r.version, r.date]))
+  })
+
+  it('has the same paragraphs and bullets in every release', () => {
+    for (const en of english) {
+      const pt = findRelease(portuguese, en.version)
+      expect(pt, `${en.version} is missing from CHANGELOG.pt.md`).toBeDefined()
+      expect(shape(pt!.body), `${en.version}: blocks differ`).toEqual(shape(en.body))
+    }
+  })
+
+  it('translates every body', () => {
+    for (const en of english) {
+      const pt = findRelease(portuguese, en.version)
+      expect(pt?.body, `${en.version}: empty Portuguese notes`).not.toBe('')
+      expect(pt?.body, `${en.version}: not translated`).not.toBe(en.body)
+    }
+  })
+
+  it('has the same bold and code spans in every release', () => {
+    for (const en of english) {
+      const pt = findRelease(portuguese, en.version)
+      expect(count(pt?.body ?? '', /\*\*[^*]+\*\*/g), `${en.version}: **bold** spans differ`).toBe(count(en.body, /\*\*[^*]+\*\*/g))
+      expect(count(pt?.body ?? '', /`[^`]+`/g), `${en.version}: \`code\` spans differ`).toBe(count(en.body, /`[^`]+`/g))
+    }
+  })
+})
