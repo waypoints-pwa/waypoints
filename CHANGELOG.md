@@ -6,7 +6,14 @@ What's new in waypoints, newest first. This file is shown in the app (Settings �
 Every user-facing change bumps "version" in package.json and adds an entry here (a test enforces it).
 Heading: "## x.y.z — YYYY-MM-DD". Body: short paragraphs and "- " bullets; inline **bold** and `code`.
 Write for people who use the app, not for developers.
+Every entry is also in CHANGELOG.pt.md, in Portuguese, with the same heading (a test enforces it).
 -->
+
+## 0.17.0 — 2026-11-11
+
+waypoints now speaks Portuguese (Portugal). Phones set to Portuguese show it in Portuguese; pick another language in Settings → **Language**. Dates and amounts follow the language too.
+
+If you use a sync server, update it to 0.8.0 so its messages show in Portuguese too. Until then they show in English.
 
 ## 0.16.0 — 2026-11-01
 

@@ -8,6 +8,12 @@ o mesmo número de parágrafos, marcadores, **negritos** e `códigos`. Um teste 
 ficheiros correspondem. Escreve para quem usa a app, não para programadores.
 -->
 
+## 0.17.0 — 2026-11-11
+
+O waypoints agora fala português (de Portugal). Os telemóveis em português mostram-no em português; escolhe outro idioma em Definições → **Idioma**. As datas e os valores também seguem o idioma.
+
+Se usas um servidor de sincronização, atualiza-o para a 0.8.0 para que as mensagens dele também apareçam em português. Até lá, aparecem em inglês.
+
 ## 0.16.0 — 2026-11-01
 
 Numa viagem com dois ou mais viajantes, cada local tem um botão 🙋 **Quero ir** na lista de Locais e um chip na sua página. Toca nele para dizer que gostavas de conhecer o local. A lista mostra quantos querem ir, e a página do local diz quem são.
