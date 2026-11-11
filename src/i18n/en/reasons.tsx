@@ -16,5 +16,9 @@ export const reasons = {
   googleUnreachable: "Can't reach your waypoints server. Paste the link into Link below and type the name.",
   googleOldServer: 'Your waypoints server needs updating to read Google Maps links.',
   googleUnreadable: "Google Maps didn't give the place's details. Try again later, or fill it in by hand.",
+  couldntShrinkPhoto: "This phone couldn't make the photo smaller.",
+  notAPhoto: (name: string): string => `${name} can't be opened on this phone. Is it a photo?`,
+  emptyFile: (name: string): string => `${name} is empty.`,
+  fileTooLarge: (name: string): string => `${name} is too large: documents can be up to 100 MB.`,
   googleListNotShared: "This list isn't shared, or doesn't exist.",
 }

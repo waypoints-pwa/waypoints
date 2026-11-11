@@ -66,7 +66,7 @@ function LinkPreview({ link }: { link: TripLink }) {
   const apply = async () => {
     setBusy(true)
     try {
-      const counts = await applyMerge(link.tables, `Before updating “${trip.name}” from a link`)
+      const counts = await applyMerge(link.tables, m.settings.safetyName.updatingFromLink(trip.name))
       setMerged({ counts, joined: isNew })
     } finally {
       setBusy(false)

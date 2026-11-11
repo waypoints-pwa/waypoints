@@ -3,7 +3,12 @@ import { plural } from '../plural'
 
 export const settings: Messages['settings'] = {
   title: 'Definições',
-  safetyName: { connecting: 'Antes de ligar ao servidor de sincronização' },
+  safetyName: {
+    removing: (name) => `Antes de remover “${name}”`,
+    importing: 'Antes de importar um ficheiro',
+    connecting: 'Antes de ligar ao servidor de sincronização',
+    updatingFromLink: (name) => `Antes de atualizar “${name}” a partir de um link`,
+  },
   backupDownloaded: 'Cópia de segurança descarregada.',
   imported: (trips, summary) => `Importação concluída, ${plural(trips, 'viagem', 'viagens')}: ${summary}.`,
   importFailed: 'A importação falhou.',

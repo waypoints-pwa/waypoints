@@ -33,6 +33,10 @@ export const reasons: Messages['reasons'] = {
   googleUnreachable: 'Não foi possível contactar o teu servidor waypoints. Cola o link em Link, abaixo, e escreve o nome.',
   googleOldServer: 'O teu servidor waypoints precisa de ser atualizado para ler links do Google Maps.',
   googleUnreadable: 'O Google Maps não deu os detalhes do local. Tenta mais tarde ou preenche à mão.',
+  couldntShrinkPhoto: 'Este telemóvel não conseguiu reduzir a foto.',
+  notAPhoto: (name) => `Não foi possível abrir ${name} neste telemóvel. É uma foto?`,
+  emptyFile: (name) => `${name} está vazio.`,
+  fileTooLarge: (name) => `${name} é demasiado grande: os documentos podem ter até 100 MB.`,
   googleListNotShared: 'Esta lista não está partilhada ou não existe.',
   data: (err) => {
     switch (err.code) {

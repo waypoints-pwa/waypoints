@@ -1,3 +1,4 @@
+import { m } from '../i18n'
 import { downloadBlob } from './download'
 
 /** Share sheet on phones, clipboard elsewhere, and a copyable prompt as the last resort. */
@@ -10,7 +11,7 @@ export async function shareUrl(url: string, title: string, text?: string): Promi
     await navigator.clipboard.writeText(url)
     return 'copied'
   } catch (err) {
-    if ((err as Error).name !== 'AbortError') prompt('Copy this link:', url)
+    if ((err as Error).name !== 'AbortError') prompt(m.share.copyLinkPrompt, url)
     return undefined
   }
 }

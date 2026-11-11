@@ -1,3 +1,4 @@
+import { m } from '../i18n'
 import { reportId, type TripReport } from '../domain/report'
 import { reviewId } from '../domain/reviews'
 import { voteId } from '../domain/votes'
@@ -274,7 +275,7 @@ export const clearUnsent = (tripId: string) => db.unsent.where('tripId').equals(
  * and documents go too: safety copies can't hold them.
  */
 export async function removeTripFromPhone(trip: Trip) {
-  await takeSnapshot(`Before removing “${trip.name}”`)
+  await takeSnapshot(m.settings.safetyName.removing(trip.name))
   await db.transaction('rw', [...RECORD_TABLES.map(recordTable), db.files, db.unsent, db.outbox, db.serverTrips, db.settings], async () => {
     await db.trips.delete(trip.id)
     for (const table of TRIP_TABLES) await recordTable(table).where('tripId').equals(trip.id).delete()

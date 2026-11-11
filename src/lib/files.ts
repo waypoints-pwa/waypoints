@@ -2,6 +2,7 @@ import type { NewFile } from '../db/attachments'
 import { EXIF_BYTES, exifTakenAt } from '../domain/exif'
 import { MAX_FILE_BYTES } from '../domain/records'
 import { toDay } from '../domain/time'
+import { m } from '../i18n'
 import { sha256Hex } from './hash'
 
 /*
@@ -51,12 +52,12 @@ function draw(bitmap: ImageBitmap, maxPx: number, quality: number): Promise<Blob
   canvas.width = Math.max(1, Math.round(bitmap.width * scale))
   canvas.height = Math.max(1, Math.round(bitmap.height * scale))
   const context = canvas.getContext('2d')
-  if (!context) return Promise.reject(new FileProblem("This phone couldn't make the photo smaller."))
+  if (!context) return Promise.reject(new FileProblem(m.reasons.couldntShrinkPhoto))
   context.fillStyle = '#fff' // transparent images get white behind them, not black
   context.fillRect(0, 0, canvas.width, canvas.height)
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
   return new Promise((resolve, reject) =>
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new FileProblem("This phone couldn't make the photo smaller."))), 'image/jpeg', quality),
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new FileProblem(m.reasons.couldntShrinkPhoto))), 'image/jpeg', quality),
   )
 }
 
@@ -74,14 +75,14 @@ const shortName = (name: string, fallback: string) => name.trim().slice(0, 200) 
 
 export async function preparePhoto(file: File): Promise<NewFile> {
   const bitmap = await decode(file)
-  if (!bitmap) throw new FileProblem(`${file.name} can't be opened on this phone. Is it a photo?`)
+  if (!bitmap) throw new FileProblem(m.reasons.notAPhoto(file.name))
   try {
     const blob = await draw(bitmap, PHOTO_MAX_PX, PHOTO_QUALITY)
     const thumb = await draw(bitmap, THUMB_MAX_PX, THUMB_QUALITY)
     const scale = Math.min(1, PHOTO_MAX_PX / Math.max(bitmap.width, bitmap.height))
     return {
       kind: 'photo',
-      name: shortName(`${file.name.replace(/\.[^.]*$/, '')}.jpg`, 'Photo.jpg'),
+      name: shortName(`${file.name.replace(/\.[^.]*$/, '')}.jpg`, m.files.photoFileName),
       type: 'image/jpeg',
       blob,
       thumb,
@@ -96,11 +97,11 @@ export async function preparePhoto(file: File): Promise<NewFile> {
 }
 
 export async function prepareDocument(file: File): Promise<NewFile> {
-  if (!file.size) throw new FileProblem(`${file.name} is empty.`)
-  if (file.size > MAX_FILE_BYTES) throw new FileProblem(`${file.name} is too large: documents can be up to 100 MB.`)
+  if (!file.size) throw new FileProblem(m.reasons.emptyFile(file.name))
+  if (file.size > MAX_FILE_BYTES) throw new FileProblem(m.reasons.fileTooLarge(file.name))
   const type = typeOf(file)
   const blob = new Blob([file], { type })
-  const doc: NewFile = { kind: 'document', name: shortName(file.name, 'Document'), type, blob, sha256: await sha256Hex(blob) }
+  const doc: NewFile = { kind: 'document', name: shortName(file.name, m.files.documentFileName), type, blob, sha256: await sha256Hex(blob) }
   const bitmap = type.startsWith('image/') ? await decode(file) : undefined
   if (bitmap) {
     try {

@@ -132,4 +132,6 @@ export const files: Messages['files'] = {
     photo: 'Editar foto',
     document: 'Editar documento',
   },
+  photoFileName: 'Foto.jpg',
+  documentFileName: 'Documento',
 }

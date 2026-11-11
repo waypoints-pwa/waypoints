@@ -80,4 +80,5 @@ export const share = {
   ),
   noWaypointsYet: 'No waypoints on your Home Screen yet? In Safari, tap Share → Add to Home Screen first.',
   useItHere: 'Use it here in Safari instead',
+  copyLinkPrompt: 'Copy this link:',
 }
