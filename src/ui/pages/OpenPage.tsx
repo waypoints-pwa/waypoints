@@ -48,7 +48,7 @@ export function OpenPage() {
       if (trips.length === 1) navigate(tripPath(trips[0].id), { replace: true })
       else setMessage(m.share.openedTrips(trips.length, mergeSummary(counts)))
     } catch (err) {
-      setError(err instanceof DataError ? err.message : m.share.fileCouldntBeOpened)
+      setError(err instanceof DataError ? m.reasons.data(err) : m.share.fileCouldntBeOpened)
     }
   }
 

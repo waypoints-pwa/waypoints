@@ -28,7 +28,7 @@ export function TripLinkPage() {
     let cancelled = false
     readTripLink(data).then(
       (link) => !cancelled && setLoaded({ data, link }),
-      (err) => !cancelled && setLoaded({ data, error: err instanceof DataError ? err.message : m.share.linkCouldntBeOpened }),
+      (err) => !cancelled && setLoaded({ data, error: err instanceof DataError ? m.reasons.data(err) : m.share.linkCouldntBeOpened }),
     )
     return () => {
       cancelled = true

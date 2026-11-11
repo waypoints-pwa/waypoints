@@ -43,7 +43,7 @@ export function SettingsPage() {
       const { counts, trips } = await importFile(await file.text())
       setMessage({ kind: 'ok', text: m.settings.imported(trips.length, mergeSummary(counts)) })
     } catch (err) {
-      setMessage({ kind: 'error', text: err instanceof DataError ? err.message : m.settings.importFailed })
+      setMessage({ kind: 'error', text: err instanceof DataError ? m.reasons.data(err) : m.settings.importFailed })
     }
   }
 
