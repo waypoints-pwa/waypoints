@@ -6,7 +6,7 @@ import { parseAmount } from '../../domain/expenses'
 import { isDay } from '../../domain/time'
 import { m } from '../../i18n'
 import { CurrencySelect, Field, NotesField } from '../components/fields'
-import { fmtPlain } from '../format'
+import { fmtPlain, fmtRate } from '../format'
 import { useToday } from '../hooks'
 import { tripPath, useTrip } from '../tripData'
 import { ItemForm, ItemGone } from './common'
@@ -74,7 +74,7 @@ function ExchangeForm({ existing, currency: asked }: { existing?: Exchange; curr
           <CurrencySelect compact value={currency} onChange={setCurrency} suggestions={foreign} label={m.money.currencyYouGot} />
         </div>
       </div>
-      <Field label={m.money.itCost(costCurrency)} hint={rate ? `1 ${costCurrency} = ${fmtPlain(rate, 4)} ${currency}` : undefined}>
+      <Field label={m.money.itCost(costCurrency)} hint={rate ? `1 ${costCurrency} = ${fmtRate(rate)} ${currency}` : undefined}>
         <input className="input" inputMode="decimal" placeholder="62.50" value={costText} onChange={(e) => setCostText(e.target.value)} />
       </Field>
       <Field label={m.common.day}>
