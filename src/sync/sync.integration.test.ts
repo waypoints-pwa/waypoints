@@ -13,7 +13,8 @@ import { emptyTables } from '../db/types.ts'
 import { buildReport, readReport, reportId } from '../domain/report.ts'
 import { reviewId } from '../domain/reviews.ts'
 import type { Credentials, SyncResponse, TripChanges } from '../domain/serverProtocol.ts'
-import { attachment, FILE, FILE_SHA256 } from '../test/fixtures.ts'
+import { pt } from '../i18n/pt/index.ts'
+import { attachment, FILE, FILE_SHA256, stay } from '../test/fixtures.ts'
 
 /*
  * End to end: the app's real sync client (on fake IndexedDB) against the real server. This phone is
@@ -138,6 +139,41 @@ describe('sync client ↔ server', async () => {
     expect((await db.stays.get(stay.id))!.name).toBe('Casa Verde')
     expect(await db.outbox.where('tripId').equals(onServer).count()).toBe(0)
     expect(await db.unsent.count()).toBe(0)
+  })
+
+  it("gives the server's reasons as codes the app can put in Portuguese", async () => {
+    const cursorBefore = anaCursor
+    const { joinWithInvite } = await import('./account')
+    const failure = async (promise: Promise<unknown>) => {
+      const err = await promise.then(() => undefined, (e: unknown) => e)
+      expect(err).toBeInstanceOf(SyncError)
+      return err as InstanceType<typeof SyncError>
+    }
+
+    const wrong = await failure(joinWithServerCode(url, 'WRONG-CODE-0000', { name: 'Eve' }, 'Pixel'))
+    expect(wrong.message).toBe('Wrong server code')
+    expect(wrong.answer).toEqual({ error: 'Wrong server code', code: 'wrongServerCode' })
+    expect(pt.reasons.server(wrong.answer!)).toBe('Código do servidor errado')
+
+    const taken = await failure(joinWithServerCode(url, config.serverCode, { name: 'Max' }, 'Pixel'))
+    expect(taken.answer?.code).toBe('nameTaken')
+    expect(pt.reasons.server(taken.answer!)).toBe('Já há alguém chamado Max no servidor. Se és tu, escolhe antes o teu nome na lista.')
+
+    const invite = await createInvite()
+    for (const i of Object.values(store.data.invites)) i.expiresAt = new Date(0).toISOString()
+    const expired = await failure(joinWithInvite(url, invite.code, 'Eve', 'Pixel'))
+    expect(expired.answer?.code).toBe('inviteExpired')
+    expect(pt.reasons.server(expired.answer!)).toBe('Esse convite expirou. Pede um novo.')
+
+    const res = await anaSync([{ id: onServer, cursor: anaCursor, records: { stays: [stay({ tripId: onServer, checkInDate: '2027-02-30' })] } }])
+    expect(res.rejected).toHaveLength(1)
+    const r = res.rejected[0]
+    expect(r.table).toBe('stays')
+    expect(r.code).toBe('invalidRecord')
+    expect(pt.reasons.data({ message: r.reason, code: r.code, table: r.table })).toBe('Contém uma estadia inválida.')
+
+    expect(anaCursor).toBe(cursorBefore)
+    expect((await getServerConfig())!.member.name).toBe('Max')
   })
 
   it("sends this phone's reviews, and brings in Ana's next to them", async () => {

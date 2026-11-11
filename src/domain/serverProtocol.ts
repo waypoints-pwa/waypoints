@@ -156,6 +156,24 @@ export interface RejectedRecord {
   table: string
   id: string
   reason: string
+  /** Server 0.8.0+: why, as a DataError code or 'serverTooOld'. */
+  code?: string
+}
+
+/** Why the server turned a request away (server 0.8.0+). The app shows each in its own language. */
+export const SERVER_ERROR_CODES = ['badRequest', 'requestTooLarge', 'tooManyTrips', 'tooManyRecords', 'tooManyWrongCodes', 'wrongServerCode', 'notConnected', 'nameNeeded', 'nameTaken', 'nameTakenInvite', 'personGone', 'codePersonGone', 'inviteInvalid', 'inviteExpired', 'noSuchTrip', 'noSuchFile', 'previewTooLarge', 'fileTooLarge', 'fileMismatch', 'fileNotYet', 'notGoogle', 'googleNoAnswer', 'googleUnreadable', 'listNotShared', 'notPlaceOrList', 'adminOnlyInvite', 'adminOnlySignIn', 'adminOnlyRemove', 'personNotOnServer', 'noSuchPhone', 'cantRemoveYourself', 'notFound', 'internalError'] as const
+export type ServerErrorCode = (typeof SERVER_ERROR_CODES)[number]
+
+/**
+ * The body of every error answer (status 4xx or 5xx). `error` is English, for apps before the codes.
+ * From server 0.8.0: `code`, and what its sentence needs (`name`: a person's name; `mb`: a size).
+ * A newer server may send codes this app doesn't know: show `error` then.
+ */
+export interface ErrorAnswer {
+  error: string
+  code?: string
+  name?: string
+  mb?: number
 }
 
 export interface SyncResponse {

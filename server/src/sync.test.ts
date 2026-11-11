@@ -154,6 +154,22 @@ describe('a trip on the server', () => {
     expect(Object.keys(data.trips[TRIP].records.places ?? {})).toEqual(['spot0002'])
     expect(data.trips[TRIP].records.stays).toEqual({})
   })
+
+  it('gives each refused record a code the app can translate', () => {
+    const { response } = sync(
+      server(),
+      ANA_M,
+      send({
+        ...lisbon(),
+        stays: [stay({ checkInDate: '2027-02-30' })],
+        places: [place({ tripId: 'another-trip' }), place({ id: 'spot0002', tripId: TRIP })],
+        ...({ reviews: [{ id: 'review01' }] } as object),
+        ...({ newTable: [{ id: 'new00001' }] } as object),
+      }),
+    )
+    expect(response.rejected.map((r) => r.code)).toEqual(['invalidRecord', 'otherTrip', 'invalidRecord', 'serverTooOld'])
+    expect(response.rejected[3].reason).toBe('This server is too old for it: update the server.')
+  })
 })
 
 describe('sync requests', () => {
@@ -173,7 +189,7 @@ describe('photos and documents on the server', () => {
   it('sync like other records, apart from private ones', () => {
     const data = server()
     const { response } = sync(data, ANA_M, send({ ...lisbon(), attachments: [attachment(), attachment({ id: 'file0002', private: true })] }))
-    expect(response.rejected).toEqual([{ tripId: TRIP, table: 'attachments', id: 'file0002', reason: 'It is kept only on the phone it was added on.' }])
+    expect(response.rejected).toEqual([{ tripId: TRIP, table: 'attachments', id: 'file0002', reason: 'It is kept only on the phone it was added on.', code: 'privateFile' }])
     expect(Object.keys(data.trips[TRIP].records.attachments ?? {})).toEqual(['file0001'])
     expect(sync(data, BO_M).response.trips[0].records.attachments).toEqual([attachment()])
   })
@@ -183,7 +199,7 @@ describe('photos and documents on the server', () => {
     sync(data, ANA_M, send({ ...lisbon(), attachments: [attachment()] }))
     const swapped = attachment({ sha256: 'f'.repeat(64), updatedAt: T1 })
     const { response } = sync(data, BO_M, send({ attachments: [swapped] }, 5))
-    expect(response.rejected).toMatchObject([{ id: 'file0001', reason: "A photo or document's file can't be changed." }])
+    expect(response.rejected).toMatchObject([{ id: 'file0001', reason: "A photo or document's file can't be changed.", code: 'fileChanged' }])
     expect(data.trips[TRIP].records.attachments?.file0001.rec).toEqual(attachment())
     // Anything else about it can change: a caption, what it belongs to.
     expect(sync(data, BO_M, send({ attachments: [attachment({ caption: 'Fado!', itemTable: undefined, itemId: undefined, updatedAt: T1 })] }, 5)).response.rejected).toEqual([])

@@ -10,12 +10,14 @@ import {
   type AdminMembersRequest,
   type Credentials,
   type DeviceSummary,
+  type ErrorAnswer,
   type GoogleMapsRequest,
   type InviteRequest,
   type InviteResponse,
   type MeResponse,
   type MemberSummary,
   type RegisterRequest,
+  type ServerErrorCode,
   type ServerHello,
 } from '../../src/domain/serverProtocol.ts'
 import type { Config } from './config.ts'
@@ -25,7 +27,7 @@ import { codesMatch, hashCode, hashSecret, newCode, newId, newToken } from './se
 import type { Device, Member, Store } from './store.ts'
 import { applySync, BadRequest, memberList, memberSummary, parseSyncRequest, tripMembers } from './sync.ts'
 
-export const VERSION = '0.7.0'
+export const VERSION = '0.8.0'
 const MAX_BODY = 10 * 1024 * 1024 // a first sync uploads whole trips
 const INVITE_DAYS = 7
 const MAX_CODE_FAILURES = 20 // per 10 minutes, across all clients
@@ -33,16 +35,24 @@ const LAST_SEEN_RESOLUTION_MS = 60 * 60_000
 
 class HttpError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  code: ServerErrorCode
+  details: { name?: string; mb?: number }
+  constructor(status: number, code: ServerErrorCode, message: string, details: { name?: string; mb?: number } = {}) {
     super(message)
     this.status = status
+    this.code = code
+    this.details = details
   }
 }
 
-function readBody(req: IncomingMessage, max: number, tooLarge = 'Request too large'): Promise<Buffer> {
+function readBody(
+  req: IncomingMessage,
+  max: number,
+  tooLarge: () => HttpError = () => new HttpError(413, 'requestTooLarge', 'Request too large'),
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     if (Number(req.headers['content-length']) > max) {
-      reject(new HttpError(413, tooLarge))
+      reject(tooLarge())
       req.resume()
       return
     }
@@ -51,7 +61,7 @@ function readBody(req: IncomingMessage, max: number, tooLarge = 'Request too lar
     req.on('data', (c: Buffer) => {
       size += c.length
       if (size > max) {
-        reject(new HttpError(413, tooLarge))
+        reject(tooLarge())
         req.destroy()
       } else chunks.push(c)
     })
@@ -65,7 +75,7 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   try {
     return JSON.parse(body.toString('utf8') || 'null')
   } catch {
-    throw new HttpError(400, 'Invalid JSON')
+    throw new HttpError(400, 'badRequest', 'Invalid JSON')
   }
 }
 
@@ -112,11 +122,11 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
   const guardCodes = () => {
     const now = Date.now()
     codeFailures = codeFailures.filter((t) => now - t < 10 * 60_000)
-    if (codeFailures.length >= MAX_CODE_FAILURES) throw new HttpError(429, 'Too many wrong codes. Try again in a few minutes.')
+    if (codeFailures.length >= MAX_CODE_FAILURES) throw new HttpError(429, 'tooManyWrongCodes', 'Too many wrong codes. Try again in a few minutes.')
   }
-  const codeFailed = (message: string): never => {
+  const codeFailed = (code: ServerErrorCode, message: string): never => {
     codeFailures.push(Date.now())
-    throw new HttpError(403, message)
+    throw new HttpError(403, code, message)
   }
 
   const authenticate = (req: IncomingMessage): Session => {
@@ -129,7 +139,7 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
         }
       }
     }
-    throw new HttpError(401, 'This phone is not (or no longer) connected to this server')
+    throw new HttpError(401, 'notConnected', 'This phone is not (or no longer) connected to this server')
   }
 
   const addDevice = (member: Member, label: string): Credentials => {
@@ -140,10 +150,10 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
   }
 
   /** Names are how people pick each other for trips, so they're unique. */
-  const checkNewName = (name: string | undefined, ifYou: string): string => {
-    if (!name) throw new HttpError(400, 'Your name is needed')
+  const checkNewName = (name: string | undefined, code: 'nameTaken' | 'nameTakenInvite', ifYou: string): string => {
+    if (!name) throw new HttpError(400, 'nameNeeded', 'Your name is needed')
     const taken = Object.values(store.data.members).some((m) => m.name.toLocaleLowerCase() === name.toLocaleLowerCase())
-    if (taken) throw new HttpError(409, `There's already someone called ${name} on the server. If that's you, ${ifYou}.`)
+    if (taken) throw new HttpError(409, code, `There's already someone called ${name} on the server. If that's you, ${ifYou}.`, { name })
     return name
   }
 
@@ -163,11 +173,11 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
     const params = new URL(req.url ?? '/', 'http://x').searchParams
     const tripId = params.get('trip')
     const id = params.get('id')
-    if (!isId(tripId) || !isId(id)) throw new HttpError(400, 'Which photo or document?')
+    if (!isId(tripId) || !isId(id)) throw new HttpError(400, 'badRequest', 'Which photo or document?')
     const trip = store.data.trips[tripId]
-    if (!trip || !tripMembers(trip, store.data.members).has(member.id)) throw new HttpError(404, 'No such trip')
+    if (!trip || !tripMembers(trip, store.data.members).has(member.id)) throw new HttpError(404, 'noSuchTrip', 'No such trip')
     const attachment = trip.records.attachments?.[id]?.rec
-    if (!attachment || attachment.deletedAt || attachment.private) throw new HttpError(404, 'No such photo or document')
+    if (!attachment || attachment.deletedAt || attachment.private) throw new HttpError(404, 'noSuchFile', 'No such photo or document')
     return { tripId, id, attachment, thumb: params.get('thumb') === '1' }
   }
 
@@ -178,7 +188,7 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
     'POST /api/admin/members': async (req): Promise<MemberSummary[]> => {
       guardCodes()
       const b = (await readJson(req)) as Partial<AdminMembersRequest> | null
-      if (typeof b?.serverCode !== 'string' || !codesMatch(b.serverCode, config.serverCode)) codeFailed('Wrong server code')
+      if (typeof b?.serverCode !== 'string' || !codesMatch(b.serverCode, config.serverCode)) codeFailed('wrongServerCode', 'Wrong server code')
       return memberList(store.data.members)
     },
 
@@ -189,36 +199,36 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
       const name = str(b?.name, 60)
 
       if (typeof b?.serverCode === 'string') {
-        if (!codesMatch(b.serverCode, config.serverCode)) codeFailed('Wrong server code')
+        if (!codesMatch(b.serverCode, config.serverCode)) codeFailed('wrongServerCode', 'Wrong server code')
         let member: Member | undefined
         if (b.memberId !== undefined) {
           member = typeof b.memberId === 'string' ? store.data.members[b.memberId] : undefined
-          if (!member) throw new HttpError(404, "That person isn't on the server any more")
+          if (!member) throw new HttpError(404, 'personGone', "That person isn't on the server any more")
         } else {
-          member = addMember(checkNewName(name, 'choose your name from the list instead'), true)
+          member = addMember(checkNewName(name, 'nameTaken', 'choose your name from the list instead'), true)
         }
         const creds = addDevice(member, label)
         await store.save()
         return creds
       }
 
-      if (typeof b?.inviteCode !== 'string') throw new HttpError(400, 'An invite code or the server code is needed')
+      if (typeof b?.inviteCode !== 'string') throw new HttpError(400, 'badRequest', 'An invite code or the server code is needed')
       const hash = hashCode(b.inviteCode)
       const invite = store.data.invites[hash]
-      if (!invite) return codeFailed('That invite is not valid. Ask for a new one.')
+      if (!invite) return codeFailed('inviteInvalid', 'That invite is not valid. Ask for a new one.')
       // Checked before using up the invite.
-      const newName = invite.memberId ? undefined : checkNewName(name, 'ask the admin for a sign-in link instead')
+      const newName = invite.memberId ? undefined : checkNewName(name, 'nameTakenInvite', 'ask the admin for a sign-in link instead')
       delete store.data.invites[hash] // single use, even if expired
       if (Date.parse(invite.expiresAt) < Date.now()) {
         await store.save()
-        throw new HttpError(403, 'That invite has expired. Ask for a new one.')
+        throw new HttpError(403, 'inviteExpired', 'That invite has expired. Ask for a new one.')
       }
       let member: Member | undefined
       if (invite.memberId) {
         member = store.data.members[invite.memberId]
         if (!member) {
           await store.save()
-          throw new HttpError(404, "The person that code was for isn't on the server any more")
+          throw new HttpError(404, 'codePersonGone', "The person that code was for isn't on the server any more")
         }
       } else {
         member = addMember(newName!, false)
@@ -252,15 +262,16 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
         return { ok: true }
       }
       if (thumb) {
-        const bytes = await readBody(req, THUMB_MAX_BYTES, 'The preview is too large')
-        if (bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) throw new HttpError(400, 'A preview must be a JPEG')
+        const bytes = await readBody(req, THUMB_MAX_BYTES, () => new HttpError(413, 'previewTooLarge', 'The preview is too large'))
+        if (bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) throw new HttpError(400, 'badRequest', 'A preview must be a JPEG')
         await files.write(tripId, id, true, bytes)
       } else {
-        const tooLarge = `This server takes files up to ${mb(config.maxFileBytes)}`
-        if ((attachment.size as number) > config.maxFileBytes) throw new HttpError(413, tooLarge)
+        const tooLarge = () =>
+          new HttpError(413, 'fileTooLarge', `This server takes files up to ${mb(config.maxFileBytes)}`, { mb: Math.round(config.maxFileBytes / 1024 / 1024) })
+        if ((attachment.size as number) > config.maxFileBytes) throw tooLarge()
         const bytes = await readBody(req, config.maxFileBytes, tooLarge)
         const sha256 = createHash('sha256').update(bytes).digest('hex')
-        if (bytes.length !== attachment.size || sha256 !== attachment.sha256) throw new HttpError(422, "The file isn't the one that was added")
+        if (bytes.length !== attachment.size || sha256 !== attachment.sha256) throw new HttpError(422, 'fileMismatch', "The file isn't the one that was added")
         await files.write(tripId, id, false, bytes)
       }
       // Deleted while it was on its way.
@@ -271,7 +282,7 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
     'GET /api/files': async (req, { member }) => {
       const { tripId, id, attachment, thumb } = fileTarget(req, member)
       const size = await files.size(tripId, id, thumb)
-      if (size === undefined) throw new HttpError(404, "The server doesn't have that file yet")
+      if (size === undefined) throw new HttpError(404, 'fileNotYet', "The server doesn't have that file yet")
       const type = thumb ? 'image/jpeg' : SERVED_TYPES.test(String(attachment.type)) ? String(attachment.type) : 'application/octet-stream'
       return new FileReply(files.path(tripId, id, thumb), size, type)
     },
@@ -282,8 +293,8 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
       try {
         return await lookUp(typeof b?.url === 'string' ? b.url.trim() : '', options.fetchFn, options.lookupTimeoutMs ?? LOOKUP_TIMEOUT_MS)
       } catch (err) {
-        if (err instanceof LookupError) throw new HttpError(err.status, err.message)
-        throw new HttpError(502, "Google Maps answered something this server can't read.")
+        if (err instanceof LookupError) throw new HttpError(err.status, err.code, err.message)
+        throw new HttpError(502, 'googleUnreadable', "Google Maps answered something this server can't read.")
       }
     },
 
@@ -292,11 +303,11 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
       const forId = b?.memberId
       let forMember: Member | undefined
       if (forId === undefined || forId === null) {
-        if (!member.admin) throw new HttpError(403, "Only the server's admin can invite new people")
+        if (!member.admin) throw new HttpError(403, 'adminOnlyInvite', "Only the server's admin can invite new people")
       } else {
         forMember = typeof forId === 'string' ? store.data.members[forId] : undefined
-        if (!forMember) throw new HttpError(404, "That person isn't on the server")
-        if (forMember.id !== member.id && !member.admin) throw new HttpError(403, "Only the server's admin can sign in someone else's phone")
+        if (!forMember) throw new HttpError(404, 'personNotOnServer', "That person isn't on the server")
+        if (forMember.id !== member.id && !member.admin) throw new HttpError(403, 'adminOnlySignIn', "Only the server's admin can sign in someone else's phone")
       }
       const now = new Date()
       // Drop expired invites while we're here.
@@ -316,7 +327,7 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
     /** Disconnect one of your phones (this one, to leave; another one, if it's lost). */
     'POST /api/devices/remove': async (req, { member }) => {
       const b = (await readJson(req)) as { deviceId?: unknown } | null
-      if (typeof b?.deviceId !== 'string' || !member.devices[b.deviceId]) throw new HttpError(404, 'No such phone')
+      if (typeof b?.deviceId !== 'string' || !member.devices[b.deviceId]) throw new HttpError(404, 'noSuchPhone', 'No such phone')
       delete member.devices[b.deviceId]
       await store.save()
       return { ok: true }
@@ -324,10 +335,10 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
 
     /** Admins: take someone off the server. Their phones stop syncing; their trips keep their travellers. */
     'POST /api/members/remove': async (req, { member }) => {
-      if (!member.admin) throw new HttpError(403, "Only the server's admin can remove people")
+      if (!member.admin) throw new HttpError(403, 'adminOnlyRemove', "Only the server's admin can remove people")
       const b = (await readJson(req)) as { memberId?: unknown } | null
-      if (typeof b?.memberId !== 'string' || !store.data.members[b.memberId]) throw new HttpError(404, "That person isn't on the server")
-      if (b.memberId === member.id) throw new HttpError(400, "You can't remove yourself")
+      if (typeof b?.memberId !== 'string' || !store.data.members[b.memberId]) throw new HttpError(404, 'personNotOnServer', "That person isn't on the server")
+      if (b.memberId === member.id) throw new HttpError(400, 'cantRemoveYourself', "You can't remove yourself")
       delete store.data.members[b.memberId]
       for (const [h, inv] of Object.entries(store.data.invites)) if (inv.memberId === b.memberId) delete store.data.invites[h]
       await store.save()
@@ -377,7 +388,7 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
         }
         result = await routes[route](req, session)
       } else {
-        throw new HttpError(404, 'Not found')
+        throw new HttpError(404, 'notFound', 'Not found')
       }
       if (result instanceof FileReply) {
         res.writeHead(200, {
@@ -396,9 +407,14 @@ export function createApp(config: Config, store: Store, files = new FileStore(jo
     } catch (err) {
       const status = err instanceof HttpError ? err.status : err instanceof BadRequest ? 400 : 500
       if (status === 500) console.error(err)
-      const message = status === 500 ? 'Internal error' : (err as Error).message
+      const answer: ErrorAnswer =
+        err instanceof HttpError
+          ? { error: err.message, code: err.code, ...err.details }
+          : err instanceof BadRequest
+            ? { error: err.message, code: err.code }
+            : { error: 'Internal error', code: 'internalError' }
       if (!res.headersSent) res.writeHead(status, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ error: message }))
+      res.end(JSON.stringify(answer))
     }
   })
 }

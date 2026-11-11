@@ -116,7 +116,7 @@ another host (an exchange-rate API, map tiles) needs adding there, and must stay
   after it; `account.ts`: joining, invites, leaving).
 - `server/` — the sync server: Node HTTP, JSON-file store, no dependencies; runs `src/domain` directly
   (Node type stripping). Image: `ghcr.io/waypoints-pwa/waypoints-server`. `DATA_DIR` holds the database,
-  `FILES_DIR` (another disk is fine) photos and documents (`trips/`) and the database's daily copies.
+  `FILES_DIR` (another disk is fine) photos and documents (`trips/`) and the database's daily copies. Every error it sends has a code (`SERVER_ERROR_CODES` in `src/domain/serverProtocol.ts`; refused records a `DataError` code), translated by the app (`m.reasons.server`, `m.reasons.data`); `error` stays English for older apps.
 - `src/ui/` — React. `tripData.ts` loads a trip once for all its pages (`useTrip()`), `TripLayout.tsx`
   has its top bar and tabs, `items/` has one file per kind (form + detail page), `pages/` the rest;
   plain CSS tokens in `src/index.css` (light + dark).

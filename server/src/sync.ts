@@ -1,10 +1,16 @@
 import { RECORD_TABLES, type RecordTable, type Tables, type Traveller } from '../../src/db/types.ts'
 import { checkRecord, DataError, isId } from '../../src/domain/records.ts'
 import { canonicalJSON, withNewerLink } from '../../src/domain/sync.ts'
-import type { MemberSummary, RejectedRecord, SyncRequest, SyncResponse, TripChanges } from '../../src/domain/serverProtocol.ts'
+import type { MemberSummary, RejectedRecord, ServerErrorCode, SyncRequest, SyncResponse, TripChanges } from '../../src/domain/serverProtocol.ts'
 import type { Member, StoreData, StoredRecord, StoredTrip } from './store.ts'
 
-export class BadRequest extends Error {}
+export class BadRequest extends Error {
+  code: ServerErrorCode
+  constructor(message: string, code: ServerErrorCode = 'badRequest') {
+    super(message)
+    this.code = code
+  }
+}
 
 const MAX_TRIPS = 500
 const MAX_RECORDS = 50_000
@@ -16,7 +22,7 @@ const key = (table: string, id: string) => `${table}/${id}`
 /** The request's shape. Records are checked one by one while merging, so one bad record can't block a sync. */
 export function parseSyncRequest(body: unknown): SyncRequest {
   if (!isObject(body) || !Array.isArray(body.trips)) throw new BadRequest('Expected a list of trips')
-  if (body.trips.length > MAX_TRIPS) throw new BadRequest('Too many trips in one sync')
+  if (body.trips.length > MAX_TRIPS) throw new BadRequest('Too many trips in one sync', 'tooManyTrips')
   const seen = new Set<string>()
   let count = 0
   for (const t of body.trips as unknown[]) {
@@ -30,7 +36,7 @@ export function parseSyncRequest(body: unknown): SyncRequest {
       count += list.length
     }
   }
-  if (count > MAX_RECORDS) throw new BadRequest('Too many records in one sync')
+  if (count > MAX_RECORDS) throw new BadRequest('Too many records in one sync', 'tooManyRecords')
   return body as unknown as SyncRequest
 }
 
@@ -55,8 +61,8 @@ export const memberList = (members: Record<string, Member>): MemberSummary[] =>
  * file the server has was checked against the first `size` and `sha256`).
  */
 function checkAttachment(rec: StoredRecord, stored: StoredRecord | undefined) {
-  if (rec.private) throw new DataError('It is kept only on the phone it was added on.')
-  if (stored && (rec.sha256 !== stored.sha256 || rec.size !== stored.size)) throw new DataError("A photo or document's file can't be changed.")
+  if (rec.private) throw new DataError('It is kept only on the phone it was added on.', 'privateFile')
+  if (stored && (rec.sha256 !== stored.sha256 || rec.size !== stored.size)) throw new DataError("A photo or document's file can't be changed.", 'fileChanged')
 }
 
 /** The trip's records that pass the same checks as links and files; the others are reported. */
@@ -64,7 +70,7 @@ function validRecords(t: TripChanges, trip: StoredTrip | undefined, now: number,
   const out: [RecordTable, StoredRecord[]][] = []
   for (const [table, list] of Object.entries(t.records) as [string, unknown[]][]) {
     if (!(RECORD_TABLES as readonly string[]).includes(table)) {
-      for (const r of list) rejected.push({ tripId: t.id, table: table.slice(0, 40), id: idOf(r), reason: 'This server is too old for it: update the server.' })
+      for (const r of list) rejected.push({ tripId: t.id, table: table.slice(0, 40), id: idOf(r), reason: 'This server is too old for it: update the server.', code: 'serverTooOld' })
       continue
     }
     const valid: StoredRecord[] = []
@@ -72,11 +78,12 @@ function validRecords(t: TripChanges, trip: StoredTrip | undefined, now: number,
       try {
         checkRecord(table as RecordTable, r, now)
         const rec = r as unknown as StoredRecord
-        if ((table === 'trips' ? rec.id : rec.tripId) !== t.id) throw new DataError('It belongs to another trip.')
+        if ((table === 'trips' ? rec.id : rec.tripId) !== t.id) throw new DataError('It belongs to another trip.', 'otherTrip')
         if (table === 'attachments') checkAttachment(rec, trip?.records.attachments?.[rec.id]?.rec)
         valid.push(rec)
       } catch (err) {
-        rejected.push({ tripId: t.id, table, id: idOf(r), reason: err instanceof DataError ? err.message : 'Invalid record.' })
+        if (err instanceof DataError) rejected.push({ tripId: t.id, table, id: idOf(r), reason: err.message, ...(err.code ? { code: err.code } : {}) })
+        else rejected.push({ tripId: t.id, table, id: idOf(r), reason: 'Invalid record.', code: 'invalidRecord' })
       }
     }
     out.push([table as RecordTable, valid])

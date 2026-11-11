@@ -1,5 +1,6 @@
 export const reasons = {
   data: (err: { message: string; code?: string; table?: string }): string => err.message,
+  server: (answer: { error: string; code?: string; name?: string; mb?: number }): string => answer.error,
   notAServerAddress: "That isn't a server address.",
   mustBeHttps: 'The server address must start with https://',
   unreachable: "Couldn't reach the server. Check the address, and that Tailscale is on.",
