@@ -1,6 +1,6 @@
 # The guide in Portuguese (Portuguese, part 8)
 
-Status: building
+Status: shipped (0.17.1)
 Issue: https://github.com/waypoints-pwa/waypoints/issues/91
 Builds after: none
 
@@ -340,3 +340,17 @@ file sizes from 1000 MB up changed to "1,234 MB".
   or the guide (`trip-budget`, `expenses-csv-export`, `server-trip-cleanup`, `qr-join`,
   `plan-editing`, `list-row-stars`) must update `GUIDE.pt.md` and the Portuguese pictures too once
   this ships (the CLAUDE.md rule from task 6), so `Builds after` is "none".
+- As built:
+  - App 0.17.1; no server change.
+  - `Language` is imported as `'../i18n/language.ts'` (with the extension) in `src/lib/links.ts`
+    and the guide scripts: `tsconfig.node.json` (`nodenext`) type-checks e2e, which imports
+    `links.ts`, and needs it.
+  - `scripts/guide/screenshots.ts` also has a small `FILES` table (per-language trip file name and
+    the two text files); `demoBackup` is async, so `await demoBackup(language)`.
+  - The Contents heading is "## Índice".
+  - The English screenshot run (Verification) gave 11 byte-identical pictures and 7 with the same
+    screens but the travellers in another order (Ben, Ana, Chloé), from the demo trip's random ids;
+    none committed. Fixed ids for the demo travellers would make the run reproducible.
+  - Browser checks were a throwaway script against the dev server (`pt-PT` and `en-GB` phones):
+    guide links on Welcome and Settings, the Money tab and every foreign-currency expense page's
+    rates, the trip name. Not checked: a 1000 MB+ file, a real phone, the GitHub rendering.
