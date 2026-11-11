@@ -1,7 +1,7 @@
 # The Language setting (Portuguese, part 7)
 
 Status: ready
-Issue: <issue link>
+Issue: https://github.com/waypoints-pwa/waypoints/issues/87
 Builds after: none
 
 ## Problem
