@@ -7,7 +7,8 @@ import { DataError } from '../../domain/records'
 import { downloadJSON } from '../../lib/download'
 import { LINKS } from '../../lib/links'
 import { requestPersistentStorage } from '../../lib/storage'
-import { locale, m } from '../../i18n'
+import { chooseLanguage, chosenLanguage, locale, m } from '../../i18n'
+import { LANGUAGE_NAMES, LANGUAGES, type Language } from '../../i18n/language'
 import { Notice } from '../components/bits'
 import { SupportLine } from '../components/SupportLine'
 import { fmtBytes, mergeSummary } from '../format'
@@ -64,6 +65,24 @@ export function SettingsPage() {
           />
         )}
         <p className="muted small">{m.settings.nameHint}</p>
+      </section>
+
+      <section className="card">
+        <h3>{m.settings.language}</h3>
+        <select
+          className="input"
+          aria-label={m.settings.language}
+          value={chosenLanguage ?? 'auto'}
+          onChange={(e) => chooseLanguage(e.target.value === 'auto' ? undefined : (e.target.value as Language))}
+        >
+          <option value="auto">{m.settings.languageAutomatic}</option>
+          {LANGUAGES.map((l) => (
+            <option key={l} value={l}>
+              {LANGUAGE_NAMES[l]}
+            </option>
+          ))}
+        </select>
+        <p className="muted small">{m.settings.languageHint}</p>
       </section>
 
       <section className="card">
