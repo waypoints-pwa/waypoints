@@ -1,10 +1,16 @@
 import { RECORD_TABLES, type RecordTable, type Tables, type Traveller } from '../../src/db/types.ts'
 import { checkRecord, DataError, isId } from '../../src/domain/records.ts'
 import { canonicalJSON, withNewerLink } from '../../src/domain/sync.ts'
-import type { MemberSummary, RejectedRecord, SyncRequest, SyncResponse, TripChanges } from '../../src/domain/serverProtocol.ts'
+import type { MemberSummary, RejectedRecord, ServerErrorCode, SyncRequest, SyncResponse, TripChanges } from '../../src/domain/serverProtocol.ts'
 import type { Member, StoreData, StoredRecord, StoredTrip } from './store.ts'
 
-export class BadRequest extends Error {}
+export class BadRequest extends Error {
+  code: ServerErrorCode
+  constructor(message: string, code: ServerErrorCode = 'badRequest') {
+    super(message)
+    this.code = code
+  }
+}
 
 const MAX_TRIPS = 500
 const MAX_RECORDS = 50_000
@@ -16,7 +22,7 @@ const key = (table: string, id: string) => `${table}/${id}`
 /** The request's shape. Records are checked one by one while merging, so one bad record can't block a sync. */
 export function parseSyncRequest(body: unknown): SyncRequest {
   if (!isObject(body) || !Array.isArray(body.trips)) throw new BadRequest('Expected a list of trips')
-  if (body.trips.length > MAX_TRIPS) throw new BadRequest('Too many trips in one sync')
+  if (body.trips.length > MAX_TRIPS) throw new BadRequest('Too many trips in one sync', 'tooManyTrips')
   const seen = new Set<string>()
   let count = 0
   for (const t of body.trips as unknown[]) {
@@ -30,7 +36,7 @@ export function parseSyncRequest(body: unknown): SyncRequest {
       count += list.length
     }
   }
-  if (count > MAX_RECORDS) throw new BadRequest('Too many records in one sync')
+  if (count > MAX_RECORDS) throw new BadRequest('Too many records in one sync', 'tooManyRecords')
   return body as unknown as SyncRequest
 }
 

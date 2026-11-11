@@ -123,6 +123,22 @@ describe('joining the server', () => {
     expect(Object.keys(store.data.members)).toHaveLength(2)
   })
 
+  it('answers every refusal with a code besides its English sentence', async () => {
+    expect(await call('/api/register', { serverCode: 'WRONG-0000', name: 'Eve', deviceLabel: 'Pixel' })).toEqual({
+      status: 403,
+      body: { error: 'Wrong server code', code: 'wrongServerCode' },
+    })
+    const admin = await registerAdmin()
+    expect(await call('/api/register', { serverCode: config.serverCode, name: 'max', deviceLabel: 'Pixel' })).toEqual({
+      status: 409,
+      body: { error: "There's already someone called max on the server. If that's you, choose your name from the list instead.", code: 'nameTaken', name: 'max' },
+    })
+    expect(await call('/api/nothing')).toEqual({ status: 404, body: { error: 'Not found', code: 'notFound' } })
+    expect(await call<{ code: string }>('/api/me', undefined, 'nope')).toMatchObject({ status: 401, body: { code: 'notConnected' } })
+    expect(await call('/api/sync', { trips: 'x' }, admin.token)).toEqual({ status: 400, body: { error: 'Expected a list of trips', code: 'badRequest' } })
+    expect((await call('/api/google-maps', { url: 'https://example.com' }, admin.token)).body).toEqual({ error: "That's not a Google Maps link.", code: 'notGoogle' })
+  })
+
   it('slows down guessing codes', async () => {
     for (let i = 0; i < 20; i++) await call('/api/register', { inviteCode: `GUESS-${i}`, name: 'Eve', deviceLabel: 'x' })
     expect(await call('/api/register', { serverCode: config.serverCode, name: 'Max', deviceLabel: 'x' })).toMatchObject({ status: 429 })
@@ -225,6 +241,14 @@ describe('photos and documents', () => {
     expect(tooLarge.status).toBe(413)
     expect(((await tooLarge.json()) as { error: string }).error).toContain('files up to')
     expect((await ok<SyncResponse>('/api/sync', { trips: [] }, max.token)).trips[0].files).toEqual([])
+  })
+
+  it('are refused with a code and the size when too large', async () => {
+    const { max } = await setUp()
+    config.maxFileBytes = 2
+    const res = await upload(max.token, FILE)
+    expect(res.status).toBe(413)
+    expect(await res.json()).toEqual({ error: 'This server takes files up to 0 MB', code: 'fileTooLarge', mb: 0 })
   })
 
   it('go when their attachment is deleted', async () => {

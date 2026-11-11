@@ -7,14 +7,16 @@ import {
   placeIdFromUrl,
   placesFromList,
 } from '../../src/domain/googleMaps.ts'
-import type { GoogleMapsAnswer } from '../../src/domain/serverProtocol.ts'
+import type { GoogleMapsAnswer, ServerErrorCode } from '../../src/domain/serverProtocol.ts'
 
 /** An error with the status the server should answer with. Messages never include the link or Google's answer. */
 export class LookupError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  code: ServerErrorCode
+  constructor(status: number, code: ServerErrorCode, message: string) {
     super(message)
     this.status = status
+    this.code = code
   }
 }
 
@@ -22,9 +24,9 @@ const MAX_REDIRECTS = 5
 const MAX_BYTES = 5 * 1024 * 1024
 export const LOOKUP_TIMEOUT_MS = 10_000
 
-const notGoogle = () => new LookupError(400, "That's not a Google Maps link.")
-const noAnswer = () => new LookupError(502, "Google Maps didn't answer.")
-const unreadable = () => new LookupError(502, "Google Maps answered something this server can't read.")
+const notGoogle = () => new LookupError(400, 'notGoogle', "That's not a Google Maps link.")
+const noAnswer = () => new LookupError(502, 'googleNoAnswer', "Google Maps didn't answer.")
+const unreadable = () => new LookupError(502, 'googleUnreadable', "Google Maps answered something this server can't read.")
 
 /**
  * Google sends EU addresses (like a home server in Portugal) to its cookie-consent page before any Maps
@@ -94,7 +96,7 @@ export async function lookUp(url: string, fetchFn: typeof fetch = fetch, timeout
       const id = listIdFromUrl(current)
       if (id) {
         const list = placesFromList(await getBody(listUrl(id)))
-        if (!list || list.places.length === 0) throw new LookupError(422, "This list isn't shared, or doesn't exist.")
+        if (!list || list.places.length === 0) throw new LookupError(422, 'listNotShared', "This list isn't shared, or doesn't exist.")
         return { kind: 'list', name: list.name, places: list.places }
       }
       const place = placeFromUrl(current)
@@ -102,7 +104,7 @@ export async function lookUp(url: string, fetchFn: typeof fetch = fetch, timeout
       const placeId = placeIdFromUrl(current)
       if (placeId) {
         const found = placeFromDetails(await getBody(detailsUrl(placeId)))
-        if (!found) throw new LookupError(422, "That link isn't a place or a list.")
+        if (!found) throw new LookupError(422, 'notPlaceOrList', "That link isn't a place or a list.")
         return { kind: 'place', place: found }
       }
       if (hops >= MAX_REDIRECTS) throw notGoogle()
@@ -127,7 +129,7 @@ export async function lookUp(url: string, fetchFn: typeof fetch = fetch, timeout
         current = next
         continue
       }
-      throw new LookupError(422, "That link isn't a place or a list.")
+      throw new LookupError(422, 'notPlaceOrList', "That link isn't a place or a list.")
     }
   }
   try {
