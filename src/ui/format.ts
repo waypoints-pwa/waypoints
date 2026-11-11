@@ -54,7 +54,8 @@ export function fmtMoneyShort(amount: number, currency: string): string {
 
 /** A number for an input box: up to `digits` decimals, no grouping ("1234.5"). */
 export const fmtPlain = (value: number, digits = 2) => String(Math.round(value * 10 ** digits) / 10 ** digits)
-/** An exchange rate to show: up to 4 decimals, no grouping, in the app's language ("162.6016", "162,6016"). */ export const fmtRate = (rate: number) => rate.toLocaleString(locale, { maximumFractionDigits: 4, useGrouping: false })
+/** An exchange rate to show: up to 4 decimals, no grouping, in the app's language ("162.6016", "162,6016"). */
+export const fmtRate = (rate: number) => rate.toLocaleString(locale, { maximumFractionDigits: 4, useGrouping: false })
 
 /** "2h 35m". */
 export function fmtDuration(ms: number): string {
