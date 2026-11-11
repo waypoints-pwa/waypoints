@@ -219,7 +219,8 @@ Keep the existing imports; add the new names to the `./language` import.
 3. **Country names follow the language**
    - Change: **Country names** in Context (`src/domain/places.ts`, `src/lib/places.ts`,
      `src/ui/components/PlaceFields.tsx`). Add to `src/domain/places.test.ts` (new `it`s; existing
-     ones not edited): `countryName('ES', 'pt-PT')` is `'Espanha'`, `countryName('ES')` is
+     ones not edited, except line 72's `maine.map(cityDetail)`, which becomes
+     `maine.map((c) => cityDetail(c))` so `map`'s index isn't passed as the locale): `countryName('ES', 'pt-PT')` is `'Espanha'`, `countryName('ES')` is
      `'Spain'`, `countryName('ZZZ', 'pt-PT')` is `'ZZZ'`; with
      `const pt = cityIndex(parseCities(<the same cities.tsv>), 'pt-PT')`,
      `searchCities(pt, 'Madrid, espanha')[0]` and `searchCities(pt, 'Madrid, spain')[0]` have
