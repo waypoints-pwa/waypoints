@@ -183,6 +183,7 @@ Glossary (PT-PT; use these words, also in later parts):
 | Save as a file | Guardar como ficheiro | Send update | Enviar atualização |
 | Open a trip / Open link / Open a file | Abrir uma viagem / Abrir link / Abrir um ficheiro | Paste / Paste trip link | Colar / Colar link da viagem |
 | Add to my trips / Update my copy | Adicionar às minhas viagens / Atualizar a minha cópia | Open the trip | Abrir a viagem |
+| preview | pré-visualização | | |
 | Add me / Skip for now | Adicionar-me / Agora não | phone-only trip | viagem só neste telemóvel |
 | Open in the waypoints app | Abrir na app waypoints | Today | Hoje |
 | server log | registo do servidor | Active (a phone) | Ativo |
@@ -354,7 +355,7 @@ Do not touch: `src/domain/`, `src/db/`, `src/sync/`, `src/lib/`, `server/`, `scr
      (`translate-sharing-and-server`);
   5. text made on the phone: reasons from `src/lib`, `src/sync`, `src/db` and `src/domain`,
      packing templates, calendar export, safety-copy names (`translate-phone-text`);
-  6. what the sync server answers: reasons as codes, translated by the app (new server image);
+  6. what the sync server answers: reasons as codes, translated by the app, server 0.8.0 (`translate-server-answers`);
   7. the switch: Language in Settings (Automatic / English / Português), Portuguese on phones set
      to Portuguese, dates and numbers following the app's language, `<html lang>`, What's new notes
      in both languages (CI-enforced), the guide and its screenshots in Portuguese, version bump.

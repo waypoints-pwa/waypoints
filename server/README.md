@@ -114,6 +114,8 @@ marked *public* need no token; all others need `Authorization: Bearer <device to
 | `POST /api/sync` | Send each trip's changes, get back what changed since `cursor` (last writer wins per record), and which files the server has |
 | `POST /api/files` · `GET /api/files` | A photo or document's file (or its preview), for the people on its trip, after its record has synced |
 
+Errors answer with their status and `{ error, code }`: `error` is English, `code` (from 0.8.0) is one of `SERVER_ERROR_CODES` in `serverProtocol.ts`, which the app shows in its own language. Refused records in a sync have a `code` too.
+
 ## Development
 
 ```sh
