@@ -1,5 +1,7 @@
 # 📍 waypoints: the user guide
 
+*Também em português: [guia do utilizador](GUIDE.pt.md).*
+
 This guide shows how to use waypoints, step by step. You don't need to be technical. The trip in the
 pictures, *Japan in spring* with Ana, Ben and Chloé, is made up.
 
