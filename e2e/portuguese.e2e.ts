@@ -2,6 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
+import { LINKS } from '../src/lib/links.ts'
 import { expect, expectNoEnglish, importDemoTrip, test } from './fixtures.ts'
 
 /** Makes a phone ready: no share sheet (so the app copies the link), clipboard allowed. */
@@ -176,6 +177,22 @@ test('?lang=pt shows why things failed and the packing templates in Portuguese',
   await page.getByRole('button', { name: 'Beach', exact: true }).click()
   await expect(page.getByText('0 of 10 packed')).toBeVisible()
   await expect(page.getByText('Sunscreen')).toHaveCount(0)
+})
+
+test('?lang=pt links the guide in Portuguese', async ({ page }) => {
+  await page.goto('?lang=pt')
+  await expect(page.getByRole('link', { name: 'Ler o guia' })).toHaveAttribute('href', LINKS.guidePt)
+  await page.goto('?lang=pt#/settings')
+  await expect(page.getByRole('link', { name: 'Como usar o waypoints' })).toHaveAttribute('href', LINKS.guidePt)
+})
+
+test('exchange rates follow the number style of the language', async ({ page }) => {
+  const backup = await importDemoTrip(page)
+  const id = backup.trips[0].id
+  await page.goto(`?lang=pt#/trips/${id}/money`)
+  await expect(page.locator('main')).toContainText('1 EUR = 162,6016 JPY')
+  await page.goto(`#/trips/${id}/money`)
+  await expect(page.locator('main')).toContainText('1 EUR = 162.6016 JPY')
 })
 
 test('an unknown language stays English', async ({ page }) => {

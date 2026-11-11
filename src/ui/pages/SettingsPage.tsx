@@ -5,9 +5,9 @@ import { exportBackup, importFile } from '../../db/backupIO'
 import { db, setSetting, SETTINGS } from '../../db/db'
 import { DataError } from '../../domain/records'
 import { downloadJSON } from '../../lib/download'
-import { LINKS } from '../../lib/links'
+import { LINKS, guideFor } from '../../lib/links'
 import { requestPersistentStorage } from '../../lib/storage'
-import { chooseLanguage, chosenLanguage, locale, m } from '../../i18n'
+import { chooseLanguage, chosenLanguage, language, locale, m } from '../../i18n'
 import { LANGUAGE_NAMES, LANGUAGES, type Language } from '../../i18n/language'
 import { Notice } from '../components/bits'
 import { SupportLine } from '../components/SupportLine'
@@ -200,7 +200,7 @@ export function SettingsPage() {
         </p>
         <p className="muted small">
           {m.settings.aboutGuide(
-            <a className="link" href={LINKS.guide} target="_blank" rel="noreferrer">
+            <a className="link" href={guideFor(language)} target="_blank" rel="noreferrer">
               {m.settings.howToUse}
             </a>,
           )}
