@@ -135,8 +135,8 @@ function readSaved(): string | null {
 }
 
 export const language: Language = pickLanguage(inBrowser ? location.search : '', readSaved(), phone)
-/** For Intl and toLocale…: undefined keeps the phone's own formats. */
-export const locale: string | undefined = formatLocale(language, phone)
+/** For Intl and toLocale…: undefined keeps the phone's own formats (and tests' formats as they are). */
+export const locale: string | undefined = inBrowser ? formatLocale(language, phone) : undefined
 export const languageTag: string = LANGUAGE_TAGS[language]
 /** What Settings → Language shows: the saved choice, or undefined for Automatic. */
 export const chosenLanguage: Language | undefined = savedLanguage(readSaved())
