@@ -6,6 +6,7 @@ import {
   airportIndex,
   airportLabel,
   cityDetail,
+  countryName,
   cityIndex,
   cityNamed,
   fold,
@@ -69,7 +70,7 @@ describe('searchCities', () => {
     const portlands = searchCities(cities, 'Portland', 20).filter((c) => c.name === 'Portland')
     expect(portlands.length).toBeGreaterThan(1)
     const maine = searchCities(cities, 'Portland, maine')
-    expect(maine.map(cityDetail)).toEqual(maine.map(() => 'Maine, United States'))
+    expect(maine.map((c) => cityDetail(c))).toEqual(maine.map(() => 'Maine, United States'))
     expect(maine[0]).toMatchObject({ name: 'Portland', timeZone: 'America/New_York' })
     expect(searchCities(cities, 'Portland, oregon')[0].timeZone).toBe('America/Los_Angeles')
   })
@@ -161,5 +162,31 @@ describe('the nearest town', () => {
     expect(nearestCity(located, 38.697, -9.206)?.name).toBe('Lisbon')
     expect(nearestCity(located, 16.4695, 107.5774)?.name).toBe('Huế')
     expect(nearestCity(located, 30, -40)).toBeUndefined()
+  })
+})
+
+describe('country names in the app language', () => {
+  const pt = cityIndex(parseCities(readFileSync(new URL('../data/cities.tsv', import.meta.url), 'utf8')), 'pt-PT')
+
+  it('names countries in the given language', () => {
+    expect(countryName('ES', 'pt-PT')).toBe('Espanha')
+    expect(countryName('ES')).toBe('Spain')
+    expect(countryName('ZZZ', 'pt-PT')).toBe('ZZZ')
+  })
+
+  it('finds cities by the country in either language', () => {
+    for (const query of ['Madrid, espanha', 'Madrid, spain']) {
+      const [city] = searchCities(pt, query)
+      expect(city.country).toBe('ES')
+      expect(city.name).toBe('Madrid')
+    }
+    expect(cityDetail(searchCities(pt, 'Madrid, espanha')[0], 'pt-PT')).toBe('Madrid, Espanha')
+    expect(searchCities(cities, 'Madrid, espanha')).toEqual([])
+  })
+
+  it('finds airports by the country in the app language', () => {
+    const found = searchAirports(airportIndex(parseAirports(readFileSync(new URL('../data/airports.tsv', import.meta.url), 'utf8')), 'pt-PT'), 'espanha')
+    expect(found.length).toBeGreaterThan(0)
+    expect(found.every((a) => a.country === 'ES')).toBe(true)
   })
 })
