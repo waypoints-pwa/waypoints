@@ -1,7 +1,7 @@
 # What the sync server answers in both languages (Portuguese, part 6)
 
 Status: ready
-Issue: <issue link>
+Issue: https://github.com/waypoints-pwa/waypoints/issues/84
 Builds after: none
 
 ## Problem
