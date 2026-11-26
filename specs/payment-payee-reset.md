@@ -84,12 +84,17 @@ Other cases:
 2. **Smoke test for the payment form**
    - Change: new file `e2e/payment-form.e2e.ts`, one test "a payment from the payee keeps the payee the form
      shows": `importDemoTrip`, `pickMe(page, trip, 'Ana')`, go to `#/trips/${trip}/money`, `dismissNotices`,
-     click the link named `+ Payment` (`getByRole('link', { name: '+ Payment' })`, the plain one in Balances, not a settle row's **Record payment**), `expect(getByLabel('From')).toHaveValue(<Ana id>)` and
-     `getByLabel('To')` has Ben's id; select **From** = Ben (`selectOption({ label: 'Ben' })`); assert
-     `getByLabel('To')` has Ana's id; fill the **Amount** textbox (`getByRole('textbox', { name: 'Amount' })`)
-     with `20`; click **Save**; assert the text "Choose who received the money." has count 0, the URL no
-     longer ends in `/expenses/new` (it may carry `?transfer=1`), and, on `#/trips/${trip}/money`, the text
-     "Ben paid Ana" is visible. Traveller ids come from `backup.travellers` by name.
+     click the link named `+ Payment` (`getByRole('link', { name: '+ Payment' })`, the plain one in Balances, not a settle row's **Record payment**).
+     **Never hard-code traveller names or order**: the demo trip's travellers share one `createdAt`, so the
+     app's order (`byCreation`, ties by random id) changes every run. Instead, read names off the form:
+     `payee` = the text of the **To** select's selected option (`getByLabel('To')` →
+     `locator('option:checked').textContent()`); select **From** = `payee` (`selectOption({ label: payee })`);
+     then `shown` = the **To** select's selected option text again, and assert `shown !== payee`. Fill the
+     **Amount** textbox (`getByRole('textbox', { name: 'Amount' })`) with `20`; click **Save**; assert the
+     text "Choose who received the money." has count 0, the URL no longer ends in `/expenses/new` (it may
+     carry `?transfer=1`), and, on `#/trips/${trip}/money`, the text `${payee} paid ${shown}` is visible.
+     Note: the **To** select's displayed option looks right even without task 1 (the browser shows the first
+     option when the state matches none), so only the Save assertions catch the bug.
    - Depends on: task 1
    - Done when: `npx playwright test e2e/payment-form.e2e.ts` passes with task 1, and fails on
      `origin/main`'s `expenses.tsx` (check once with `git stash` of task 1's change, then restore).
@@ -108,11 +113,11 @@ Other cases:
 ## Acceptance criteria
 - [ ] On a 3-traveller trip, new payment, **From** set to the shown payee → **To** shows and holds the
   first other traveller; **Save** succeeds with no error (`e2e/payment-form.e2e.ts`).
-- [ ] The saved payment reads "Ben paid Ana" on the Money screen (same test).
+- [ ] The saved payment reads "<payer> paid <the person To showed>" on the Money screen (same test).
 - [ ] Changing **From** to someone other than the payee leaves **To** unchanged (manual: open **+ Payment**
-  as Ana → To Ben, set From to Chloé, To still Ben).
-- [ ] `#/trips/<id>/expenses/new?transfer=1&from=<Ben>&to=<Ben>` opens with **To** = Ana and saves
-  (manual).
+  as Ana, set From to the traveller who is neither Ana nor the shown payee, To is unchanged).
+- [ ] `#/trips/<id>/expenses/new?transfer=1&from=<X>&to=<X>` (X not you) opens with **To** = the first
+  traveller other than X and saves (manual).
 - [ ] Only `src/ui/items/expenses.tsx`, `e2e/payment-form.e2e.ts`, `package.json`, `package-lock.json`,
   `CHANGELOG.md`, `CHANGELOG.pt.md` change.
 - [ ] `npm run smoke` passes.
