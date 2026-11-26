@@ -8,6 +8,10 @@ o mesmo número de parágrafos, marcadores, **negritos** e `códigos`. Um teste 
 ficheiros correspondem. Escreve para quem usa a app, não para programadores.
 -->
 
+## 0.18.1 — 2026-11-26
+
+Registar um pagamento feito pela pessoa que estava escolhida para o receber já não diz que ninguém o recebeu: o pagamento vai agora para a pessoa que o formulário mostra.
+
 ## 0.18.0 — 2026-11-26
 
 Uma despesa pode agora ser paga por várias pessoas: toca em **Pago por várias pessoas?** em Pago por e divide por igual ou por valores diferentes. Os saldos contam o que cada uma pagou. Os telemóveis ainda não atualizados contam-na como paga por quem pagou mais.
