@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ANA, BO, CY, exchange, expense, T1 } from '../test/fixtures'
 import type { Expense, PaidWith } from '../db/types'
-import { awaitingCost, balances, cashLeft, exchangeRates, likelyPaidWith, paidWithOf, parseAmount, paymentSplit, rateFinder, settleUp, sharesOf, totals, unconverted } from './expenses'
+import { awaitingCost, balances, cashLeft, exchangeRates, likelyPaidWith, mainPayer, paidWithOf, payersOf, parseAmount, paymentSplit, rateFinder, settleUp, sharesOf, totals, unconverted } from './expenses'
 
 /** A trip in EUR, without exchanges unless given. */
 const inEuros = (exchanges = [exchange({ deletedAt: '2026-10-02T10:00:00.000Z' })]) => rateFinder('EUR', exchanges)
@@ -21,6 +21,44 @@ describe('sharesOf', () => {
       [ANA, 5],
       [BO, 25],
     ])
+  })
+})
+
+describe('payersOf', () => {
+  const parts = (e: Partial<Expense>) => Object.fromEntries(payersOf(expense(e)))
+
+  it('is paidBy for the whole amount without payers', () => {
+    expect(parts({ amount: 30 })).toEqual({ [ANA]: 30 })
+  })
+
+  it('ignores payers on a transfer', () => {
+    expect(parts({ amount: 30, transfer: true, payers: { kind: 'equal', among: [BO, CY] } })).toEqual({ [ANA]: 30 })
+  })
+
+  it('splits equally, ignoring duplicates', () => {
+    expect(parts({ amount: 30, payers: { kind: 'equal', among: [ANA, BO, ANA] } })).toEqual({ [ANA]: 15, [BO]: 15 })
+  })
+
+  it('uses exact amounts', () => {
+    expect(parts({ amount: 60, payers: { kind: 'exact', amounts: { [ANA]: 40, [BO]: 20 } } })).toEqual({ [ANA]: 40, [BO]: 20 })
+  })
+
+  it('scales exact amounts that no longer add up', () => {
+    expect(parts({ amount: 90, payers: { kind: 'exact', amounts: { [ANA]: 40, [BO]: 20 } } })).toEqual({ [ANA]: 60, [BO]: 30 })
+  })
+
+  it('falls back to paidBy when nothing above 0', () => {
+    expect(parts({ amount: 30, payers: { kind: 'exact', amounts: { [ANA]: 0, [BO]: 0 } } })).toEqual({ [ANA]: 30 })
+  })
+})
+
+describe('mainPayer', () => {
+  it('is the one who paid the most', () => {
+    expect(mainPayer(new Map([[BO, 20], [ANA, 40]]))).toBe(ANA)
+  })
+
+  it('gives ties to the first', () => {
+    expect(mainPayer(new Map([[BO, 30], [ANA, 30]]))).toBe(BO)
   })
 })
 
@@ -185,6 +223,14 @@ describe('balances', () => {
     const part = expense({ id: 'cost0002', title: 'Payment', amount: 35, paidBy: BO, transfer: true, split: { kind: 'equal', among: [ANA] } })
     const b = balances([dinner, part], inEuros(), [ANA, BO])
     expect(settleUp(new Map([...b].map(([id, x]) => [id, x.net])))).toEqual([{ from: BO, to: ANA, amount: 65 }])
+  })
+
+  it('credits each of several payers with their part', () => {
+    const e = expense({ amount: 60, payers: { kind: 'exact', amounts: { [ANA]: 40, [BO]: 20 } }, split: { kind: 'equal', among: [ANA, BO, CY] } })
+    const b = balances([e], inEuros(), [ANA, BO, CY])
+    expect(nets(b)).toEqual({ [ANA]: 20, [BO]: 0, [CY]: -20 })
+    expect(b.get(ANA)?.paid).toBe(40)
+    expect(b.get(BO)?.paid).toBe(20)
   })
 
   it('ignores deleted expenses', () => {
