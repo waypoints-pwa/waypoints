@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { checkRecord } from './records.ts'
+import { ANA, BO, CY } from '../test/fixtures.ts'
 
 const place = {
   id: 'place-0001',
@@ -42,6 +43,35 @@ describe('checkRecord packing items', () => {
   })
   it('rejects a 500-character text', () => {
     expect(() => checkRecord('packingItems', { ...item, text: 'a'.repeat(500) })).toThrow('It contains an invalid packing item.')
+  })
+})
+
+describe('checkRecord expenses payers', () => {
+  const expense = {
+    id: 'cost0001',
+    tripId: 'trip-0001',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    title: 'Dinner',
+    amount: 60,
+    currency: 'EUR',
+    date: '2027-03-10',
+    category: 'food',
+    paidBy: ANA,
+    split: { kind: 'equal', among: [ANA, BO, CY] },
+  }
+  it('accepts equal payers', () => {
+    expect(() => checkRecord('expenses', { ...expense, payers: { kind: 'equal', among: [ANA, BO] } })).not.toThrow()
+  })
+  it('accepts exact payers', () => {
+    expect(() => checkRecord('expenses', { ...expense, payers: { kind: 'exact', amounts: { [ANA]: 40, [BO]: 20 } } })).not.toThrow()
+  })
+  it('accepts an expense without payers', () => {
+    expect(() => checkRecord('expenses', expense)).not.toThrow()
+  })
+  it('rejects invalid payers', () => {
+    expect(() => checkRecord('expenses', { ...expense, payers: { kind: 'equal', among: ['x'] } })).toThrow()
+    expect(() => checkRecord('expenses', { ...expense, payers: 'ana' })).toThrow()
   })
 })
 

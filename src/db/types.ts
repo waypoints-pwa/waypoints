@@ -162,6 +162,12 @@ export interface Expense extends TripRecord {
   /** Traveller id. */
   paidBy: string
   split: Split
+  /**
+   * When several travellers paid: equally among them, or exact amounts (in `currency`) each.
+   * Absent: `paidBy` paid it all. When set, `paidBy` is the one who paid the most (for older apps).
+   * Never on a transfer.
+   */
+  payers?: Split
   /** A payment between travellers to settle up rather than spending: `split` is the one recipient. */
   transfer?: boolean
   notes?: string

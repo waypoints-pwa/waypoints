@@ -163,6 +163,7 @@ const SPECS: { [T in RecordTable]: Record<string, { check: Check; required: bool
     category: required(WORD),
     paidBy: required(isId),
     split: required(split),
+    payers: optional(split),
     transfer: optional(bool),
     notes: optional(LONG),
   },
