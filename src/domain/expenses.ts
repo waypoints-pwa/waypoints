@@ -106,6 +106,40 @@ export function sharesOf(expense: Pick<Expense, 'amount' | 'split'>): Map<string
   return shares
 }
 
+/**
+ * Who paid an expense and how much of it, in the expense's own currency. Without `payers` (and always
+ * for transfers) `paidBy` paid it all. Exact amounts that no longer add up to the amount (an older app
+ * changed it) are scaled to it.
+ */
+export function payersOf(e: Pick<Expense, 'amount' | 'paidBy' | 'payers' | 'transfer'>): Map<string, number> {
+  const parts = new Map<string, number>()
+  if (!e.transfer && e.payers) {
+    if (e.payers.kind === 'equal') {
+      const among = [...new Set(e.payers.among)]
+      for (const id of among) parts.set(id, e.amount / among.length)
+    } else {
+      for (const [id, amount] of Object.entries(e.payers.amounts)) if (amount > 0) parts.set(id, amount)
+      const sum = [...parts.values()].reduce((a, b) => a + b, 0)
+      if (sum > 0 && Math.abs(sum - e.amount) > 0.005) for (const [id, amount] of parts) parts.set(id, (amount * e.amount) / sum)
+    }
+  }
+  if (!parts.size) parts.set(e.paidBy, e.amount)
+  return parts
+}
+
+/** The one who paid the most; ties go to the first in the map's order. */
+export function mainPayer(parts: Map<string, number>): string {
+  let best = ''
+  let most = -Infinity
+  for (const [id, amount] of parts) {
+    if (amount > most) {
+      best = id
+      most = amount
+    }
+  }
+  return best
+}
+
 export interface Balance {
   /** Spending this traveller paid for. */
   paid: number
@@ -126,10 +160,11 @@ export function balances(expenses: Expense[], rateOf: RateOf, travellerIds: stri
   for (const expense of expenses) {
     const rate = rateOf(expense)
     if (expense.deletedAt || !rate) continue
-    const payer = of(expense.paidBy)
-    const value = toTripCurrency(expense.amount, rate)
-    payer.net += value
-    if (!expense.transfer) payer.paid += value
+    for (const [id, amount] of payersOf(expense)) {
+      const value = toTripCurrency(amount, rate)
+      of(id).net += value
+      if (!expense.transfer) of(id).paid += value
+    }
     for (const [id, amount] of sharesOf(expense)) {
       const part = toTripCurrency(amount, rate)
       of(id).net -= part

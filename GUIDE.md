@@ -193,6 +193,7 @@ On the 💶 Money tab, add an expense: what it was, how much, in which currency,
 
 - Use **any currency**.
 - **Split** equally between the people who share it, or by exact amounts.
+- Paid by **several people**? Tap **Paid by several people?** and split who paid equally or by different amounts.
 - Say if it was paid in **Cash** or by **Card**. A new expense starts the way the last one in that
   currency was paid.
 - Add a receipt photo to the expense.

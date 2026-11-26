@@ -193,6 +193,7 @@ No separador 💶 Dinheiro, adiciona uma despesa: o que foi, quanto, em que moed
 
 - Usa **qualquer moeda**.
 - **Divide** por igual entre as pessoas que a partilham, ou por valores exatos.
+- Pago por **várias pessoas**? Toca em **Pago por várias pessoas?** e divide quem pagou por igual ou por valores diferentes.
 - Diz se foi pago em **Dinheiro** ou com **Cartão**. Uma nova despesa começa da forma como foi paga a última
   nessa moeda.
 - Adiciona uma foto do recibo à despesa.

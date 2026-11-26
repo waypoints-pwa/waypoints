@@ -8,9 +8,11 @@ import {
   cashLeft,
   exchangeRates,
   likelyPaidWith,
+  mainPayer,
   paidWithOf,
   parseAmount,
   paymentSplit,
+  payersOf,
   settleUp,
   sharesOf,
   toTripCurrency,
@@ -196,7 +198,7 @@ function RatesCard() {
   const rates = exchangeRates(t.exchanges, trip.currency)
   const left = cashLeft(t.exchanges, t.expenses, trip.currency)
   const cardsWaiting = t.expenses.filter((e) => awaitingCost(e, trip.currency))
-  const yours = t.me ? cardsWaiting.filter((e) => e.paidBy === t.me?.id).length : 0
+  const yours = t.me ? cardsWaiting.filter((e) => payersOf(e).has(t.me?.id ?? '')).length : 0
   // Card payments wait for the bank, not for an exchange.
   const waiting = unconverted(t.expenses, t.rateOf).filter((e) => !awaitingCost(e, trip.currency))
   const missing = [...new Set(waiting.map((e) => e.currency))]
@@ -284,6 +286,11 @@ function splitSummary(e: Expense, t: TripData): string {
   if (e.transfer) return m.money.paidTo(nameOf(t, e.paidBy), [...sharesOf(e).keys()].map((id) => nameOf(t, id)).join(', '))
   if (t.travellers.length < 2) return labelOf(EXPENSE_CATEGORIES, e.category).label
   const parts = sharesOf(e)
+  const payerCount = payersOf(e).size
+  if (payerCount > 1) {
+    if (parts.size === 1) return m.money.severalPaidForOne(payerCount, nameOf(t, [...parts.keys()][0]))
+    return parts.size === t.travellers.length ? m.money.severalPaidSplitEveryone(payerCount) : m.money.severalPaidSplitWays(payerCount, parts.size)
+  }
   const payer = nameOf(t, e.paidBy)
   if (parts.size === 1) return m.money.paidForOne(payer, nameOf(t, [...parts.keys()][0]))
   return parts.size === t.travellers.length ? m.money.paidSplitEveryone(payer) : m.money.paidSplitWays(payer, parts.size)
@@ -372,6 +379,11 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
   const [exact, setExact] = useState<Record<string, string>>(() =>
     existing?.split.kind === 'exact' ? Object.fromEntries(Object.entries(existing.split.amounts).map(([id, a]) => [id, fmtPlain(a)])) : {},
   )
+  const [payersKind, setPayersKind] = useState<'one' | 'equal' | 'exact'>(existing?.payers?.kind ?? 'one')
+  const [payerSet, setPayerSet] = useState<Set<string>>(() => new Set(existing?.payers?.kind === 'equal' ? existing.payers.among : [paidBy]))
+  const [payerExact, setPayerExact] = useState<Record<string, string>>(() =>
+    existing?.payers?.kind === 'exact' ? Object.fromEntries(Object.entries(existing.payers.amounts).map(([id, a]) => [id, fmtPlain(a)])) : {},
+  )
   const [to, setTo] = useState(() => settle?.to ?? (existing?.transfer ? [...sharesOf(existing).keys()][0] : ids.find((id) => id !== defaultPayer)) ?? '')
   const [notes, setNotes] = useState(existing?.notes ?? '')
   const { save, busy, error, setError } = useSave('expenses', existing?.id, transfer)
@@ -391,6 +403,13 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
   // A card payment without what the bank charged is estimated at the exchanges' rate meanwhile.
   const rate = !foreign ? 1 : card ? (cardRate ?? exchangeRate) : newExchange ? (got && cost ? got / cost : undefined) : exchangeRate
   const exactTotal = ids.reduce((sum, id) => sum + (parseAmount(exact[id] ?? '') ?? 0), 0)
+  const payerExactTotal = ids.reduce((sum, id) => sum + (parseAmount(payerExact[id] ?? '') ?? 0), 0)
+  // Who paid, as the form stands now (several payers only): each payer's part, in traveller order.
+  const currentPayers = (): Map<string, number> => {
+    if (payersKind === 'equal') return new Map(ids.filter((id) => payerSet.has(id)).map((id) => [id, 1] as const))
+    if (payersKind === 'exact') return new Map(ids.map((id) => [id, parseAmount(payerExact[id] ?? '') ?? 0] as const).filter(([, a]) => a > 0))
+    return new Map()
+  }
   // For a new payment between two travellers: what settling up says one owes the other.
   const owed = transfer && !existing ? settlePayments(balances(t.expenses, t.rateOf, ids)).find((p) => p.from === paidBy && p.to === to)?.amount : undefined
 
@@ -418,9 +437,23 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
       split = { kind: 'exact', amounts: Object.fromEntries(ids.map((id) => [id, parseAmount(exact[id] ?? '') ?? 0] as const).filter(([, a]) => a > 0)) }
     }
 
+    let payers: Split | undefined
+    let savedPayer = paidBy
+    if (group && !transfer && payersKind !== 'one') {
+      const chosen = currentPayers()
+      if (payersKind === 'equal') {
+        if (!chosen.size) return setError(m.money.chooseWhoPaid)
+        if (chosen.size > 1) payers = { kind: 'equal', among: [...chosen.keys()] }
+      } else {
+        if (Math.abs(payerExactTotal - amount) > 0.005) return setError(m.money.amountsAddUp(fmtPlain(payerExactTotal), fmtPlain(amount)))
+        if (chosen.size > 1) payers = { kind: 'exact', amounts: Object.fromEntries(chosen) }
+      }
+      if (chosen.size) savedPayer = mainPayer(chosen)
+    }
+
     // A rate given here for a currency without one is saved for the whole trip, as an exchange.
     if (newExchange && got && cost) {
-      await saveRecord('exchanges', trip.id, { date, currency, amount: got, cost, costCurrency: trip.currency, by: paidBy })
+      await saveRecord('exchanges', trip.id, { date, currency, amount: got, cost, costCurrency: trip.currency, by: savedPayer })
     }
     // An older expense that doesn't say how it was paid stays that way while it converts as before.
     const convertsAsBefore = existing && existing.currency === currency && paidWithBefore === paidWith && existing.rate === cardRate
@@ -432,7 +465,8 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
       paidWith: convertsAsBefore ? existing.paidWith : paidWith,
       date,
       category: (transfer ? 'other' : category) as ExpenseCategory,
-      paidBy,
+      paidBy: savedPayer,
+      payers,
       split,
       transfer: transfer || undefined,
       notes: opt(notes),
@@ -531,7 +565,7 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
         <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </Field>
       {!transfer && <ChoiceChips label={m.money.category} options={EXPENSE_CATEGORIES} value={category} onChange={setCategory} />}
-      {group && (
+      {group && (transfer || payersKind === 'one') && (
         <Field label={transfer ? m.money.from : m.money.paidBy}>
           <select className="input" value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
             {t.travellers.map((x) => (
@@ -541,7 +575,88 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
               </option>
             ))}
           </select>
+          {!transfer && (
+            <button
+              type="button"
+              className="link small"
+              onClick={() => {
+                setPayersKind('equal')
+                setPayerSet(new Set([paidBy]))
+              }}
+            >
+              {m.money.paidBySeveral}
+            </button>
+          )}
         </Field>
+      )}
+      {group && !transfer && payersKind !== 'one' && (
+        <div className="field" role="group" aria-label={m.money.paidBy}>
+          <span>{m.money.paidBy}</span>
+          <div className="segmented">
+            <button type="button" className={payersKind === 'equal' ? 'active' : ''} onClick={() => setPayersKind('equal')}>
+              {m.money.payersEqually}
+            </button>
+            <button type="button" className={payersKind === 'exact' ? 'active' : ''} onClick={() => setPayersKind('exact')}>
+              {m.money.payersAmounts}
+            </button>
+          </div>
+          {payersKind === 'equal' ? (
+            <>
+              <div className="chips">
+                {t.travellers.map((x) => (
+                  <button
+                    key={x.id}
+                    type="button"
+                    className="toggle-chip"
+                    aria-pressed={payerSet.has(x.id)}
+                    onClick={() =>
+                      setPayerSet((set) => {
+                        const next = new Set(set)
+                        if (!next.delete(x.id)) next.add(x.id)
+                        return next
+                      })
+                    }
+                  >
+                    {x.name}
+                  </button>
+                ))}
+              </div>
+              {amount !== undefined && payerSet.size > 0 && <small className="muted">{m.money.paidEach(fmtMoney(amount / payerSet.size, currency), payerSet.size)}</small>}
+            </>
+          ) : (
+            <>
+              {t.travellers.map((x) => (
+                <div key={x.id} className="split-row">
+                  <span>{x.name}</span>
+                  <input
+                    className="input"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    aria-label={m.money.paidPartOf(x.name)}
+                    value={payerExact[x.id] ?? ''}
+                    onChange={(e) => setPayerExact((o) => ({ ...o, [x.id]: e.target.value }))}
+                  />
+                </div>
+              ))}
+              {amount !== undefined && (
+                <small className={Math.abs(payerExactTotal - amount) > 0.005 ? 'minus' : 'muted'}>
+                  {m.money.leftToAssign(fmtMoney(amount - payerExactTotal, currency))}
+                </small>
+              )}
+            </>
+          )}
+          <button
+            type="button"
+            className="link small"
+            onClick={() => {
+              const parts = currentPayers()
+              if (parts.size) setPaidBy(mainPayer(parts))
+              setPayersKind('one')
+            }}
+          >
+            {m.money.onePayer}
+          </button>
+        </div>
       )}
       {transfer && (
         <Field label={m.money.to}>
@@ -627,6 +742,7 @@ export function ExpensePage() {
   if (!e) return <ItemGone backTo={back} />
   const label = labelOf(EXPENSE_CATEGORIES, e.category)
   const parts = [...sharesOf(e)]
+  const payers = [...payersOf(e)]
   const rate = t.rateOf(e)
   const cur = t.trip.currency
   const foreign = e.currency !== cur
@@ -675,7 +791,7 @@ export function ExpensePage() {
               <dd>{paidWith === 'cash' ? m.money.cash : e.transfer ? m.money.cardOrBank : m.money.card}</dd>
             </>
           )}
-          {t.travellers.length > 1 && (
+          {t.travellers.length > 1 && payers.length < 2 && (
             <>
               <dt>{e.transfer ? m.money.from : m.money.paidBy}</dt>
               <dd>{nameOf(t, e.paidBy)}</dd>
@@ -683,6 +799,19 @@ export function ExpensePage() {
           )}
         </dl>
       </section>
+      {t.travellers.length > 1 && payers.length > 1 && (
+        <section className="card">
+          <h3>{m.money.paidBy}</h3>
+          <ul className="history">
+            {payers.map(([id, amount]) => (
+              <li key={id}>
+                <span>{nameOf(t, id)}</span>
+                <span className="money">{fmtMoney(amount, e.currency)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {t.travellers.length > 1 && (
         <section className="card">
           <h3>{e.transfer ? m.money.to : m.money.split}</h3>

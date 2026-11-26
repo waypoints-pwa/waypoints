@@ -8,6 +8,10 @@ o mesmo número de parágrafos, marcadores, **negritos** e `códigos`. Um teste 
 ficheiros correspondem. Escreve para quem usa a app, não para programadores.
 -->
 
+## 0.18.0 — 2026-11-26
+
+Uma despesa pode agora ser paga por várias pessoas: toca em **Pago por várias pessoas?** em Pago por e divide por igual ou por valores diferentes. Os saldos contam o que cada uma pagou. Os telemóveis ainda não atualizados contam-na como paga por quem pagou mais.
+
 ## 0.17.1 — 2026-11-11
 
 O guia do utilizador agora também está em português, com imagens próprias: **Ler o guia** abre-o quando a app está em português. As taxas de câmbio seguem o formato de números da app ("1 EUR = 162,6016 JPY" em português), e os tamanhos de ficheiros a partir de 1000 MB voltam a aparecer como "1234 MB".

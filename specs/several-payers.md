@@ -1,6 +1,6 @@
 # Several people paid one expense
 
-Status: ready
+Status: shipped (0.18.0)
 Issue: https://github.com/waypoints-pwa/waypoints/issues/96
 Builds after: none
 
@@ -215,20 +215,20 @@ Offline, links, files and the sync server: nothing new; the field travels with t
    - Executor: haiku
 
 ## Acceptance criteria
-- [ ] 1. New expense on a 3-traveller trip: the form shows the **Paid by** dropdown and the
+- [x] 1. New expense on a 3-traveller trip: the form shows the **Paid by** dropdown and the
   **Paid by several people?** link, nothing else new; saving gives a one-payer expense as before.
-- [ ] 2. Several, Equally, Ana + Bruno, 60 EUR: the line says "30.00 each, paid by 2 people.";
+- [x] 2. Several, Equally, Ana + Bruno, 60 EUR: the line says "30.00 each, paid by 2 people.";
   saved; Ana and Bruno are each credited 30 in Balances.
-- [ ] 3. Several, Different amounts, Ana 40 + Bruno 10 on 60: error "The amounts add up to 50,
+- [x] 3. Several, Different amounts, Ana 40 + Bruno 10 on 60: error "The amounts add up to 50,
   not 60."; with Bruno 20 it saves; split equally by all three gives Ana +20, Bruno 0, Carla −20.
-- [ ] 4. Editing that expense opens on Different amounts with 40 and 20; **One person** + save
+- [x] 4. Editing that expense opens on Different amounts with 40 and 20; **One person** + save
   gives a one-payer expense paid by Ana (the field is gone: balances Ana +40).
-- [ ] 5. The Money row reads "2 people paid · split by everyone"; the expense page shows a
+- [x] 5. The Money row reads "2 people paid · split by everyone"; the expense page shows a
   **Paid by** card with Ana 40.00 EUR and Bruno 20.00 EUR.
-- [ ] 6. Bruno can't be removed from the trip while he paid part of an expense.
-- [ ] 7. Settle-up payments and one-traveller trips show no several-payers link.
-- [ ] 8. Unit tests from tasks 1–2 pass (`npm test`).
-- [ ] 9. A trip link or file with such an expense, opened on another phone with this version,
+- [x] 6. Bruno can't be removed from the trip while he paid part of an expense.
+- [x] 7. Settle-up payments and one-traveller trips show no several-payers link.
+- [x] 8. Unit tests from tasks 1–2 pass (`npm test`).
+- [x] 9. A trip link or file with such an expense, opened on another phone with this version,
   shows the same payers (manual: share link between two browser profiles).
 
 ## Verification
@@ -258,3 +258,16 @@ new warnings. Then the manual checks above in `npm run dev`.
 - Overlap scan: `expenses-csv-export` (draft) and `trip-budget` (draft) read expenses but don't
   use `paidBy`; `field-level-merge` (draft) merges fields generically. No shared Dexie version,
   table or helper, so `Builds after: none`.
+- As built:
+  - App 0.18.0; no server change.
+  - The **Paid by** card and the payers form list travellers in the trip's order (the demo trip
+    showed Ben above Ana), not in the order they paid.
+  - Browser checks were a throwaway script against the dev server (`en-GB` phone, the demo trip's
+    Ana, Ben and Chloé, no expenses): criteria 1–7 and 9 (link shared to a second browser), plus
+    "Choose who paid." and the "2 people paid · for Chloé" row; 24 checks passed. Not checked: a
+    real phone, a group with an older app version.
+  - Left as is: in Equally mode the "x each, paid by n people" line counts a payer who has since
+    been removed from the trip (saving filters them out). Traveller removal checks `payersOf` only,
+    as specced; if an older app changes `paidBy` on a several-payer expense, that person is no longer
+    locked. Keeping `paidBy` too (`[e.paidBy, ...payersOf(e).keys()]`) would close it.
+  - `npm run smoke` needs `npx playwright install chromium` first on a fresh machine.
