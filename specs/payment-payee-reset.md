@@ -1,7 +1,7 @@
 # Payment keeps the payee it shows
 
 Status: ready
-Issue: <issue link>
+Issue: https://github.com/waypoints-pwa/waypoints/issues/99
 Builds after: none
 
 ## Problem
