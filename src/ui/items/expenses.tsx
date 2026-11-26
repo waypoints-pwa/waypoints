@@ -12,6 +12,7 @@ import {
   paidWithOf,
   parseAmount,
   paymentSplit,
+  payersOf,
   settleUp,
   sharesOf,
   toTripCurrency,
@@ -197,7 +198,7 @@ function RatesCard() {
   const rates = exchangeRates(t.exchanges, trip.currency)
   const left = cashLeft(t.exchanges, t.expenses, trip.currency)
   const cardsWaiting = t.expenses.filter((e) => awaitingCost(e, trip.currency))
-  const yours = t.me ? cardsWaiting.filter((e) => e.paidBy === t.me?.id).length : 0
+  const yours = t.me ? cardsWaiting.filter((e) => payersOf(e).has(t.me?.id ?? '')).length : 0
   // Card payments wait for the bank, not for an exchange.
   const waiting = unconverted(t.expenses, t.rateOf).filter((e) => !awaitingCost(e, trip.currency))
   const missing = [...new Set(waiting.map((e) => e.currency))]
@@ -285,6 +286,11 @@ function splitSummary(e: Expense, t: TripData): string {
   if (e.transfer) return m.money.paidTo(nameOf(t, e.paidBy), [...sharesOf(e).keys()].map((id) => nameOf(t, id)).join(', '))
   if (t.travellers.length < 2) return labelOf(EXPENSE_CATEGORIES, e.category).label
   const parts = sharesOf(e)
+  const payerCount = payersOf(e).size
+  if (payerCount > 1) {
+    if (parts.size === 1) return m.money.severalPaidForOne(payerCount, nameOf(t, [...parts.keys()][0]))
+    return parts.size === t.travellers.length ? m.money.severalPaidSplitEveryone(payerCount) : m.money.severalPaidSplitWays(payerCount, parts.size)
+  }
   const payer = nameOf(t, e.paidBy)
   if (parts.size === 1) return m.money.paidForOne(payer, nameOf(t, [...parts.keys()][0]))
   return parts.size === t.travellers.length ? m.money.paidSplitEveryone(payer) : m.money.paidSplitWays(payer, parts.size)
@@ -736,6 +742,7 @@ export function ExpensePage() {
   if (!e) return <ItemGone backTo={back} />
   const label = labelOf(EXPENSE_CATEGORIES, e.category)
   const parts = [...sharesOf(e)]
+  const payers = [...payersOf(e)]
   const rate = t.rateOf(e)
   const cur = t.trip.currency
   const foreign = e.currency !== cur
@@ -784,7 +791,7 @@ export function ExpensePage() {
               <dd>{paidWith === 'cash' ? m.money.cash : e.transfer ? m.money.cardOrBank : m.money.card}</dd>
             </>
           )}
-          {t.travellers.length > 1 && (
+          {t.travellers.length > 1 && payers.length < 2 && (
             <>
               <dt>{e.transfer ? m.money.from : m.money.paidBy}</dt>
               <dd>{nameOf(t, e.paidBy)}</dd>
@@ -792,6 +799,19 @@ export function ExpensePage() {
           )}
         </dl>
       </section>
+      {t.travellers.length > 1 && payers.length > 1 && (
+        <section className="card">
+          <h3>{m.money.paidBy}</h3>
+          <ul className="history">
+            {payers.map(([id, amount]) => (
+              <li key={id}>
+                <span>{nameOf(t, id)}</span>
+                <span className="money">{fmtMoney(amount, e.currency)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {t.travellers.length > 1 && (
         <section className="card">
           <h3>{e.transfer ? m.money.to : m.money.split}</h3>

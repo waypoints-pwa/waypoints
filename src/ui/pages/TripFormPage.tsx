@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router'
 import { createTrip, updateTrip, type TravellerDraft } from '../../db/actions'
 import { setSetting, SETTINGS } from '../../db/db'
 import type { ServerConfig } from '../../db/serverState'
-import { sharesOf } from '../../domain/expenses'
+import { payersOf, sharesOf } from '../../domain/expenses'
 import type { MemberSummary } from '../../domain/serverProtocol'
 import { daysBetween, deviceTimeZone, isDay } from '../../domain/time'
 import { m } from '../../i18n'
@@ -54,7 +54,7 @@ function TripForm(props: { existing?: TripData; myName?: string; lastCurrency?: 
   const [busy, setBusy] = useState(false)
 
   // Travellers with expenses can't be removed: their balances would be lost.
-  const inExpenses = new Set(existing?.expenses.flatMap((e) => [e.paidBy, ...sharesOf(e).keys()]) ?? [])
+  const inExpenses = new Set(existing?.expenses.flatMap((e) => [...payersOf(e).keys(), ...sharesOf(e).keys()]) ?? [])
 
   const setPerson = (index: number, value: string) => setPeople((list) => list.map((p, i) => (i === index ? { ...p, name: value } : p)))
   const setLink = (index: number, memberId: string) =>
