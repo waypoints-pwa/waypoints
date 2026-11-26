@@ -9,6 +9,10 @@ Write for people who use the app, not for developers.
 Every entry is also in CHANGELOG.pt.md, in Portuguese, with the same heading (a test enforces it).
 -->
 
+## 0.18.1 — 2026-11-26
+
+Recording a payment from the person who was set to receive it no longer says nobody received it: the payment now goes to the person the form shows.
+
 ## 0.18.0 — 2026-11-26
 
 An expense can now be paid by several people: tap **Paid by several people?** under Paid by, then split it equally or by different amounts. Balances credit each of them. Phones that haven't updated yet count it as paid by whoever paid the most.
