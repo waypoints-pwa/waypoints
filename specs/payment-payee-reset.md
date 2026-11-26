@@ -1,6 +1,6 @@
 # Payment keeps the payee it shows
 
-Status: building
+Status: shipped (0.18.1)
 Issue: https://github.com/waypoints-pwa/waypoints/issues/99
 Builds after: none
 
@@ -73,9 +73,11 @@ Other cases:
      - Line 570: the `<select>` `onChange` becomes: read `const payer = e.target.value`, call
        `setPaidBy(payer)`, and if `payer === to` call `setTo(ids.find((id) => id !== payer) ?? '')`.
        Applies to both expenses and payments (for expenses `to` is unused, harmless).
-     - Line 387: the initial `to` must never equal `defaultPayer`: if the computed value equals
-       `defaultPayer`, use `ids.find((id) => id !== defaultPayer) ?? ''` instead (covers a settle-up link
-       with `from === to`). Keep the existing-payment branch otherwise unchanged.
+     - Line 387: the initial `to` must never equal the starting payer (`existing?.paidBy ?? defaultPayer`,
+       the same value `paidBy` starts with): if the computed value equals it, use
+       `ids.find((id) => id !== startingPayer) ?? ''` instead (covers a settle-up link with `from === to`).
+       Comparing with plain `defaultPayer` would be wrong: editing "Ben paid Ana" as Ana would move the
+       payee away from Ana. Keep the existing-payment branch otherwise unchanged.
    - Depends on: none
    - Done when: `npm run typecheck` and `npm run lint` pass, and `git diff --stat` shows only
      `src/ui/items/expenses.tsx`.
