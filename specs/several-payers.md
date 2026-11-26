@@ -1,7 +1,7 @@
 # Several people paid one expense
 
 Status: ready
-Issue: <issue link>
+Issue: https://github.com/waypoints-pwa/waypoints/issues/96
 Builds after: none
 
 ## Problem
