@@ -1,6 +1,6 @@
 # Several people paid one expense
 
-Status: ready
+Status: building
 Issue: https://github.com/waypoints-pwa/waypoints/issues/96
 Builds after: none
 
