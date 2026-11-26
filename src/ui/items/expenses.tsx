@@ -384,7 +384,11 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
   const [payerExact, setPayerExact] = useState<Record<string, string>>(() =>
     existing?.payers?.kind === 'exact' ? Object.fromEntries(Object.entries(existing.payers.amounts).map(([id, a]) => [id, fmtPlain(a)])) : {},
   )
-  const [to, setTo] = useState(() => settle?.to ?? (existing?.transfer ? [...sharesOf(existing).keys()][0] : ids.find((id) => id !== defaultPayer)) ?? '')
+  const [to, setTo] = useState(() => {
+    const initialPayer = existing?.paidBy ?? defaultPayer
+    const first = settle?.to ?? (existing?.transfer ? [...sharesOf(existing).keys()][0] : ids.find((id) => id !== defaultPayer)) ?? ''
+    return first === initialPayer ? (ids.find((id) => id !== initialPayer) ?? '') : first
+  })
   const [notes, setNotes] = useState(existing?.notes ?? '')
   const { save, busy, error, setError } = useSave('expenses', existing?.id, transfer)
 
@@ -567,7 +571,15 @@ function ExpenseForm({ existing, transfer, settle }: { existing?: Expense; trans
       {!transfer && <ChoiceChips label={m.money.category} options={EXPENSE_CATEGORIES} value={category} onChange={setCategory} />}
       {group && (transfer || payersKind === 'one') && (
         <Field label={transfer ? m.money.from : m.money.paidBy}>
-          <select className="input" value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
+          <select
+            className="input"
+            value={paidBy}
+            onChange={(e) => {
+              const payer = e.target.value
+              setPaidBy(payer)
+              if (payer === to) setTo(ids.find((id) => id !== payer) ?? '')
+            }}
+          >
             {t.travellers.map((x) => (
               <option key={x.id} value={x.id}>
                 {x.name}
